@@ -3,15 +3,11 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { UploadModal } from "@/components/upload-modal"
 import { useRouter } from "next/navigation"
 import { DashboardCard } from "@/components/dashboard-card"
-import { Button } from "@/components/ui/button"
-import { Plus, Download } from "lucide-react"
 import {
   BarChart3,
   FileText,
-  Upload,
   CreditCard,
   Building2,
   ArrowUpRight,
@@ -131,32 +127,51 @@ export default function DashboardPage() {
     setStats(newStats)
   }
 
-  const handleUploadClick = (type: DocumentType) => {
-    setCurrentUploadType(type)
-    setUploadModalOpen(true)
-  }
-
   const handleFilesAccepted = (files: File[]) => {
     if (!currentCompany) return
 
     // Create new document objects
-    const newDocuments = files.map((file) => ({
-      id: Math.random().toString(36).substring(2, 9),
-      name: file.name,
-      invoiceNumber: "",
-      partner: "",
-      invoiceDate: "",
-      dueDate: "",
-      createdAt: new Date().toLocaleDateString(),
-      amount: 0,
-      amountWithTax: 0,
-      type: "facture",
-      paymentStatus: "non-paye",
-      declarationStatus: "non-declare",
-      status: "en-cours",
-      hasWarning: true,
-      documentType: currentUploadType, // Add document type for categorization
-    }))
+    const newDocuments = files.map((file) => {
+      // Generate a more descriptive name based on the file
+      const fileExtension = file.name.split(".").pop()?.toLowerCase() || ""
+      const isInvoice = fileExtension === "pdf" || fileExtension === "jpg" || fileExtension === "png"
+
+      // Generate a random invoice number
+      const invoiceNumber = `INV-${Math.floor(Math.random() * 10000)
+        .toString()
+        .padStart(4, "0")}`
+
+      // Generate a random supplier name
+      const suppliers = ["HITECK LAND", "WANA CORPORATE", "MAROC TELECOM", "INWI", "ORANGE MAROC", "BMCE BANK"]
+      const randomSupplier = suppliers[Math.floor(Math.random() * suppliers.length)]
+
+      // Generate a random date within the last 30 days
+      const date = new Date()
+      date.setDate(date.getDate() - Math.floor(Math.random() * 30))
+      const formattedDate = `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1).toString().padStart(2, "0")}/${date.getFullYear()}`
+
+      // Generate a random amount
+      const amount = Math.floor(Math.random() * 10000) + 100
+
+      return {
+        id: Math.random().toString(36).substring(2, 9),
+        name: isInvoice ? `Facture ${randomSupplier}` : file.name,
+        description: file.name, // Keep original filename as description
+        invoiceNumber: invoiceNumber,
+        partner: randomSupplier,
+        invoiceDate: formattedDate,
+        dueDate: formattedDate,
+        createdAt: new Date().toLocaleDateString(),
+        amount: amount,
+        amountWithTax: Math.round(amount * 1.2),
+        type: "facture",
+        paymentStatus: "non-paye",
+        declarationStatus: "non-declare",
+        status: "en-cours",
+        hasWarning: true,
+        documentType: currentUploadType, // Add document type for categorization
+      }
+    })
 
     // Get existing documents for this type
     const storageKey = `${currentUploadType}_${currentCompany.id}`
@@ -171,33 +186,12 @@ export default function DashboardPage() {
 
     // Close the modal
     setUploadModalOpen(false)
-
-    // Redirect to the appropriate page based on the upload type
-    if (currentUploadType === "purchases") {
-      router.push("/dashboard/invoices")
-    }
   }
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Tableau de bord</h1>
-        <div className="flex flex-col sm:flex-row gap-2 justify-between">
-          <div className="flex gap-2">
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-1" />
-              Créer
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setUploadModalOpen(true)}>
-              <Download className="h-4 w-4 mr-1" />
-              Charger
-            </Button>
-            <Button size="sm" variant="secondary" onClick={() => router.push("/dashboard/ocr-upload")}>
-              <Upload className="h-4 w-4 mr-1" />
-              OCR Upload
-            </Button>
-          </div>
-        </div>
         <div className="flex items-center gap-2">
           {currentCompany && (
             <Badge variant="outline" className="px-3 py-1 text-sm bg-blue-50 mr-2">
@@ -295,7 +289,7 @@ export default function DashboardPage() {
                 </p>
               </div>
               <div className="bg-red-100 dark:bg-red-800/30 p-3 rounded-full">
-                <Upload className="h-6 w-6 text-red-600 dark:text-red-400" />
+                <FileText className="h-6 w-6 text-red-600 dark:text-red-400" />
               </div>
             </div>
           </CardContent>
@@ -309,8 +303,8 @@ export default function DashboardPage() {
           title="Achats"
           icon={FileText}
           color="blue"
-          actionLabel="Charger"
-          onAction={() => handleUploadClick("purchases")}
+          actionLabel="Voir"
+          onAction={() => router.push("/dashboard/invoices")}
         >
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
@@ -330,8 +324,8 @@ export default function DashboardPage() {
           title="Ventes"
           icon={BarChart3}
           color="green"
-          actionLabel="Charger"
-          onAction={() => handleUploadClick("sales")}
+          actionLabel="Voir"
+          onAction={() => router.push("/dashboard/sales")}
         >
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
@@ -351,8 +345,8 @@ export default function DashboardPage() {
           title="Bons de caisse"
           icon={CreditCard}
           color="amber"
-          actionLabel="Charger"
-          onAction={() => handleUploadClick("cashReceipts")}
+          actionLabel="Voir"
+          onAction={() => router.push("/dashboard/cash-receipts")}
         >
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
@@ -372,8 +366,8 @@ export default function DashboardPage() {
           title="Rel. bancaires"
           icon={Building2}
           color="red"
-          actionLabel="PDF"
-          onAction={() => handleUploadClick("bankStatements")}
+          actionLabel="Voir"
+          onAction={() => router.push("/dashboard/bank-statements")}
         >
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
@@ -409,24 +403,6 @@ export default function DashboardPage() {
           ),
         )}
       </div>
-
-      {/* Upload Modal */}
-      <UploadModal
-        title={
-          currentUploadType === "purchases"
-            ? "Achats"
-            : currentUploadType === "sales"
-              ? "Ventes"
-              : currentUploadType === "cashReceipts"
-                ? "Bons de caisse"
-                : currentUploadType === "bankStatements"
-                  ? "Relevés bancaires"
-                  : ""
-        }
-        isOpen={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
-        onAccept={handleFilesAccepted}
-      />
     </div>
   )
 }

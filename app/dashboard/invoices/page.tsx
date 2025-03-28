@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { AlertTriangle, Download, Plus } from "lucide-react"
-import { UploadModal } from "@/components/upload-modal"
+import { AlertTriangle } from "lucide-react"
 import { EnhancedDataTable } from "@/components/enhanced-data-table"
 import { StatusTag } from "@/components/status-tag"
 
@@ -67,61 +65,6 @@ export default function InvoicesPage() {
       setInvoices([])
     }
   }, [router])
-
-  const handleUpload = (files: File[]) => {
-    if (!currentCompanyId) return
-
-    // Create new invoice objects with better descriptions instead of filenames
-    const newInvoices = files.map((file) => {
-      // Generate a more descriptive name based on the file
-      const fileExtension = file.name.split(".").pop()?.toLowerCase() || ""
-      const isInvoice = fileExtension === "pdf" || fileExtension === "jpg" || fileExtension === "png"
-
-      // Generate a random invoice number
-      const invoiceNumber = `INV-${Math.floor(Math.random() * 10000)
-        .toString()
-        .padStart(4, "0")}`
-
-      // Generate a random supplier name
-      const suppliers = ["HITECK LAND", "WANA CORPORATE", "MAROC TELECOM", "INWI", "ORANGE MAROC", "BMCE BANK"]
-      const randomSupplier = suppliers[Math.floor(Math.random() * suppliers.length)]
-
-      // Generate a random date within the last 30 days
-      const date = new Date()
-      date.setDate(date.getDate() - Math.floor(Math.random() * 30))
-      const formattedDate = `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1).toString().padStart(2, "0")}/${date.getFullYear()}`
-
-      // Generate a random amount
-      const amount = Math.floor(Math.random() * 10000) + 100
-
-      return {
-        id: Math.random().toString(36).substring(2, 9),
-        name: isInvoice ? `Facture ${randomSupplier}` : file.name,
-        description: file.name, // Keep original filename as description
-        invoiceNumber: invoiceNumber,
-        partner: randomSupplier,
-        invoiceDate: formattedDate,
-        dueDate: formattedDate,
-        createdAt: new Date().toLocaleDateString(),
-        amount: amount,
-        amountWithTax: Math.round(amount * 1.2),
-        type: "facture",
-        paymentStatus: "non-paye",
-        declarationStatus: "non-declare",
-        status: "en-cours",
-        hasWarning: true,
-      }
-    })
-
-    // Update invoices state
-    const updatedInvoices = [...newInvoices, ...invoices]
-    setInvoices(updatedInvoices)
-
-    // Save to localStorage for this company
-    localStorage.setItem(`invoices_${currentCompanyId}`, JSON.stringify(updatedInvoices))
-
-    setUploadModalOpen(false)
-  }
 
   const handleViewInvoice = (id: string) => {
     router.push(`/dashboard/invoices/${id}`)
@@ -248,19 +191,6 @@ export default function InvoicesPage() {
         <h1 className="text-2xl font-bold tracking-tight">Achats {currentCompanyName && `- ${currentCompanyName}`}</h1>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2 justify-between">
-        <div className="flex gap-2">
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            Créer
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => setUploadModalOpen(true)}>
-            <Download className="h-4 w-4 mr-1" />
-            Charger
-          </Button>
-        </div>
-      </div>
-
       <EnhancedDataTable
         data={invoices}
         columns={columns}
@@ -278,14 +208,6 @@ export default function InvoicesPage() {
           Total: <strong>{totalAmount.toFixed(2)} DH</strong>
         </div>
       </div>
-
-      {/* Upload Modal */}
-      <UploadModal
-        title="Achats"
-        isOpen={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
-        onAccept={handleUpload}
-      />
     </div>
   )
 }

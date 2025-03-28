@@ -16,7 +16,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Upload,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -49,11 +48,6 @@ const navItems: NavItem[] = [
     title: "Invoices",
     href: "/dashboard/invoices",
     icon: FileText,
-  },
-  {
-    title: "OCR Upload",
-    href: "/dashboard/ocr-upload",
-    icon: Upload,
   },
   {
     title: "Reports",
