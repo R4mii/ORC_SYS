@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function InvoiceDetailPage() {
   const router = useRouter()
@@ -31,6 +32,7 @@ export default function InvoiceDetailPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [editMode, setEditMode] = useState(false)
   const [formData, setFormData] = useState<any>({})
+  const [activeTab, setActiveTab] = useState("form")
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -236,195 +238,235 @@ export default function InvoiceDetailPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel - Form */}
         <div className="w-1/2 overflow-y-auto p-4 border-r">
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Fournisseur</label>
-                <Input
-                  value={formData.supplier}
-                  onChange={(e) => handleInputChange("supplier", e.target.value)}
-                  disabled={!editMode}
-                />
-              </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="form">Formulaire</TabsTrigger>
+              <TabsTrigger value="ocr">Texte OCR</TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Compte de charge</label>
-                <Input
-                  value={formData.accountCode}
-                  onChange={(e) => handleInputChange("accountCode", e.target.value)}
-                  disabled={!editMode}
-                />
-              </div>
+          {activeTab === "form" && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Fournisseur</label>
+                  <Input
+                    value={formData.supplier}
+                    onChange={(e) => handleInputChange("supplier", e.target.value)}
+                    disabled={!editMode}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Devise</label>
-                <Input
-                  value={formData.currency}
-                  onChange={(e) => handleInputChange("currency", e.target.value)}
-                  disabled={!editMode}
-                />
-              </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Compte de charge</label>
+                  <Input
+                    value={formData.accountCode}
+                    onChange={(e) => handleInputChange("accountCode", e.target.value)}
+                    disabled={!editMode}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Numéro de facture</label>
-                <Input
-                  value={formData.invoiceNumber}
-                  onChange={(e) => handleInputChange("invoiceNumber", e.target.value)}
-                  disabled={!editMode}
-                />
-              </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Devise</label>
+                  <Input
+                    value={formData.currency}
+                    onChange={(e) => handleInputChange("currency", e.target.value)}
+                    disabled={!editMode}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Date de facturation</label>
-                <Input
-                  value={formData.invoiceDate}
-                  onChange={(e) => handleInputChange("invoiceDate", e.target.value)}
-                  disabled={!editMode}
-                />
-              </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Numéro de facture</label>
+                  <Input
+                    value={formData.invoiceNumber}
+                    onChange={(e) => handleInputChange("invoiceNumber", e.target.value)}
+                    disabled={!editMode}
+                  />
+                </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="withholding"
-                  checked={formData.withholding}
-                  onCheckedChange={(checked) => handleInputChange("withholding", checked)}
-                  disabled={!editMode}
-                />
-                <label htmlFor="withholding" className="text-sm font-medium">
-                  Retenue à la source
-                </label>
-              </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Date de facturation</label>
+                  <Input
+                    value={formData.invoiceDate}
+                    onChange={(e) => handleInputChange("invoiceDate", e.target.value)}
+                    disabled={!editMode}
+                  />
+                </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="prorataTVA"
-                  checked={formData.prorataTVA}
-                  onCheckedChange={(checked) => handleInputChange("prorataTVA", checked)}
-                  disabled={!editMode}
-                />
-                <label htmlFor="prorataTVA" className="text-sm font-medium">
-                  Prorata de TVA
-                </label>
-              </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="withholding"
+                    checked={formData.withholding}
+                    onCheckedChange={(checked) => handleInputChange("withholding", checked)}
+                    disabled={!editMode}
+                  />
+                  <label htmlFor="withholding" className="text-sm font-medium">
+                    Retenue à la source
+                  </label>
+                </div>
 
-              <Separator />
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="prorataTVA"
+                    checked={formData.prorataTVA}
+                    onCheckedChange={(checked) => handleInputChange("prorataTVA", checked)}
+                    disabled={!editMode}
+                  />
+                  <label htmlFor="prorataTVA" className="text-sm font-medium">
+                    Prorata de TVA
+                  </label>
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Montant HT</label>
-                <Input
-                  value={formData.amountHT}
-                  onChange={(e) => {
-                    const value = Number.parseFloat(e.target.value) || 0
-                    handleInputChange("amountHT", value)
-                    // Recalculate TTC
-                    const ttc = value + (formData.amountTVA || 0) + (formData.stampDuty || 0) + (formData.expenses || 0)
-                    handleInputChange("amountTTC", ttc)
-                  }}
-                  disabled={!editMode}
-                  type="number"
-                  className="text-right"
-                />
-              </div>
+                <Separator />
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Montant TVA</label>
-                <Input
-                  value={formData.amountTVA}
-                  onChange={(e) => {
-                    const value = Number.parseFloat(e.target.value) || 0
-                    handleInputChange("amountTVA", value)
-                    // Recalculate TTC
-                    const ttc = (formData.amountHT || 0) + value + (formData.stampDuty || 0) + (formData.expenses || 0)
-                    handleInputChange("amountTTC", ttc)
-                  }}
-                  disabled={!editMode}
-                  type="number"
-                  className="text-right"
-                />
-              </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Montant HT</label>
+                  <Input
+                    value={formData.amountHT}
+                    onChange={(e) => {
+                      const value = Number.parseFloat(e.target.value) || 0
+                      handleInputChange("amountHT", value)
+                      // Recalculate TTC
+                      const ttc =
+                        value + (formData.amountTVA || 0) + (formData.stampDuty || 0) + (formData.expenses || 0)
+                      handleInputChange("amountTTC", ttc)
+                    }}
+                    disabled={!editMode}
+                    type="number"
+                    className="text-right"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Droits de timbre</label>
-                <Input
-                  value={formData.stampDuty}
-                  onChange={(e) => {
-                    const value = Number.parseFloat(e.target.value) || 0
-                    handleInputChange("stampDuty", value)
-                    // Recalculate TTC
-                    const ttc = (formData.amountHT || 0) + (formData.amountTVA || 0) + value + (formData.expenses || 0)
-                    handleInputChange("amountTTC", ttc)
-                  }}
-                  disabled={!editMode}
-                  type="number"
-                  className="text-right"
-                />
-              </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Montant TVA</label>
+                  <Input
+                    value={formData.amountTVA}
+                    onChange={(e) => {
+                      const value = Number.parseFloat(e.target.value) || 0
+                      handleInputChange("amountTVA", value)
+                      // Recalculate TTC
+                      const ttc =
+                        (formData.amountHT || 0) + value + (formData.stampDuty || 0) + (formData.expenses || 0)
+                      handleInputChange("amountTTC", ttc)
+                    }}
+                    disabled={!editMode}
+                    type="number"
+                    className="text-right"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Débours</label>
-                <Input
-                  value={formData.expenses}
-                  onChange={(e) => {
-                    const value = Number.parseFloat(e.target.value) || 0
-                    handleInputChange("expenses", value)
-                    // Recalculate TTC
-                    const ttc = (formData.amountHT || 0) + (formData.amountTVA || 0) + (formData.stampDuty || 0) + value
-                    handleInputChange("amountTTC", ttc)
-                  }}
-                  disabled={!editMode}
-                  type="number"
-                  className="text-right"
-                />
-              </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Droits de timbre</label>
+                  <Input
+                    value={formData.stampDuty}
+                    onChange={(e) => {
+                      const value = Number.parseFloat(e.target.value) || 0
+                      handleInputChange("stampDuty", value)
+                      // Recalculate TTC
+                      const ttc =
+                        (formData.amountHT || 0) + (formData.amountTVA || 0) + value + (formData.expenses || 0)
+                      handleInputChange("amountTTC", ttc)
+                    }}
+                    disabled={!editMode}
+                    type="number"
+                    className="text-right"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Montant TTC</label>
-                <Input
-                  value={formData.amountTTC}
-                  onChange={(e) => handleInputChange("amountTTC", Number.parseFloat(e.target.value) || 0)}
-                  disabled={!editMode}
-                  type="number"
-                  className="text-right"
-                />
-              </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Débours</label>
+                  <Input
+                    value={formData.expenses}
+                    onChange={(e) => {
+                      const value = Number.parseFloat(e.target.value) || 0
+                      handleInputChange("expenses", value)
+                      // Recalculate TTC
+                      const ttc =
+                        (formData.amountHT || 0) + (formData.amountTVA || 0) + (formData.stampDuty || 0) + value
+                      handleInputChange("amountTTC", ttc)
+                    }}
+                    disabled={!editMode}
+                    type="number"
+                    className="text-right"
+                  />
+                </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="nonRecoverableTVA"
-                  checked={formData.nonRecoverableTVA}
-                  onCheckedChange={(checked) => handleInputChange("nonRecoverableTVA", checked)}
-                  disabled={!editMode}
-                />
-                <label htmlFor="nonRecoverableTVA" className="text-sm font-medium">
-                  TVA non Récupérable
-                </label>
-              </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Montant TTC</label>
+                  <Input
+                    value={formData.amountTTC}
+                    onChange={(e) => handleInputChange("amountTTC", Number.parseFloat(e.target.value) || 0)}
+                    disabled={!editMode}
+                    type="number"
+                    className="text-right"
+                  />
+                </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="multipleTVAAmounts"
-                  checked={formData.multipleTVAAmounts}
-                  onCheckedChange={(checked) => handleInputChange("multipleTVAAmounts", checked)}
-                  disabled={!editMode}
-                />
-                <label htmlFor="multipleTVAAmounts" className="text-sm font-medium">
-                  Plusieurs montants de TVA
-                </label>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="nonRecoverableTVA"
+                    checked={formData.nonRecoverableTVA}
+                    onCheckedChange={(checked) => handleInputChange("nonRecoverableTVA", checked)}
+                    disabled={!editMode}
+                  />
+                  <label htmlFor="nonRecoverableTVA" className="text-sm font-medium">
+                    TVA non Récupérable
+                  </label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="multipleTVAAmounts"
+                    checked={formData.multipleTVAAmounts}
+                    onCheckedChange={(checked) => handleInputChange("multipleTVAAmounts", checked)}
+                    disabled={!editMode}
+                  />
+                  <label htmlFor="multipleTVAAmounts" className="text-sm font-medium">
+                    Plusieurs montants de TVA
+                  </label>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {activeTab === "ocr" && (
+            <div className="space-y-4">
+              <div className="border rounded-md p-4 bg-muted/30">
+                <h3 className="font-medium mb-2">Texte extrait par OCR</h3>
+                <div className="max-h-[500px] overflow-y-auto text-sm whitespace-pre-wrap bg-background p-3 rounded border">
+                  {invoice.rawText || "Aucun texte OCR disponible pour ce document"}
+                </div>
+              </div>
+
+              {invoice.ocrConfidence && (
+                <div className="flex items-center space-x-2 text-sm">
+                  <div
+                    className={`w-2 h-2 rounded-full ${invoice.ocrConfidence > 0.7 ? "bg-green-500" : invoice.ocrConfidence > 0.4 ? "bg-amber-500" : "bg-red-500"}`}
+                  ></div>
+                  <span>
+                    Confiance OCR: {Math.round(invoice.ocrConfidence * 100)}%
+                    {invoice.ocrConfidence > 0.7
+                      ? " (Élevée)"
+                      : invoice.ocrConfidence > 0.4
+                        ? " (Moyenne)"
+                        : " (Faible)"}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right panel - Document viewer */}
         <div className="w-1/2 flex flex-col">
           <div className="flex items-center justify-between p-2 border-b bg-gray-50">
             <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="icon">
-                <ZoomOut className="h-4 w-4" onClick={handleZoomOut} />
+              <Button variant="ghost" size="icon" onClick={handleZoomOut}>
+                <ZoomOut className="h-4 w-4" />
               </Button>
               <span className="text-sm">{zoomLevel}%</span>
-              <Button variant="ghost" size="icon">
-                <ZoomIn className="h-4 w-4" onClick={handleZoomIn} />
+              <Button variant="ghost" size="icon" onClick={handleZoomIn}>
+                <ZoomIn className="h-4 w-4" />
               </Button>
             </div>
             <div className="flex items-center space-x-2">

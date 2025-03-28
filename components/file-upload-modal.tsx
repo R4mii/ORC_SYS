@@ -84,39 +84,30 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
     setProgress(10)
 
     try {
-      // Simulate OCR processing
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      // Create form data for API request
+      const formData = new FormData()
+      formData.append("file", files[0])
+
       setProgress(30)
 
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      // Call our OCR API endpoint
+      const response = await fetch("/api/ocr/process", {
+        method: "POST",
+        body: formData,
+      })
+
       setProgress(70)
 
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      setProgress(100)
-
-      // Mock OCR results
-      const mockOcrResults = {
-        rawText:
-          "HITECH LAND\nFacture N° : FA21 20210460\nDate : 13/02/2021\nClient : 003119\n\nRéférence : 01.0001\nDésignation : Ordinateur portable\nQté : 1\nP.U.HT : 5 605,00\nMontant HT : 5 605,00\n\nTVA 20% : 1 121,00\nMontant TTC : 6 726,00",
-        invoice: {
-          supplier: "HITECH LAND",
-          invoiceNumber: "FA21 20210460",
-          invoiceDate: "13/02/2021",
-          amount: 5605.0,
-          vatAmount: 1121.0,
-          amountWithTax: 6726.0,
-          currency: "MAD",
-          confidence: 0.85,
-        },
-        originalFile: {
-          name: files[0].name,
-          type: files[0].type,
-          size: files[0].size,
-        },
-        documentType: documentType,
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Erreur lors du traitement OCR")
       }
 
-      setOcrResults(mockOcrResults)
+      const data = await response.json()
+      setProgress(100)
+
+      // Set OCR results and move to results step
+      setOcrResults(data)
       setCurrentStep("results")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Une erreur s'est produite")
