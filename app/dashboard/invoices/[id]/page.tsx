@@ -117,8 +117,9 @@ export default function InvoiceDetailPage() {
       const updatedInvoices = invoices.map((inv: any) => (inv.id === invoice.id ? updatedInvoice : inv))
 
       localStorage.setItem(`purchases_${companyId}`, JSON.stringify(updatedInvoices))
-      setInvoice(updatedInvoice)
-      setEditMode(false)
+
+      // Redirect to invoices page
+      router.push("/dashboard/invoices")
     }
   }
 
@@ -492,11 +493,11 @@ export default function InvoiceDetailPage() {
                 transition: "transform 0.2s",
               }}
             >
-              <img
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/5.jpg-TVvk4iPb70rK2nFJfPLkAmktshYHV5.jpeg"
-                alt="Invoice document"
-                className="max-w-full h-auto"
-              />
+              {invoice.fileUrl ? (
+                <img src={invoice.fileUrl || "/placeholder.svg"} alt="Invoice document" className="max-w-full h-auto" />
+              ) : (
+                <div className="p-8 text-center text-muted-foreground">Aucun document disponible</div>
+              )}
             </div>
           </div>
         </div>

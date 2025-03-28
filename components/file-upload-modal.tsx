@@ -161,6 +161,8 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
         documentType: documentType,
         ocrConfidence: result.invoice.confidence,
         rawText: result.rawText,
+        // Add the file URL
+        fileUrl: URL.createObjectURL(files[0]),
       }
 
       // Get existing documents
