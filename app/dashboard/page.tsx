@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { UploadModal } from "@/components/upload-modal"
 import { useRouter } from "next/navigation"
 import { DashboardCard } from "@/components/dashboard-card"
+import { Button } from "@/components/ui/button"
+import { Plus, Download } from "lucide-react"
 import {
   BarChart3,
   FileText,
@@ -180,6 +182,22 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Tableau de bord</h1>
+        <div className="flex flex-col sm:flex-row gap-2 justify-between">
+          <div className="flex gap-2">
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-1" />
+              Créer
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setUploadModalOpen(true)}>
+              <Download className="h-4 w-4 mr-1" />
+              Charger
+            </Button>
+            <Button size="sm" variant="secondary" onClick={() => router.push("/dashboard/ocr-upload")}>
+              <Upload className="h-4 w-4 mr-1" />
+              OCR Upload
+            </Button>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           {currentCompany && (
             <Badge variant="outline" className="px-3 py-1 text-sm bg-blue-50 mr-2">
