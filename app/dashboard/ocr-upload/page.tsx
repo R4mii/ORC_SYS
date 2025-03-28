@@ -27,6 +27,7 @@ import {
   Loader2,
   ArrowRight,
   Info,
+  AlertCircle,
 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 
@@ -62,6 +63,7 @@ export default function OcrUploadPage() {
   const [editMode, setEditMode] = useState(false)
   const [editedResult, setEditedResult] = useState<OcrResult | null>(null)
   const [confidenceColors, setConfidenceColors] = useState<Record<string, string>>({})
+  const [error, setError] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -128,6 +130,7 @@ export default function OcrUploadPage() {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0]
       setFile(selectedFile)
+      setError(null)
 
       // Create a preview URL for the file
       if (selectedFile.type.startsWith("image/") || selectedFile.type === "application/pdf") {
@@ -149,6 +152,7 @@ export default function OcrUploadPage() {
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const droppedFile = e.dataTransfer.files[0]
       setFile(droppedFile)
+      setError(null)
 
       // Create a preview URL for the file
       if (droppedFile.type.startsWith("image/") || droppedFile.type === "application/pdf") {
@@ -158,12 +162,45 @@ export default function OcrUploadPage() {
     }
   }
 
+  // Extract invoice data from OCR text
+  const extractInvoiceData = (ocrText: string): OcrResult => {
+    // Basic extraction logic - in a real app, this would be more sophisticated
+    const invoiceNumberMatch = ocrText.match(/(?:invoice|facture|inv)[^\d]*(\d+[-\s]?\d+)/i)
+    const dateMatch = ocrText.match(/(?:date)[^\d]*(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/i)
+    const amountMatch = ocrText.match(/(?:total|amount|montant)[^\d]*(\d+(?:[.,]\d+)?)/i)
+    const vatMatch = ocrText.match(/(?:tva|vat|tax)[^\d]*(\d+(?:[.,]\d+)?)/i)
+    const supplierMatch = ocrText.match(/(?:from|de|supplier|fournisseur)[^:]*(?::|)\s*([^\n]+)/i)
+
+    // Calculate confidence based on how many fields were extracted
+    const extractedFields = [invoiceNumberMatch, dateMatch, amountMatch, supplierMatch].filter(Boolean).length
+
+    const confidence = Math.min(1, extractedFields / 4)
+
+    return {
+      invoiceNumber: invoiceNumberMatch ? invoiceNumberMatch[1].trim() : "",
+      invoiceDate: dateMatch ? dateMatch[1].trim() : "",
+      supplier: supplierMatch ? supplierMatch[1].trim() : "Unknown Supplier",
+      amount: amountMatch ? Number.parseFloat(amountMatch[1].replace(",", ".")) : 0,
+      amountWithTax: amountMatch ? Number.parseFloat(amountMatch[1].replace(",", ".")) * 1.2 : 0,
+      vatAmount: vatMatch ? Number.parseFloat(vatMatch[1].replace(",", ".")) : 0,
+      currency: "MAD", // Default currency
+      fileName: file?.name || "",
+      fileUrl: previewUrl,
+      confidence: confidence,
+      rawText: ocrText,
+    }
+  }
+
   const handleUpload = async () => {
-    if (!file) return
+    if (!file) {
+      setError("Please select a file to upload")
+      return
+    }
 
     setUploading(true)
     setUploadProgress(0)
     setProcessingStatus(null)
+    setError(null)
 
     // Simulate upload progress
     const uploadInterval = setInterval(() => {
@@ -181,54 +218,55 @@ export default function OcrUploadPage() {
       const formData = new FormData()
       formData.append("file", file)
 
-      // In a real implementation, you would send the file to your OCR API
-      // For demo purposes, we'll simulate the API call
       setProcessingStatus("Uploading file...")
 
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      setProcessingStatus("Preparing document for OCR processing...")
-      await new Promise((resolve) => setTimeout(resolve, 800))
-
-      setProcessingStatus("Extracting text with OCR...")
+      // Send the file to our API route
+      setProcessingStatus("Sending to OCR service...")
       setProcessing(true)
-      await new Promise((resolve) => setTimeout(resolve, 1200))
 
-      setProcessingStatus("Analyzing invoice data...")
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const response = await fetch("/api/ocr/process", {
+        method: "POST",
+        body: formData,
+      })
 
-      // Simulate OCR result
-      const mockOcrResult: OcrResult = {
-        invoiceNumber: `INV-${Math.floor(Math.random() * 10000)
-          .toString()
-          .padStart(4, "0")}`,
-        invoiceDate: new Date().toLocaleDateString(),
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        supplier: file.name.split(".")[0] || "WANA CORPORATE",
-        amount: Math.floor(Math.random() * 5000) + 500,
-        amountWithTax: Math.floor(Math.random() * 5000 + 500) * 1.2,
-        vatAmount: Math.floor(Math.random() * 5000 + 500) * 0.2,
-        currency: "MAD",
-        fileUrl: previewUrl,
-        fileName: file.name,
-        confidence: 0.75 + Math.random() * 0.2,
-        rawText:
-          "FACTURE\nN° INV-2345\nDate: 15/03/2024\nFournisseur: WANA CORPORATE\nMontant HT: 3450.75 MAD\nTVA (20%): 690.15 MAD\nMontant TTC: 4140.90 MAD",
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `Server responded with status: ${response.status}`)
       }
+
+      const data = await response.json()
+
+      setProcessingStatus("Processing OCR results...")
+
+      // Extract OCR text from response
+      const ocrText = data.ocrText || ""
+
+      if (!ocrText) {
+        throw new Error("No text was extracted from the document")
+      }
+
+      // Parse the OCR text to extract invoice data
+      const extractedData = extractInvoiceData(ocrText)
 
       // Complete the upload
       clearInterval(uploadInterval)
       setUploadProgress(100)
       setProcessingStatus("Processing complete!")
-      setOcrResult(mockOcrResult)
+      setOcrResult(extractedData)
       setActiveTab("review")
-    } catch (error) {
-      console.error("Error uploading file:", error)
+
+      toast({
+        title: "OCR Processing Complete",
+        description: "The document has been successfully processed.",
+      })
+    } catch (err) {
+      clearInterval(uploadInterval)
+      console.error("Error processing OCR:", err)
+      setError(err instanceof Error ? err.message : "An unknown error occurred")
       toast({
         variant: "destructive",
-        title: "Upload failed",
-        description: "There was an error uploading your file. Please try again.",
+        title: "OCR Processing Failed",
+        description: err instanceof Error ? err.message : "Failed to process the document",
       })
     } finally {
       setUploading(false)
@@ -347,6 +385,14 @@ export default function OcrUploadPage() {
                     </div>
                   </div>
                 </div>
+
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
 
                 {file && (
                   <Button className="w-full" onClick={handleUpload} disabled={uploading || processing}>
