@@ -1,143 +1,205 @@
 import { type NextRequest, NextResponse } from "next/server"
-import fs from "fs"
-import path from "path"
-import os from "os"
-import { v4 as uuidv4 } from "uuid"
-import logger from "@/lib/services/logging-service"
 
-// Rate limiting implementation for Next.js App Router
-const RATE_LIMIT = {
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // 10 requests per windowMs
-  message: "Too many requests, please try again later",
+/**
+ * Configuration to disable Next.js body parsing
+ * This is necessary when handling file uploads
+ */
+export const config = {
+  api: {
+    bodyParser: false,
+  },
 }
 
-// Simple in-memory store for rate limiting
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
+/**
+ * Extract invoice data from OCR text using regular expressions
+ * @param ocrText - The raw text extracted from the OCR service
+ * @returns Structured invoice data object
+ */
+function extractInvoiceData(ocrText: string) {
+  // Initialize invoice object
+  const invoice: Record<string, any> = {}
 
-// Clean up expired rate limit entries
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, value] of rateLimitStore.entries()) {
-    if (value.resetTime < now) {
-      rateLimitStore.delete(key)
+  // Extract invoice number
+  const invoiceNumberMatch =
+    ocrText.match(/(?:invoice|facture|inv)[^\d]*(?:n[o°]?)?[^\d]*(\d+[-\s]?\d+)/i) ||
+    ocrText.match(/(?:invoice|facture|inv)[^\d]*(?:n[o°]?)?[^\d]*([A-Z0-9][-A-Z0-9/]+)/i)
+  if (invoiceNumberMatch) {
+    invoice.invoiceNumber = invoiceNumberMatch[1].trim()
+  }
+
+  // Extract invoice date
+  const dateMatch =
+    ocrText.match(/(?:date)[^\d]*(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/i) ||
+    ocrText.match(/(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/i)
+  if (dateMatch) {
+    invoice.date = dateMatch[1].trim()
+  }
+
+  // Extract supplier name
+  const supplierMatch =
+    ocrText.match(/(?:from|de|supplier|fournisseur)[^:]*(?::|)\s*([^\n]+)/i) ||
+    ocrText.match(/(?:société|company|raison sociale)[^:]*(?::|)\s*([^\n]+)/i)
+  if (supplierMatch) {
+    invoice.supplier = supplierMatch[1].trim()
+  } else {
+    // If no supplier found, try to extract from the top of the document
+    const lines = ocrText.split("\n").slice(0, 5) // Check first 5 lines
+    for (const line of lines) {
+      // Look for a line that might be a company name (all caps, or contains SARL, SA, etc.)
+      if (/^[A-Z\s]{5,}$/.test(line) || /\b(?:SARL|SA|SAS|EURL|SASU)\b/.test(line)) {
+        invoice.supplier = line.trim()
+        break
+      }
     }
   }
-}, 60000) // Clean up every minute
 
-export async function POST(request: NextRequest) {
+  // Extract total amount
+  const totalMatch =
+    ocrText.match(/(?:total\s*ttc|montant\s*total|total\s*amount)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i) ||
+    ocrText.match(/(?:total)[^0-9€$]*([0-9\s,.]+)[€$\s]*(?:dh|mad|dirham)/i) ||
+    ocrText.match(/(?:à\s*payer|to\s*pay)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i)
+  if (totalMatch) {
+    // Clean up the number: remove spaces, replace comma with dot
+    const cleanNumber = totalMatch[1].replace(/\s/g, "").replace(",", ".")
+    invoice.totalAmount = cleanNumber
+  }
+
+  // Extract subtotal (amount without tax)
+  const subtotalMatch =
+    ocrText.match(/(?:sous\s*total|subtotal|total\s*ht|montant\s*ht)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i) ||
+    ocrText.match(/(?:ht|hors\s*taxe)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i)
+  if (subtotalMatch) {
+    const cleanNumber = subtotalMatch[1].replace(/\s/g, "").replace(",", ".")
+    invoice.subtotal = cleanNumber
+  }
+
+  // Extract VAT amount
+  const vatMatch =
+    ocrText.match(/(?:tva|t\.v\.a\.|vat)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i) ||
+    ocrText.match(/(?:montant\s*(?:tva|t\.v\.a\.|vat))[^0-9€$]*([0-9\s,.]+)[€$\s]*/i)
+  if (vatMatch) {
+    const cleanNumber = vatMatch[1].replace(/\s/g, "").replace(",", ".")
+    invoice.vatAmount = cleanNumber
+  }
+
+  // Extract currency
+  const currencyMatch = ocrText.match(/(?:€|\$|£|MAD|DH|DHs|EUR|USD|GBP)/i)
+  if (currencyMatch) {
+    const currencyMap: Record<string, string> = {
+      "€": "EUR",
+      $: "USD",
+      "£": "GBP",
+      MAD: "MAD",
+      DH: "MAD",
+      DHs: "MAD",
+      EUR: "EUR",
+      USD: "USD",
+      GBP: "GBP",
+    }
+    invoice.currency = currencyMap[currencyMatch[0].toUpperCase()] || "MAD"
+  } else {
+    invoice.currency = "MAD" // Default currency
+  }
+
+  return invoice
+}
+
+/**
+ * API route handler for OCR processing
+ * @param req - The incoming request
+ * @returns JSON response with OCR results
+ */
+export async function POST(req: NextRequest) {
   try {
-    // Get client IP for rate limiting
-    const ip = request.headers.get("x-forwarded-for") || "unknown"
+    // OCR API credentials (hard-coded as requested)
+    const username = "RAMI"
+    const licenseCode = "F5D38AC1-0D82-4D17-93AA-CC8E2450B302"
 
-    // Check rate limit
-    const now = Date.now()
-    const rateLimit = rateLimitStore.get(ip) || { count: 0, resetTime: now + RATE_LIMIT.windowMs }
+    // OCR API endpoint
+    const requestUrl = "https://www.ocrwebservice.com/restservices/processDocument?gettext=true"
 
-    if (rateLimit.resetTime < now) {
-      // Reset if window has passed
-      rateLimit.count = 1
-      rateLimit.resetTime = now + RATE_LIMIT.windowMs
-    } else {
-      rateLimit.count += 1
-    }
-
-    rateLimitStore.set(ip, rateLimit)
-
-    if (rateLimit.count > RATE_LIMIT.max) {
-      return NextResponse.json(
-        { error: RATE_LIMIT.message },
-        { status: 429, headers: { "Retry-After": String(Math.ceil((rateLimit.resetTime - now) / 1000)) } },
-      )
-    }
-
-    // Process the request
-    const formData = await request.formData()
+    // Create a temporary file path for storing the uploaded file
+    const formData = await req.formData()
     const file = formData.get("file") as File
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
-    // Validate file size (10MB max)
-    const MAX_SIZE = 10 * 1024 * 1024
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json(
-        { error: `File too large. Maximum size is ${MAX_SIZE / 1024 / 1024}MB` },
-        { status: 400 },
-      )
-    }
+    // Log file information
+    console.log(`Processing file: ${file.name}, type: ${file.type}, size: ${file.size} bytes`)
 
-    // Validate file type
-    const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png"]
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: `Invalid file type. Allowed types: ${ALLOWED_TYPES.join(", ")}` },
-        { status: 400 },
-      )
-    }
-
-    // Get language preference if provided
-    const preferredLanguage = (formData.get("language") as string) || undefined
-
-    // Convert file to buffer for processing
+    // Convert file to array buffer then to Buffer
     const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    const fileData = Buffer.from(arrayBuffer)
 
-    // Create a unique filename to prevent collisions
-    const tempDir = os.tmpdir()
-    const uniqueFilename = `${uuidv4()}-${file.name}`
-    const tempFilePath = path.join(tempDir, uniqueFilename)
+    // Create authorization header for Basic Auth
+    const authHeader = "Basic " + Buffer.from(`${username}:${licenseCode}`).toString("base64")
 
-    // Write buffer to temporary file
-    fs.writeFileSync(tempFilePath, buffer)
+    console.log("Sending request to OCR service...")
 
-    try {
-      // Process the image with OCRWebService.com
-      const ocrText = await processImageWithOCR(tempFilePath, {
-        preferredLanguage,
-      })
+    // Send file data to the OCR API
+    const response = await fetch(requestUrl, {
+      method: "POST",
+      headers: {
+        Authorization: authHeader,
+        "Content-Type": "application/octet-stream",
+      },
+      body: fileData,
+    })
 
-      // Parse the OCR text to extract invoice data
-      const invoiceData = parseInvoiceData(ocrText)
+    console.log(`OCR service response status: ${response.status}`)
 
-      // Return the processed data
-      return NextResponse.json({
-        success: true,
-        data: {
-          ...invoiceData,
-          fileName: file.name,
-          fileSize: file.size,
-          fileType: file.type,
-        },
-      })
-    } catch (error) {
-      // Handle OCR-specific errors
-      if (error instanceof Error) {
-        if (error.message.includes("Unauthorized")) {
-          return NextResponse.json({ error: "Unauthorized: Invalid OCR API credentials" }, { status: 401 })
-        }
-        return NextResponse.json({ error: error.message }, { status: 500 })
+    // Handle HTTP errors
+    if (!response.ok) {
+      if (response.status === 401) {
+        return NextResponse.json({ error: "Unauthorized: Invalid OCR API credentials" }, { status: 401 })
       }
-      throw error
-    } finally {
-      // Clean up the temporary file
-      try {
-        fs.unlinkSync(tempFilePath)
-      } catch (e) {
-        console.error("Error deleting temp file:", e)
-      }
+      return NextResponse.json(
+        { error: `OCR service returned status: ${response.status}` },
+        { status: response.status },
+      )
     }
+
+    // Parse the JSON response
+    const data = await response.json()
+    console.log(`OCR service response: ${JSON.stringify(data).substring(0, 200)}...`)
+
+    // Check for error message in the response
+    if (data.ErrorMessage) {
+      return NextResponse.json({ error: `OCR Error: ${data.ErrorMessage}` }, { status: 400 })
+    }
+
+    // Extract OCR text from response
+    const ocrText = data.OCRText?.[0]?.[0] || ""
+
+    if (!ocrText) {
+      return NextResponse.json({ error: "No text was extracted from the document" }, { status: 400 })
+    }
+
+    // Parse the OCR text to extract invoice details
+    const invoice = extractInvoiceData(ocrText)
+
+    // Calculate confidence score based on how many fields were successfully extracted
+    const extractedFields = Object.keys(invoice).filter((key) => !!invoice[key]).length
+    const confidence = Math.min(1, extractedFields / 5) // 5 is the total number of fields we try to extract
+
+    // Return the structured invoice data along with OCR details
+    return NextResponse.json({
+      success: true,
+      taskDescription: data.TaskDescription,
+      availablePages: data.AvailablePages,
+      processedPages: data.ProcessedPages,
+      confidence,
+      invoice,
+      rawText: ocrText,
+    })
   } catch (error) {
-    // Log error
-    logger.error("Error processing OCR request:", error)
-
-    // Return appropriate error response
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    return NextResponse.json({ error: "An unknown error occurred" }, { status: 500 })
+    console.error("Error processing OCR:", error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "An unknown error occurred" },
+      { status: 500 },
+    )
   }
 }
 
