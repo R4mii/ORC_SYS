@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 import { AlertTriangle } from "lucide-react"
 import { EnhancedDataTable } from "@/components/enhanced-data-table"
 import { StatusTag } from "@/components/status-tag"
+import { Button } from "@/components/ui/button"
+import { FileUploadModal } from "@/components/file-upload-modal"
 
 // Interface for invoice data
 interface Invoice {
@@ -23,6 +25,7 @@ interface Invoice {
   status: string
   hasWarning: boolean
   description?: string
+  documentType: string
 }
 
 export default function InvoicesPage() {
@@ -55,19 +58,67 @@ export default function InvoicesPage() {
       setCurrentCompanyName(company.name)
     }
 
-    // Get invoices for this company
-    const companyInvoices = localStorage.getItem(`invoices_${companyId}`)
-    if (companyInvoices) {
-      setInvoices(JSON.parse(companyInvoices))
+    // Get purchases documents for this company
+    const purchasesDocuments = localStorage.getItem(`purchases_${companyId}`)
+    if (purchasesDocuments) {
+      setInvoices(JSON.parse(purchasesDocuments))
     } else {
       // Initialize with empty array if no invoices exist
-      localStorage.setItem(`invoices_${companyId}`, JSON.stringify([]))
+      localStorage.setItem(`purchases_${companyId}`, JSON.stringify([]))
       setInvoices([])
     }
   }, [router])
 
   const handleViewInvoice = (id: string) => {
     router.push(`/dashboard/invoices/${id}`)
+  }
+
+  const handleUploadComplete = (result: any) => {
+    if (!currentCompanyId) return
+
+    // Create a new document from OCR results
+    const newDocument = {
+      id: Math.random().toString(36).substring(2, 9),
+      name: result.invoice.supplier
+        ? `Facture ${result.invoice.supplier}`
+        : `Document ${new Date().toLocaleDateString()}`,
+      description: result.originalFile.name,
+      invoiceNumber:
+        result.invoice.invoiceNumber ||
+        `INV-${Math.floor(Math.random() * 10000)
+          .toString()
+          .padStart(4, "0")}`,
+      partner: result.invoice.supplier || "Fournisseur inconnu",
+      invoiceDate: result.invoice.invoiceDate || new Date().toLocaleDateString(),
+      dueDate: result.invoice.invoiceDate || new Date().toLocaleDateString(),
+      createdAt: new Date().toLocaleDateString(),
+      amount: result.invoice.amount || 0,
+      amountWithTax: result.invoice.amountWithTax || 0,
+      vatAmount: result.invoice.vatAmount || 0,
+      type: "facture",
+      paymentStatus: "non-paye",
+      declarationStatus: "non-declare",
+      status: "en-cours",
+      hasWarning: result.invoice.confidence < 0.7,
+      documentType: "purchases",
+      ocrConfidence: result.invoice.confidence,
+      rawText: result.rawText,
+    }
+
+    // Get existing documents
+    const storageKey = `purchases_${currentCompanyId}`
+    const existingDocumentsJson = localStorage.getItem(storageKey)
+    const existingDocuments = existingDocumentsJson ? JSON.parse(existingDocumentsJson) : []
+
+    // Save to localStorage
+    const updatedDocuments = [newDocument, ...existingDocuments]
+    localStorage.setItem(storageKey, JSON.stringify(updatedDocuments))
+
+    // Update state
+    setInvoices(updatedDocuments)
+
+    // Close the modal
+    setUploadModalOpen(false)
   }
 
   // Calculate total amount
@@ -179,7 +230,7 @@ export default function InvoicesPage() {
         if (confirm("Êtes-vous sûr de vouloir supprimer cette facture?")) {
           const updatedInvoices = invoices.filter((inv) => inv.id !== invoice.id)
           setInvoices(updatedInvoices)
-          localStorage.setItem(`invoices_${currentCompanyId}`, JSON.stringify(updatedInvoices))
+          localStorage.setItem(`purchases_${currentCompanyId}`, JSON.stringify(updatedInvoices))
         }
       },
     },
@@ -189,6 +240,7 @@ export default function InvoicesPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Achats {currentCompanyName && `- ${currentCompanyName}`}</h1>
+        <Button onClick={() => setUploadModalOpen(true)}>Charger une facture</Button>
       </div>
 
       <EnhancedDataTable
@@ -208,6 +260,14 @@ export default function InvoicesPage() {
           Total: <strong>{totalAmount.toFixed(2)} DH</strong>
         </div>
       </div>
+
+      {/* File Upload Modal */}
+      <FileUploadModal
+        open={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        documentType="purchases"
+        onUploadComplete={handleUploadComplete}
+      />
     </div>
   )
 }

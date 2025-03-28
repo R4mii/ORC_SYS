@@ -16,6 +16,7 @@ import {
   DollarSign,
 } from "lucide-react"
 import { CalendarIcon } from "lucide-react"
+import { FileUploadModal } from "@/components/file-upload-modal"
 
 // Define document types for categorization
 type DocumentType = "purchases" | "sales" | "cashReceipts" | "bankStatements"
@@ -45,7 +46,6 @@ export default function DashboardPage() {
     bankStatements: {
       inProgress: 0,
       toValidate: 0,
-      toExport: 0,
     },
     totalAmount: 0,
     vatAmount: 0,
@@ -127,51 +127,42 @@ export default function DashboardPage() {
     setStats(newStats)
   }
 
-  const handleFilesAccepted = (files: File[]) => {
+  const handleUploadClick = (type: DocumentType) => {
+    setCurrentUploadType(type)
+    setUploadModalOpen(true)
+  }
+
+  const handleUploadComplete = (result: any) => {
     if (!currentCompany) return
 
-    // Create new document objects
-    const newDocuments = files.map((file) => {
-      // Generate a more descriptive name based on the file
-      const fileExtension = file.name.split(".").pop()?.toLowerCase() || ""
-      const isInvoice = fileExtension === "pdf" || fileExtension === "jpg" || fileExtension === "png"
-
-      // Generate a random invoice number
-      const invoiceNumber = `INV-${Math.floor(Math.random() * 10000)
-        .toString()
-        .padStart(4, "0")}`
-
-      // Generate a random supplier name
-      const suppliers = ["HITECK LAND", "WANA CORPORATE", "MAROC TELECOM", "INWI", "ORANGE MAROC", "BMCE BANK"]
-      const randomSupplier = suppliers[Math.floor(Math.random() * suppliers.length)]
-
-      // Generate a random date within the last 30 days
-      const date = new Date()
-      date.setDate(date.getDate() - Math.floor(Math.random() * 30))
-      const formattedDate = `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1).toString().padStart(2, "0")}/${date.getFullYear()}`
-
-      // Generate a random amount
-      const amount = Math.floor(Math.random() * 10000) + 100
-
-      return {
-        id: Math.random().toString(36).substring(2, 9),
-        name: isInvoice ? `Facture ${randomSupplier}` : file.name,
-        description: file.name, // Keep original filename as description
-        invoiceNumber: invoiceNumber,
-        partner: randomSupplier,
-        invoiceDate: formattedDate,
-        dueDate: formattedDate,
-        createdAt: new Date().toLocaleDateString(),
-        amount: amount,
-        amountWithTax: Math.round(amount * 1.2),
-        type: "facture",
-        paymentStatus: "non-paye",
-        declarationStatus: "non-declare",
-        status: "en-cours",
-        hasWarning: true,
-        documentType: currentUploadType, // Add document type for categorization
-      }
-    })
+    // Create a new document from OCR results
+    const newDocument = {
+      id: Math.random().toString(36).substring(2, 9),
+      name: result.invoice.supplier
+        ? `Facture ${result.invoice.supplier}`
+        : `Document ${new Date().toLocaleDateString()}`,
+      description: result.originalFile.name,
+      invoiceNumber:
+        result.invoice.invoiceNumber ||
+        `INV-${Math.floor(Math.random() * 10000)
+          .toString()
+          .padStart(4, "0")}`,
+      partner: result.invoice.supplier || "Fournisseur inconnu",
+      invoiceDate: result.invoice.invoiceDate || new Date().toLocaleDateString(),
+      dueDate: result.invoice.invoiceDate || new Date().toLocaleDateString(),
+      createdAt: new Date().toLocaleDateString(),
+      amount: result.invoice.amount || 0,
+      amountWithTax: result.invoice.amountWithTax || 0,
+      vatAmount: result.invoice.vatAmount || 0,
+      type: "facture",
+      paymentStatus: "non-paye",
+      declarationStatus: "non-declare",
+      status: "en-cours",
+      hasWarning: result.invoice.confidence < 0.7,
+      documentType: currentUploadType,
+      ocrConfidence: result.invoice.confidence,
+      rawText: result.rawText,
+    }
 
     // Get existing documents for this type
     const storageKey = `${currentUploadType}_${currentCompany.id}`
@@ -179,7 +170,7 @@ export default function DashboardPage() {
     const existingDocuments = existingDocumentsJson ? JSON.parse(existingDocumentsJson) : []
 
     // Save to localStorage for this company and document type
-    localStorage.setItem(storageKey, JSON.stringify([...newDocuments, ...existingDocuments]))
+    localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]))
 
     // Update stats
     calculateStats(currentCompany.id)
@@ -303,8 +294,8 @@ export default function DashboardPage() {
           title="Achats"
           icon={FileText}
           color="blue"
-          actionLabel="Voir"
-          onAction={() => router.push("/dashboard/invoices")}
+          actionLabel="Charger"
+          onAction={() => handleUploadClick("purchases")}
         >
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
@@ -324,8 +315,8 @@ export default function DashboardPage() {
           title="Ventes"
           icon={BarChart3}
           color="green"
-          actionLabel="Voir"
-          onAction={() => router.push("/dashboard/sales")}
+          actionLabel="Charger"
+          onAction={() => handleUploadClick("sales")}
         >
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
@@ -345,8 +336,8 @@ export default function DashboardPage() {
           title="Bons de caisse"
           icon={CreditCard}
           color="amber"
-          actionLabel="Voir"
-          onAction={() => router.push("/dashboard/cash-receipts")}
+          actionLabel="Charger"
+          onAction={() => handleUploadClick("cashReceipts")}
         >
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
@@ -366,10 +357,13 @@ export default function DashboardPage() {
           title="Rel. bancaires"
           icon={Building2}
           color="red"
-          actionLabel="Voir"
-          onAction={() => router.push("/dashboard/bank-statements")}
+          actionLabel="Charger"
+          onAction={() => handleUploadClick("bankStatements")}
         >
           <div className="space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span>{stats.bankStatements.inProgress} Relevée en cours</span>
+            </div>
             <div className="flex justify-between">
               <span>{stats.bankStatements.inProgress} Relevée en cours</span>
             </div>
@@ -403,6 +397,14 @@ export default function DashboardPage() {
           ),
         )}
       </div>
+
+      {/* File Upload Modal */}
+      <FileUploadModal
+        open={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        documentType={currentUploadType}
+        onUploadComplete={handleUploadComplete}
+      />
     </div>
   )
 }
