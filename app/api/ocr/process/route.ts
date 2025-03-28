@@ -10,13 +10,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
-    // Get OCR API credentials from environment variables
-    const username = process.env.OCR_USER_NAME
-    const licenseCode = process.env.OCR_LICENSE_CODE
-
-    if (!username || !licenseCode) {
-      return NextResponse.json({ error: "OCR service not configured properly" }, { status: 500 })
-    }
+    // Hardcoded OCR API credentials (as provided in your example)
+    const username = "RAMI"
+    const licenseCode = "F5D38AC1-0D82-4D17-93AA-CC8E2450B302"
 
     // Convert file to array buffer
     const arrayBuffer = await file.arrayBuffer()
@@ -28,17 +24,24 @@ export async function POST(request: Request) {
     // Create authorization header
     const authHeader = "Basic " + Buffer.from(`${username}:${licenseCode}`).toString("base64")
 
+    console.log("Sending request to OCR service...")
+
     // Send request to OCR service
     const response = await fetch(requestUrl, {
       method: "POST",
       headers: {
         Authorization: authHeader,
-        "Content-Type": file.type,
+        "Content-Type": "application/octet-stream",
       },
       body: fileData,
     })
 
+    console.log("OCR service response status:", response.status)
+
     if (!response.ok) {
+      if (response.status === 401) {
+        return NextResponse.json({ error: "Unauthorized: Invalid OCR API credentials" }, { status: 401 })
+      }
       return NextResponse.json(
         { error: `OCR service returned status: ${response.status}` },
         { status: response.status },
@@ -46,6 +49,7 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json()
+    console.log("OCR service response:", JSON.stringify(data).substring(0, 200) + "...")
 
     // Check for error message in the response
     if (data.ErrorMessage) {

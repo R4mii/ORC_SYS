@@ -224,29 +224,36 @@ export default function OcrUploadPage() {
       setProcessingStatus("Sending to OCR service...")
       setProcessing(true)
 
+      console.log("Sending file to OCR service:", file.name, file.type, file.size)
+
       const response = await fetch("/api/ocr/process", {
         method: "POST",
         body: formData,
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || `Server responded with status: ${response.status}`)
-      }
+      console.log("OCR API response status:", response.status)
 
-      const data = await response.json()
+      const responseData = await response.json()
+      console.log("OCR API response:", responseData)
+
+      if (!response.ok) {
+        throw new Error(responseData.error || `Server responded with status: ${response.status}`)
+      }
 
       setProcessingStatus("Processing OCR results...")
 
       // Extract OCR text from response
-      const ocrText = data.ocrText || ""
+      const ocrText = responseData.ocrText || ""
 
       if (!ocrText) {
         throw new Error("No text was extracted from the document")
       }
 
+      console.log("Extracted OCR text:", ocrText.substring(0, 200) + "...")
+
       // Parse the OCR text to extract invoice data
       const extractedData = extractInvoiceData(ocrText)
+      console.log("Extracted invoice data:", extractedData)
 
       // Complete the upload
       clearInterval(uploadInterval)
