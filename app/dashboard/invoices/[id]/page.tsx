@@ -1,800 +1,464 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
+import {
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn,
+  ZoomOut,
+  Maximize,
+  Printer,
+  Download,
+  Edit,
+  Check,
+  X,
+  FileText,
+  Menu,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ChevronLeft, ChevronRight, Edit, Pencil, Save, X, ExternalLink } from "lucide-react"
-import { PartnerModal } from "@/components/partner-modal"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-// Interface for invoice data
-interface Invoice {
-  id: string
-  name: string
-  invoiceNumber: string
-  partner: string
-  invoiceDate: string
-  dueDate: string
-  createdAt: string
-  amount: number
-  amountWithTax: number
-  type: string
-  paymentStatus: string
-  declarationStatus: string
-  status: string
-  hasWarning: boolean
-  accountCode?: string
-  currency?: string
-  vatAmount?: string
-  stampDuty?: string
-  expenses?: string
-  withholding?: boolean
-  vatProrated?: boolean
-  nonRecoverableVAT?: boolean
-  multipleVATAmounts?: boolean
-  accountingEntries?: any[]
-  warning?: string
-  fileUrl?: string
-  fileName?: string
-  documentType?: string // Added for categorization
-  ocrRawText?: string
-}
-
-export default function InvoiceDetailPage({ params }: { params: { id: string } }) {
+export default function InvoiceDetailPage() {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState("details")
-  const [previewScale, setPreviewScale] = useState(1)
-  const [invoiceData, setInvoiceData] = useState<Invoice | null>(null)
-  const [isEditing, setIsEditing] = useState(false)
-  const [partnerModalOpen, setPartnerModalOpen] = useState(false)
-  const [previousInvoice, setPreviousInvoice] = useState<boolean>(false)
-  const [periodicInvoice, setPeriodicInvoice] = useState<boolean>(false)
-  const [withholding, setWithholding] = useState<boolean>(false)
-  const [currentCompanyId, setCurrentCompanyId] = useState<string | null>(null)
+  const params = useParams()
+  const [invoice, setInvoice] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [zoomLevel, setZoomLevel] = useState(100)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [editMode, setEditMode] = useState(false)
+  const [formData, setFormData] = useState<any>({})
 
-  // Load invoice data
   useEffect(() => {
-    // Only run this code in the browser
     if (typeof window === "undefined") return
 
-    // Get the selected company from localStorage
+    const invoiceId = params.id
     const companyId = localStorage.getItem("selectedCompanyId")
-    if (!companyId) {
-      router.push("/auth/login")
+
+    if (!companyId || !invoiceId) {
+      router.push("/dashboard/invoices")
       return
     }
 
-    setCurrentCompanyId(companyId)
+    // Get invoice data from localStorage
+    const purchasesDocuments = localStorage.getItem(`purchases_${companyId}`)
+    if (purchasesDocuments) {
+      const invoices = JSON.parse(purchasesDocuments)
+      const foundInvoice = invoices.find((inv: any) => inv.id === invoiceId)
 
-    // Get invoices for this company - check both purchases and sales
-    const purchasesJson = localStorage.getItem(`purchases_${companyId}`)
-    const salesJson = localStorage.getItem(`sales_${companyId}`)
-
-    let invoice = null
-    let documentType = ""
-
-    // Check purchases first
-    if (purchasesJson) {
-      const purchases = JSON.parse(purchasesJson)
-      invoice = purchases.find((inv: Invoice) => inv.id === params.id)
-      if (invoice) documentType = "purchases"
-    }
-
-    // If not found in purchases, check sales
-    if (!invoice && salesJson) {
-      const sales = JSON.parse(salesJson)
-      invoice = sales.find((inv: Invoice) => inv.id === params.id)
-      if (invoice) documentType = "sales"
-    }
-
-    // If still not found, check other document types
-    if (!invoice) {
-      const cashReceiptsJson = localStorage.getItem(`cashReceipts_${companyId}`)
-      const bankStatementsJson = localStorage.getItem(`bankStatements_${companyId}`)
-
-      if (cashReceiptsJson) {
-        const cashReceipts = JSON.parse(cashReceiptsJson)
-        invoice = cashReceipts.find((inv: Invoice) => inv.id === params.id)
-        if (invoice) documentType = "cashReceipts"
-      }
-
-      if (!invoice && bankStatementsJson) {
-        const bankStatements = JSON.parse(bankStatementsJson)
-        invoice = bankStatements.find((inv: Invoice) => inv.id === params.id)
-        if (invoice) documentType = "bankStatements"
-      }
-    }
-
-    if (invoice) {
-      // If it's a newly uploaded invoice with minimal data, add default values
-      if (!invoice.accountCode) {
-        const enhancedInvoice: Invoice = {
-          ...invoice,
+      if (foundInvoice) {
+        setInvoice(foundInvoice)
+        setFormData({
+          supplier: foundInvoice.partner || "",
           accountCode: '61110000 Achats de marchandises "groupe A"',
           currency: "MAD",
-          vatAmount: "0,00",
-          stampDuty: "0,00",
-          expenses: "0,00",
+          invoiceNumber: foundInvoice.invoiceNumber || "",
+          invoiceDate: foundInvoice.invoiceDate || "",
           withholding: false,
-          vatProrated: true,
-          nonRecoverableVAT: false,
-          multipleVATAmounts: false,
-          documentType: documentType, // Store the document type
-          accountingEntries: [
-            {
-              account: "61110000 Achats de marchandises",
-              description: `${invoice.partner || ""} - ${invoice.invoiceNumber || ""}`,
-              debit: "0,00 DH",
-              credit: "0,00 DH",
-              tax: "TVA 20% ACHATS",
-              taxCode: "140 - Prestations de services",
-            },
-            {
-              account: "34552200 État - TVA récupérable",
-              description: `${invoice.partner || ""} - ${invoice.invoiceNumber || ""}`,
-              debit: "0,00 DH",
-              credit: "0,00 DH",
-              tax: "",
-              taxCode: "",
-            },
-            {
-              account: "44110000 Fournisseurs",
-              description: `${invoice.partner || ""} - ${invoice.invoiceNumber || ""}`,
-              debit: "0,00 DH",
-              credit: "0,00 DH",
-              tax: "",
-              taxCode: "",
-            },
-          ],
-          warning: "Cette facture nécessite votre attention pour compléter les informations manquantes.",
-        }
-        setInvoiceData(enhancedInvoice)
+          prorataTVA: true,
+          amountHT: foundInvoice.amount || 0,
+          amountTVA: foundInvoice.vatAmount || 0,
+          stampDuty: 0,
+          expenses: 0,
+          amountTTC: foundInvoice.amountWithTax || 0,
+          nonRecoverableTVA: false,
+          multipleTVAAmounts: false,
+        })
       } else {
-        setInvoiceData({ ...invoice, documentType })
+        router.push("/dashboard/invoices")
       }
-    } else {
-      // If invoice not found, redirect to invoices list
-      router.push("/dashboard/invoices")
     }
+
+    setLoading(false)
   }, [params.id, router])
 
-  // Inside the InvoiceDetailPage component, add this function to update the invoice with extracted data
+  const handleZoomIn = () => {
+    setZoomLevel((prev) => Math.min(prev + 10, 200))
+  }
 
-  const updateInvoiceWithExtractedData = (extractedData: any) => {
-    if (!invoiceData || !extractedData) return
+  const handleZoomOut = () => {
+    setZoomLevel((prev) => Math.max(prev - 10, 50))
+  }
 
-    // Update the invoice with extracted data
+  const handlePrevPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1))
+  }
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+  }
+
+  const handleSave = () => {
+    if (!invoice || typeof window === "undefined") return
+
+    const companyId = localStorage.getItem("selectedCompanyId")
+    if (!companyId) return
+
+    // Update invoice with form data
     const updatedInvoice = {
-      ...invoiceData,
-      invoiceNumber: extractedData.invoiceNumber || invoiceData.invoiceNumber,
-      invoiceDate: extractedData.invoiceDate || invoiceData.invoiceDate,
-      amount: extractedData.amount || invoiceData.amount,
-      amountWithTax: extractedData.amountWithTax || invoiceData.amountWithTax,
-      partner: extractedData.supplier || invoiceData.partner,
-      // Add vatAmount if needed
-      vatAmount: extractedData.vatAmount || invoiceData.vatAmount || "0,00",
-      // Add OCR raw text for reference
-      ocrRawText: extractedData.rawText,
+      ...invoice,
+      partner: formData.supplier,
+      invoiceNumber: formData.invoiceNumber,
+      invoiceDate: formData.invoiceDate,
+      amount: Number.parseFloat(formData.amountHT),
+      vatAmount: Number.parseFloat(formData.amountTVA),
+      amountWithTax: Number.parseFloat(formData.amountTTC),
     }
 
-    setInvoiceData(updatedInvoice)
+    // Update in localStorage
+    const purchasesDocuments = localStorage.getItem(`purchases_${companyId}`)
+    if (purchasesDocuments) {
+      const invoices = JSON.parse(purchasesDocuments)
+      const updatedInvoices = invoices.map((inv: any) => (inv.id === invoice.id ? updatedInvoice : inv))
 
-    // Recalculate total if needed
-    setTimeout(() => calculateTotalAmount(), 100)
+      localStorage.setItem(`purchases_${companyId}`, JSON.stringify(updatedInvoices))
+      setInvoice(updatedInvoice)
+      setEditMode(false)
+    }
   }
 
-  // Update the invoice data when editing is enabled/disabled
-  useEffect(() => {
-    if (invoiceData && isEditing) {
-      setWithholding(invoiceData.withholding || false)
-      setPreviousInvoice(false)
-      setPeriodicInvoice(false)
+  const handleCancel = () => {
+    // Reset form data to original invoice data
+    if (invoice) {
+      setFormData({
+        supplier: invoice.partner || "",
+        accountCode: '61110000 Achats de marchandises "groupe A"',
+        currency: "MAD",
+        invoiceNumber: invoice.invoiceNumber || "",
+        invoiceDate: invoice.invoiceDate || "",
+        withholding: false,
+        prorataTVA: true,
+        amountHT: invoice.amount || 0,
+        amountTVA: invoice.vatAmount || 0,
+        stampDuty: 0,
+        expenses: 0,
+        amountTTC: invoice.amountWithTax || 0,
+        nonRecoverableTVA: false,
+        multipleTVAAmounts: false,
+      })
     }
-  }, [isEditing, invoiceData])
-
-  // Calculate total amount when component values change
-  useEffect(() => {
-    if (isEditing && invoiceData) {
-      calculateTotalAmount()
-    }
-  }, [isEditing])
-
-  const calculateTotalAmount = () => {
-    if (!invoiceData) return
-
-    // Parse numeric values, handling comma as decimal separator
-    const parseAmount = (value: string | number) => {
-      if (typeof value === "number") return value
-      return Number.parseFloat(value.replace(",", ".")) || 0
-    }
-
-    const amount = parseAmount(invoiceData.amount)
-    const vatAmount = parseAmount(invoiceData.vatAmount || "0")
-    const stampDuty = parseAmount(invoiceData.stampDuty || "0")
-    const expenses = parseAmount(invoiceData.expenses || "0")
-
-    // Calculate total: Montant TTC = Montant HT + Montant TVA + Droits de Timbre + Debours
-    const total = amount + vatAmount + stampDuty + expenses
-
-    // Update the invoice data with the new total
-    setInvoiceData({
-      ...invoiceData,
-      amountWithTax: total,
-    })
+    setEditMode(false)
   }
 
-  const handleInputChange = (field: string, value: string) => {
-    if (!invoiceData) return
-
-    setInvoiceData({
-      ...invoiceData,
+  const handleInputChange = (field: string, value: any) => {
+    setFormData((prev) => ({
+      ...prev,
       [field]: value,
-    })
-
-    // Recalculate total amount after a short delay to ensure state is updated
-    setTimeout(() => calculateTotalAmount(), 100)
+    }))
   }
 
-  const handleSavePartner = (partner: any) => {
-    if (!invoiceData) return
-
-    setInvoiceData({
-      ...invoiceData,
-      partner: `${partner.name} - ${partner.identifiers.if}`,
-    })
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen">Chargement...</div>
   }
 
-  const handleSaveInvoice = () => {
-    if (!invoiceData || !currentCompanyId || !invoiceData.documentType) return
-
-    // Update withholding from the checkbox state
-    const updatedInvoice = {
-      ...invoiceData,
-      withholding,
-    }
-
-    // Get the storage key based on document type
-    const storageKey = `${invoiceData.documentType}_${currentCompanyId}`
-
-    // Get all documents for this type
-    const documentsJson = localStorage.getItem(storageKey)
-    if (!documentsJson) return
-
-    const documents = JSON.parse(documentsJson)
-
-    // Update the document in the array
-    const updatedDocuments = documents.map((doc: Invoice) => (doc.id === updatedInvoice.id ? updatedInvoice : doc))
-
-    // Save back to localStorage
-    localStorage.setItem(storageKey, JSON.stringify(updatedDocuments))
-
-    setInvoiceData(updatedInvoice)
-    setIsEditing(false)
-    alert("Invoice saved successfully!")
-  }
-
-  // Add this function to handle adding a new accounting entry
-  const addAccountingEntry = () => {
-    if (!invoiceData) return
-
-    const newEntry = {
-      account: "",
-      description: `${invoiceData.partner || ""} - ${invoiceData.invoiceNumber || ""}`,
-      debit: "0,00 DH",
-      credit: "0,00 DH",
-      tax: "",
-      taxCode: "",
-    }
-
-    const updatedInvoice = {
-      ...invoiceData,
-      accountingEntries: [...(invoiceData.accountingEntries || []), newEntry],
-    }
-
-    setInvoiceData(updatedInvoice)
-  }
-
-  // Add this function to handle editing an accounting entry
-  const handleEntryChange = (index: number, field: string, value: string) => {
-    if (!invoiceData || !invoiceData.accountingEntries) return
-
-    const updatedEntries = [...invoiceData.accountingEntries]
-    updatedEntries[index] = {
-      ...updatedEntries[index],
-      [field]: value,
-    }
-
-    setInvoiceData({
-      ...invoiceData,
-      accountingEntries: updatedEntries,
-    })
-  }
-
-  if (!invoiceData) {
-    return <div>Loading...</div>
+  if (!invoice) {
+    return <div className="flex items-center justify-center h-screen">Facture non trouvée</div>
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Retour
+    <div className="flex flex-col h-screen">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center space-x-2">
+          <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard/invoices")}>
+            <ChevronLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl font-bold tracking-tight">
-            {invoiceData.documentType === "purchases"
-              ? "Achats"
-              : invoiceData.documentType === "sales"
-                ? "Ventes"
-                : invoiceData.documentType === "cashReceipts"
-                  ? "Bons de caisse"
-                  : "Relevés bancaires"}{" "}
-            - {invoiceData.name}
-          </h1>
+          <div className="flex items-center">
+            <Menu className="h-5 w-5 mr-2" />
+            <h1 className="text-lg font-medium">Achats</h1>
+          </div>
+          <div className="text-sm text-muted-foreground">{invoice.description || invoice.name}</div>
         </div>
-        <div className="flex gap-2">
-          {isEditing ? (
-            <>
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-red-500 border-red-200 hover:bg-red-50"
-                onClick={() => setIsEditing(false)}
-              >
-                <X className="h-4 w-4 mr-1" />
-                Abandonner
-              </Button>
-              <Button size="sm" onClick={handleSaveInvoice}>
-                <Save className="h-4 w-4 mr-1" />
-                Sauver
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button size="sm" variant="outline" className="text-red-500 border-red-200 hover:bg-red-50">
-                <X className="h-4 w-4 mr-1" />
-                Abandonner
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>
-                <Pencil className="h-4 w-4 mr-1" />
-                Modifier
-              </Button>
-              <Button size="sm">
-                <Save className="h-4 w-4 mr-1" />
-                Valider
-              </Button>
-            </>
-          )}
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center bg-primary/10 text-primary rounded-full px-3 py-1">
+            <FileText className="h-4 w-4 mr-1" />
+            <span className="text-sm font-medium">05 20 25 07 07</span>
+          </div>
+          <div className="text-sm">EXPERIO TUTO</div>
+          <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center">B</div>
         </div>
       </div>
 
-      {invoiceData.warning && (
-        <Alert variant="warning" className="bg-amber-50 text-amber-800 border-amber-200">
-          <AlertDescription>{invoiceData.warning}</AlertDescription>
-        </Alert>
+      {/* Action buttons */}
+      <div className="flex items-center space-x-2 p-4 border-b">
+        {editMode ? (
+          <>
+            <Button onClick={handleSave}>
+              <Check className="h-4 w-4 mr-2" />
+              Valider
+            </Button>
+            <Button variant="outline" onClick={handleCancel}>
+              <X className="h-4 w-4 mr-2" />
+              Abandonner
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button onClick={() => setEditMode(true)}>
+              <Edit className="h-4 w-4 mr-2" />
+              Modifier
+            </Button>
+            <Button variant="outline">
+              <Check className="h-4 w-4 mr-2" />
+              Valider
+            </Button>
+            <Button variant="outline" className="text-red-500 border-red-200 hover:bg-red-50">
+              <X className="h-4 w-4 mr-2" />
+              Abandonner
+            </Button>
+          </>
+        )}
+        <div className="ml-auto flex items-center">
+          <span className="text-sm text-muted-foreground mr-2">Brouillon</span>
+          <span className="text-sm text-muted-foreground">
+            {currentPage}/{totalPages}
+          </span>
+          <Button variant="ghost" size="icon" onClick={handlePrevPage} disabled={currentPage === 1}>
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={handleNextPage} disabled={currentPage === totalPages}>
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Warning message */}
+      {invoice.hasWarning && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 mx-4 mt-4 rounded-md">
+          La date de cette facture ne correspond pas à l'exercice fiscal courant
+        </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="flex flex-col gap-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="w-full">
-              <TabsTrigger value="details" className="flex-1">
-                Détails
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="details" className="space-y-4 mt-4">
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="supplier">Fournisseur</Label>
-                      <div className="flex gap-2">
-                        {isEditing ? (
-                          <>
-                            <Input
-                              id="supplier"
-                              value={invoiceData.partner}
-                              onChange={(e) => handleInputChange("partner", e.target.value)}
-                              className="flex-1"
-                            />
-                            <Button variant="outline" size="icon" onClick={() => setPartnerModalOpen(true)}>
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
-                          </>
-                        ) : (
-                          <Input id="supplier" value={invoiceData.partner} readOnly />
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="accountCode">Compte de charge</Label>
-                      {isEditing ? (
-                        <Select
-                          value={invoiceData.accountCode}
-                          onValueChange={(value) => handleInputChange("accountCode", value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner un compte" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value='61110000 Achats de marchandises "groupe A"'>
-                              61110000 Achats de marchandises "groupe A"
-                            </SelectItem>
-                            <SelectItem value="61120000 Achats de matières premières">
-                              61120000 Achats de matières premières
-                            </SelectItem>
-                            <SelectItem value="61300000 Achats de services">61300000 Achats de services</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <Input id="accountCode" value={invoiceData.accountCode} readOnly />
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="currency">Devise</Label>
-                      {isEditing ? (
-                        <Select
-                          value={invoiceData.currency}
-                          onValueChange={(value) => handleInputChange("currency", value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner une devise" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="MAD">MAD</SelectItem>
-                            <SelectItem value="EUR">EUR</SelectItem>
-                            <SelectItem value="USD">USD</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <Input id="currency" value={invoiceData.currency} readOnly />
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="invoiceNumber">Numéro de facture</Label>
-                      {isEditing ? (
-                        <Input
-                          id="invoiceNumber"
-                          value={invoiceData.invoiceNumber}
-                          onChange={(e) => handleInputChange("invoiceNumber", e.target.value)}
-                        />
-                      ) : (
-                        <Input id="invoiceNumber" value={invoiceData.invoiceNumber} readOnly />
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="invoiceDate">Date de facturation</Label>
-                      {isEditing ? (
-                        <Input
-                          id="invoiceDate"
-                          type="date"
-                          value={invoiceData.invoiceDate ? invoiceData.invoiceDate.split("/").reverse().join("-") : ""}
-                          onChange={(e) => {
-                            if (e.target.value) {
-                              const date = new Date(e.target.value)
-                              const formattedDate = `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1).toString().padStart(2, "0")}/${date.getFullYear()}`
-                              handleInputChange("invoiceDate", formattedDate)
-                            }
-                          }}
-                        />
-                      ) : (
-                        <Input id="invoiceDate" value={invoiceData.invoiceDate} readOnly />
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="previousInvoice">Facture antérieure</Label>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="previousInvoice"
-                          checked={previousInvoice}
-                          disabled={!isEditing}
-                          onCheckedChange={(checked) => setPreviousInvoice(checked as boolean)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="periodicInvoice">Facture périodique</Label>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="periodicInvoice"
-                          checked={periodicInvoice}
-                          disabled={!isEditing}
-                          onCheckedChange={(checked) => setPeriodicInvoice(checked as boolean)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="withholding">Retenue à la source</Label>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="withholding"
-                          checked={withholding}
-                          disabled={!isEditing}
-                          onCheckedChange={(checked) => setWithholding(checked as boolean)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="amountExclTax">Montant HT</Label>
-                      {isEditing ? (
-                        <div className="flex items-center">
-                          <Input
-                            id="amountExclTax"
-                            value={
-                              typeof invoiceData.amount === "number"
-                                ? invoiceData.amount.toString()
-                                : invoiceData.amount
-                            }
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9.,]/g, "")
-                              handleInputChange("amount", value)
-                            }}
-                          />
-                          <span className="ml-2">DH</span>
-                        </div>
-                      ) : (
-                        <Input id="amountExclTax" value={`${invoiceData.amount} DH`} readOnly />
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="vatAmount">Montant TVA</Label>
-                      {isEditing ? (
-                        <div className="flex items-center">
-                          <Input
-                            id="vatAmount"
-                            value={invoiceData.vatAmount}
-                            onChange={(e) => handleInputChange("vatAmount", e.target.value)}
-                          />
-                          <span className="ml-2">DH</span>
-                        </div>
-                      ) : (
-                        <Input id="vatAmount" value={`${invoiceData.vatAmount} DH`} readOnly />
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="stampDuty">Droits de timbre</Label>
-                      {isEditing ? (
-                        <div className="flex items-center">
-                          <Input
-                            id="stampDuty"
-                            value={invoiceData.stampDuty}
-                            onChange={(e) => handleInputChange("stampDuty", e.target.value)}
-                          />
-                          <span className="ml-2">DH</span>
-                        </div>
-                      ) : (
-                        <Input id="stampDuty" value={`${invoiceData.stampDuty} DH`} readOnly />
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="expenses">Débours</Label>
-                      {isEditing ? (
-                        <div className="flex items-center">
-                          <Input
-                            id="expenses"
-                            value={invoiceData.expenses}
-                            onChange={(e) => handleInputChange("expenses", e.target.value)}
-                          />
-                          <span className="ml-2">DH</span>
-                        </div>
-                      ) : (
-                        <Input id="expenses" value={`${invoiceData.expenses} DH`} readOnly />
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="totalAmount">Montant TTC</Label>
-                      {isEditing ? (
-                        <div className="flex items-center">
-                          <Input
-                            id="totalAmount"
-                            value={
-                              typeof invoiceData.amountWithTax === "number"
-                                ? invoiceData.amountWithTax.toString()
-                                : invoiceData.amountWithTax
-                            }
-                            readOnly
-                          />
-                          <span className="ml-2">DH</span>
-                        </div>
-                      ) : (
-                        <Input id="totalAmount" value={`${invoiceData.amountWithTax} DH`} readOnly />
-                      )}
-                    </div>
-
-                    {/* Écritures section moved under details */}
-                    <Separator className="my-4" />
-
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Écritures</h3>
-
-                      <Button variant="outline" size="sm" onClick={addAccountingEntry}>
-                        Ajouter une ligne
-                      </Button>
-
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Compte</TableHead>
-                            <TableHead>Libellé</TableHead>
-                            <TableHead className="text-right">Débit</TableHead>
-                            <TableHead className="text-right">Crédit</TableHead>
-                            <TableHead>Taxes</TableHead>
-                            <TableHead>Code de taxe</TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {invoiceData.accountingEntries &&
-                            invoiceData.accountingEntries.map((entry, index) => (
-                              <TableRow key={index}>
-                                <TableCell>{entry.account}</TableCell>
-                                <TableCell>{entry.description}</TableCell>
-                                <TableCell className="text-right">{entry.debit}</TableCell>
-                                <TableCell className="text-right">{entry.credit}</TableCell>
-                                <TableCell>
-                                  {entry.tax && (
-                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                      {entry.tax}
-                                    </Badge>
-                                  )}
-                                </TableCell>
-                                <TableCell>{entry.taxCode}</TableCell>
-                                <TableCell>
-                                  {entry.taxCode && (
-                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                  )}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                        </TableBody>
-                      </Table>
-
-                      <div className="flex justify-between items-center">
-                        <div className="flex gap-4 text-sm">
-                          <div>{invoiceData.amountWithTax} DH</div>
-                          <div>{invoiceData.amountWithTax} DH</div>
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      <div className="space-y-2">
-                        <Label>Désignation de la déclaration</Label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+      {/* Main content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left panel - Form */}
+        <div className="w-1/2 overflow-y-auto p-4 border-r">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Fournisseur</label>
+                <Input
+                  value={formData.supplier}
+                  onChange={(e) => handleInputChange("supplier", e.target.value)}
+                  disabled={!editMode}
+                />
               </div>
-            </TabsContent>
-          </Tabs>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Compte de charge</label>
+                <Input
+                  value={formData.accountCode}
+                  onChange={(e) => handleInputChange("accountCode", e.target.value)}
+                  disabled={!editMode}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Devise</label>
+                <Input
+                  value={formData.currency}
+                  onChange={(e) => handleInputChange("currency", e.target.value)}
+                  disabled={!editMode}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Numéro de facture</label>
+                <Input
+                  value={formData.invoiceNumber}
+                  onChange={(e) => handleInputChange("invoiceNumber", e.target.value)}
+                  disabled={!editMode}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Date de facturation</label>
+                <Input
+                  value={formData.invoiceDate}
+                  onChange={(e) => handleInputChange("invoiceDate", e.target.value)}
+                  disabled={!editMode}
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="withholding"
+                  checked={formData.withholding}
+                  onCheckedChange={(checked) => handleInputChange("withholding", checked)}
+                  disabled={!editMode}
+                />
+                <label htmlFor="withholding" className="text-sm font-medium">
+                  Retenue à la source
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="prorataTVA"
+                  checked={formData.prorataTVA}
+                  onCheckedChange={(checked) => handleInputChange("prorataTVA", checked)}
+                  disabled={!editMode}
+                />
+                <label htmlFor="prorataTVA" className="text-sm font-medium">
+                  Prorata de TVA
+                </label>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Montant HT</label>
+                <Input
+                  value={formData.amountHT}
+                  onChange={(e) => {
+                    const value = Number.parseFloat(e.target.value) || 0
+                    handleInputChange("amountHT", value)
+                    // Recalculate TTC
+                    const ttc = value + (formData.amountTVA || 0) + (formData.stampDuty || 0) + (formData.expenses || 0)
+                    handleInputChange("amountTTC", ttc)
+                  }}
+                  disabled={!editMode}
+                  type="number"
+                  className="text-right"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Montant TVA</label>
+                <Input
+                  value={formData.amountTVA}
+                  onChange={(e) => {
+                    const value = Number.parseFloat(e.target.value) || 0
+                    handleInputChange("amountTVA", value)
+                    // Recalculate TTC
+                    const ttc = (formData.amountHT || 0) + value + (formData.stampDuty || 0) + (formData.expenses || 0)
+                    handleInputChange("amountTTC", ttc)
+                  }}
+                  disabled={!editMode}
+                  type="number"
+                  className="text-right"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Droits de timbre</label>
+                <Input
+                  value={formData.stampDuty}
+                  onChange={(e) => {
+                    const value = Number.parseFloat(e.target.value) || 0
+                    handleInputChange("stampDuty", value)
+                    // Recalculate TTC
+                    const ttc = (formData.amountHT || 0) + (formData.amountTVA || 0) + value + (formData.expenses || 0)
+                    handleInputChange("amountTTC", ttc)
+                  }}
+                  disabled={!editMode}
+                  type="number"
+                  className="text-right"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Débours</label>
+                <Input
+                  value={formData.expenses}
+                  onChange={(e) => {
+                    const value = Number.parseFloat(e.target.value) || 0
+                    handleInputChange("expenses", value)
+                    // Recalculate TTC
+                    const ttc = (formData.amountHT || 0) + (formData.amountTVA || 0) + (formData.stampDuty || 0) + value
+                    handleInputChange("amountTTC", ttc)
+                  }}
+                  disabled={!editMode}
+                  type="number"
+                  className="text-right"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Montant TTC</label>
+                <Input
+                  value={formData.amountTTC}
+                  onChange={(e) => handleInputChange("amountTTC", Number.parseFloat(e.target.value) || 0)}
+                  disabled={!editMode}
+                  type="number"
+                  className="text-right"
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="nonRecoverableTVA"
+                  checked={formData.nonRecoverableTVA}
+                  onCheckedChange={(checked) => handleInputChange("nonRecoverableTVA", checked)}
+                  disabled={!editMode}
+                />
+                <label htmlFor="nonRecoverableTVA" className="text-sm font-medium">
+                  TVA non Récupérable
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="multipleTVAAmounts"
+                  checked={formData.multipleTVAAmounts}
+                  onCheckedChange={(checked) => handleInputChange("multipleTVAAmounts", checked)}
+                  disabled={!editMode}
+                />
+                <label htmlFor="multipleTVAAmounts" className="text-sm font-medium">
+                  Plusieurs montants de TVA
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <Card className="overflow-hidden">
-          <CardContent className="p-0">
-            <div className="flex items-center justify-between bg-muted p-2">
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <div className="text-sm">1 of 1</div>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={() => setPreviewScale(Math.max(0.5, previewScale - 0.1))}
-                >
-                  <span>-</span>
-                </Button>
-                <select
-                  className="h-8 rounded-md border border-input bg-background px-3 py-1 text-sm"
-                  value={`${Math.round(previewScale * 100)}%`}
-                  onChange={(e) => setPreviewScale(Number.parseInt(e.target.value) / 100)}
-                >
-                  <option>50%</option>
-                  <option>75%</option>
-                  <option>100%</option>
-                  <option>125%</option>
-                  <option>150%</option>
-                </select>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={() => setPreviewScale(Math.min(2, previewScale + 0.1))}
-                >
-                  <span>+</span>
-                </Button>
-              </div>
+        {/* Right panel - Document viewer */}
+        <div className="w-1/2 flex flex-col">
+          <div className="flex items-center justify-between p-2 border-b bg-gray-50">
+            <div className="flex items-center space-x-2">
+              <Button variant="ghost" size="icon">
+                <ZoomOut className="h-4 w-4" onClick={handleZoomOut} />
+              </Button>
+              <span className="text-sm">{zoomLevel}%</span>
+              <Button variant="ghost" size="icon">
+                <ZoomIn className="h-4 w-4" onClick={handleZoomIn} />
+              </Button>
             </div>
-
-            <div className="h-[calc(100vh-300px)] overflow-auto bg-gray-100 flex items-center justify-center">
-              <div
-                style={{ transform: `scale(${previewScale})`, transformOrigin: "center", transition: "transform 0.2s" }}
-              >
-                {invoiceData.fileUrl ? (
-                  <img
-                    src={invoiceData.fileUrl || "/placeholder.svg"}
-                    alt="Invoice preview"
-                    className="max-w-full object-contain"
-                    onError={(e) => {
-                      console.error("Error loading invoice image:", e)
-                      ;(e.target as HTMLImageElement).src = "/placeholder.svg?height=600&width=400"
-                      ;(e.target as HTMLImageElement).alt = "Invoice preview not available"
-                    }}
-                  />
-                ) : (
-                  <div className="bg-white p-8 rounded shadow-md">
-                    <p className="text-gray-500">No preview available for this invoice</p>
-                  </div>
-                )}
-              </div>
+            <div className="flex items-center space-x-2">
+              <Button variant="ghost" size="icon">
+                <Printer className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon">
+                <Download className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon">
+                <Maximize className="h-4 w-4" />
+              </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          <div className="flex-1 overflow-auto bg-gray-100 p-4 flex items-center justify-center">
+            {/* Display the invoice image */}
+            <div
+              className="bg-white shadow-md"
+              style={{
+                transform: `scale(${zoomLevel / 100})`,
+                transformOrigin: "center",
+                transition: "transform 0.2s",
+              }}
+            >
+              <img
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/5.jpg-TVvk4iPb70rK2nFJfPLkAmktshYHV5.jpeg"
+                alt="Invoice document"
+                className="max-w-full h-auto"
+              />
+            </div>
+          </div>
+        </div>
       </div>
-
-      {/* Partner Modal */}
-      <PartnerModal
-        isOpen={partnerModalOpen}
-        onClose={() => setPartnerModalOpen(false)}
-        onSave={handleSavePartner}
-        initialPartner={{
-          id: "1004450",
-          name: "WANA CORPORATE EX MAROC CONNECT",
-          type: "company",
-          isSupplier: true,
-          isClient: false,
-          address: {
-            line1: "LOT LA COLLINE 2 SIDI MAAROUF –ANFA (",
-            line2: "Rue 2...",
-            city: "CASABLANCA",
-            country: "Maroc",
-          },
-          identifiers: {
-            ice: "001527882000090",
-            if: "1004450",
-            rc: "99907",
-            pat: "",
-          },
-          contact: {
-            phone: "",
-            mobile: "",
-            email: "",
-          },
-          language: "French / Français",
-        }}
-      />
     </div>
   )
 }
