@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { FileUp, X, Check, AlertTriangle } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { toast } from "@/components/ui/use-toast"
 
 type DocumentType = "purchases" | "sales" | "cashReceipts" | "bankStatements"
 
@@ -28,6 +31,8 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
   const [currentStep, setCurrentStep] = useState<"upload" | "processing" | "results">("upload")
   const [ocrResults, setOcrResults] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -52,6 +57,7 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       handleFiles(Array.from(e.target.files))
+      setFile(e.target.files[0])
     }
   }
 
@@ -215,6 +221,62 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
     }
   }
 
+  const handleOCRProcess = async () => {
+    if (!file) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez sélectionner un fichier",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      // Create a blob URL for the file to display in the invoice detail page
+      const fileUrl = URL.createObjectURL(file)
+
+      // Simulate OCR processing
+      const ocrData = simulateOCRProcessing()
+
+      // Store the OCR data and file URL in localStorage
+      localStorage.setItem("ocrData", JSON.stringify(ocrData))
+      localStorage.setItem("fileUrl", fileUrl)
+      localStorage.setItem("fileName", file.name)
+
+      // Close the modal and redirect to the invoice detail page
+      onClose()
+      router.push(`/invoices/${Math.floor(Math.random() * 1000)}`)
+    } catch (error) {
+      console.error("Error processing file:", error)
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors du traitement du fichier",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const simulateOCRProcessing = () => {
+    // Simulate OCR processing
+    return {
+      invoice: {
+        supplier: "Fournisseur simulé",
+        invoiceNumber: "123456",
+        invoiceDate: new Date().toLocaleDateString(),
+        amount: 100,
+        amountWithTax: 120,
+        vatAmount: 20,
+        currency: "MAD",
+        confidence: 0.8,
+      },
+      rawText: "Texte extrait simulé",
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
@@ -281,9 +343,23 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
                 Annuler
               </Button>
               <Button onClick={handleUpload} disabled={files.length === 0 || isUploading}>
-                Traiter avec OCR
+                Suivant
               </Button>
             </div>
+            <div className="grid w-full max-w-sm items-center gap-1.5">
+              <Label htmlFor="file">Fichier</Label>
+              <Input
+                id="file"
+                type="file"
+                accept=".jpg,.jpeg,.png,.pdf"
+                onChange={handleFileChange}
+                className="cursor-pointer"
+              />
+              <p className="text-xs text-gray-500">JPG, PNG ou PDF. Max 5MB.</p>
+            </div>
+            <Button onClick={handleOCRProcess} disabled={!file || isLoading}>
+              {isLoading ? "Traitement en cours..." : "Traiter le fichier"}
+            </Button>
           </div>
         )}
 
