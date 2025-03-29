@@ -190,7 +190,7 @@ export default function InvoiceDetailPage() {
       <div className="flex items-center space-x-2 p-4 border-b">
         {editMode ? (
           <>
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
               <Check className="h-4 w-4 mr-2" />
               Valider
             </Button>
@@ -201,7 +201,7 @@ export default function InvoiceDetailPage() {
           </>
         ) : (
           <>
-            <Button variant="primary" className="bg-blue-600 hover:bg-blue-700" onClick={() => setEditMode(true)}>
+            <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setEditMode(true)}>
               Modifier
             </Button>
             <Button variant="outline">Valider</Button>
@@ -335,7 +335,7 @@ export default function InvoiceDetailPage() {
                       type="number"
                       className="text-right"
                     />
-                    <span className="ml-2">DH</span>
+                    <span className="ml-2 text-sm text-muted-foreground">DH</span>
                   </div>
                 </div>
 
@@ -356,7 +356,7 @@ export default function InvoiceDetailPage() {
                       type="number"
                       className="text-right"
                     />
-                    <span className="ml-2">DH</span>
+                    <span className="ml-2 text-sm text-muted-foreground">DH</span>
                   </div>
                 </div>
 
@@ -377,7 +377,7 @@ export default function InvoiceDetailPage() {
                       type="number"
                       className="text-right"
                     />
-                    <span className="ml-2">DH</span>
+                    <span className="ml-2 text-sm text-muted-foreground">DH</span>
                   </div>
                 </div>
 
@@ -398,7 +398,7 @@ export default function InvoiceDetailPage() {
                       type="number"
                       className="text-right"
                     />
-                    <span className="ml-2">DH</span>
+                    <span className="ml-2 text-sm text-muted-foreground">DH</span>
                   </div>
                 </div>
 
@@ -412,7 +412,7 @@ export default function InvoiceDetailPage() {
                       type="number"
                       className="text-right"
                     />
-                    <span className="ml-2">DH</span>
+                    <span className="ml-2 text-sm text-muted-foreground">DH</span>
                   </div>
                 </div>
 
@@ -457,8 +457,8 @@ export default function InvoiceDetailPage() {
                     <div className="grid grid-cols-6 gap-2 font-medium text-sm mb-2">
                       <div>Compte</div>
                       <div>Libellé</div>
-                      <div>Débit</div>
-                      <div>Crédit</div>
+                      <div className="text-right">Débit</div>
+                      <div className="text-right">Crédit</div>
                       <div>Taxes</div>
                       <div>Code de taxe</div>
                     </div>
@@ -469,8 +469,8 @@ export default function InvoiceDetailPage() {
                         HITECK LAND - N<br />
                         FA21 20210460
                       </div>
-                      <div>5 829,20 DH</div>
-                      <div>0,00 DH</div>
+                      <div className="text-right">5 829,20 DH</div>
+                      <div className="text-right">0,00 DH</div>
                       <div>
                         <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">TVA 20% ACHATS</span>
                       </div>
@@ -488,8 +488,8 @@ export default function InvoiceDetailPage() {
                         HITECK LAND - N<br />
                         FA21 20210460
                       </div>
-                      <div>896,80 DH</div>
-                      <div>0,00 DH</div>
+                      <div className="text-right">896,80 DH</div>
+                      <div className="text-right">0,00 DH</div>
                       <div></div>
                       <div></div>
                     </div>
@@ -500,8 +500,8 @@ export default function InvoiceDetailPage() {
                         HITECK LAND - N<br />
                         FA21 20210460
                       </div>
-                      <div>0,00 DH</div>
-                      <div>6 726,00 DH</div>
+                      <div className="text-right">0,00 DH</div>
+                      <div className="text-right">6 726,00 DH</div>
                       <div></div>
                       <div></div>
                     </div>
@@ -514,8 +514,8 @@ export default function InvoiceDetailPage() {
 
                     <div className="flex justify-end mt-4 text-sm font-medium">
                       <div className="grid grid-cols-2 gap-8">
-                        <div>6 726,00</div>
-                        <div>6 726,00</div>
+                        <div className="text-right">6 726,00</div>
+                        <div className="text-right">6 726,00</div>
                       </div>
                     </div>
                   </div>
@@ -556,11 +556,11 @@ export default function InvoiceDetailPage() {
         <div className="w-1/2 flex flex-col">
           <div className="flex items-center justify-between p-2 border-b bg-gray-50">
             <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="icon" onClick={handleZoomOut}>
+              <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={zoomLevel <= 50}>
                 <ZoomOut className="h-4 w-4" />
               </Button>
               <span className="text-sm">{zoomLevel}%</span>
-              <Button variant="ghost" size="icon" onClick={handleZoomIn}>
+              <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={zoomLevel >= 200}>
                 <ZoomIn className="h-4 w-4" />
               </Button>
             </div>
@@ -590,12 +590,21 @@ export default function InvoiceDetailPage() {
                     }}
                   >
                     {invoice.fileUrl.endsWith(".pdf") ? (
-                      <iframe src={invoice.fileUrl} title="Invoice PDF" className="w-full h-[calc(100vh-200px)]" />
+                      <iframe
+                        src={invoice.fileUrl + "#toolbar=0&navpanes=0"}
+                        title="Invoice PDF"
+                        className="w-[600px] h-[calc(100vh-200px)]"
+                        style={{ border: "none" }}
+                      />
                     ) : (
                       <img
                         src={invoice.fileUrl || "/placeholder.svg"}
                         alt="Invoice document"
                         className="max-w-full max-h-[calc(100vh-200px)] object-contain"
+                        onError={(e) => {
+                          e.currentTarget.src = "/placeholder.svg?height=800&width=600"
+                          console.error("Error loading image:", invoice.fileUrl)
+                        }}
                       />
                     )}
                   </div>
