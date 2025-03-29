@@ -33,6 +33,7 @@ export default function InvoiceDetailPage() {
   const [editMode, setEditMode] = useState(false)
   const [formData, setFormData] = useState<any>({})
   const [activeTab, setActiveTab] = useState("form")
+  const [showAccountingEntries, setShowAccountingEntries] = useState(false)
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -173,7 +174,7 @@ export default function InvoiceDetailPage() {
             <Menu className="h-5 w-5 mr-2" />
             <h1 className="text-lg font-medium">Achats</h1>
           </div>
-          <div className="text-sm text-muted-foreground">{invoice.description || invoice.name}</div>
+          <div className="text-sm text-muted-foreground ml-2">{invoice.description || invoice.name}</div>
         </div>
         <div className="flex items-center space-x-2">
           <div className="flex items-center bg-primary/10 text-primary rounded-full px-3 py-1">
@@ -200,22 +201,19 @@ export default function InvoiceDetailPage() {
           </>
         ) : (
           <>
-            <Button onClick={() => setEditMode(true)}>
-              <Edit className="h-4 w-4 mr-2" />
+            <Button variant="primary" className="bg-blue-600 hover:bg-blue-700" onClick={() => setEditMode(true)}>
               Modifier
             </Button>
-            <Button variant="outline">
-              <Check className="h-4 w-4 mr-2" />
-              Valider
-            </Button>
+            <Button variant="outline">Valider</Button>
             <Button variant="outline" className="text-red-500 border-red-200 hover:bg-red-50">
-              <X className="h-4 w-4 mr-2" />
               Abandonner
             </Button>
           </>
         )}
         <div className="ml-auto flex items-center">
-          <span className="text-sm text-muted-foreground mr-2">Brouillon</span>
+          <span className="text-sm text-muted-foreground mr-2 px-2 py-1 bg-blue-100 text-blue-800 rounded">
+            Brouillon
+          </span>
           <span className="text-sm text-muted-foreground">
             {currentPage}/{totalPages}
           </span>
@@ -322,85 +320,100 @@ export default function InvoiceDetailPage() {
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Montant HT</label>
-                  <Input
-                    value={formData.amountHT}
-                    onChange={(e) => {
-                      const value = Number.parseFloat(e.target.value) || 0
-                      handleInputChange("amountHT", value)
-                      // Recalculate TTC
-                      const ttc =
-                        value + (formData.amountTVA || 0) + (formData.stampDuty || 0) + (formData.expenses || 0)
-                      handleInputChange("amountTTC", ttc)
-                    }}
-                    disabled={!editMode}
-                    type="number"
-                    className="text-right"
-                  />
+                  <div className="flex items-center">
+                    <Input
+                      value={formData.amountHT}
+                      onChange={(e) => {
+                        const value = Number.parseFloat(e.target.value) || 0
+                        handleInputChange("amountHT", value)
+                        // Recalculate TTC
+                        const ttc =
+                          value + (formData.amountTVA || 0) + (formData.stampDuty || 0) + (formData.expenses || 0)
+                        handleInputChange("amountTTC", ttc)
+                      }}
+                      disabled={!editMode}
+                      type="number"
+                      className="text-right"
+                    />
+                    <span className="ml-2">DH</span>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Montant TVA</label>
-                  <Input
-                    value={formData.amountTVA}
-                    onChange={(e) => {
-                      const value = Number.parseFloat(e.target.value) || 0
-                      handleInputChange("amountTVA", value)
-                      // Recalculate TTC
-                      const ttc =
-                        (formData.amountHT || 0) + value + (formData.stampDuty || 0) + (formData.expenses || 0)
-                      handleInputChange("amountTTC", ttc)
-                    }}
-                    disabled={!editMode}
-                    type="number"
-                    className="text-right"
-                  />
+                  <div className="flex items-center">
+                    <Input
+                      value={formData.amountTVA}
+                      onChange={(e) => {
+                        const value = Number.parseFloat(e.target.value) || 0
+                        handleInputChange("amountTVA", value)
+                        // Recalculate TTC
+                        const ttc =
+                          (formData.amountHT || 0) + value + (formData.stampDuty || 0) + (formData.expenses || 0)
+                        handleInputChange("amountTTC", ttc)
+                      }}
+                      disabled={!editMode}
+                      type="number"
+                      className="text-right"
+                    />
+                    <span className="ml-2">DH</span>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Droits de timbre</label>
-                  <Input
-                    value={formData.stampDuty}
-                    onChange={(e) => {
-                      const value = Number.parseFloat(e.target.value) || 0
-                      handleInputChange("stampDuty", value)
-                      // Recalculate TTC
-                      const ttc =
-                        (formData.amountHT || 0) + (formData.amountTVA || 0) + value + (formData.expenses || 0)
-                      handleInputChange("amountTTC", ttc)
-                    }}
-                    disabled={!editMode}
-                    type="number"
-                    className="text-right"
-                  />
+                  <div className="flex items-center">
+                    <Input
+                      value={formData.stampDuty}
+                      onChange={(e) => {
+                        const value = Number.parseFloat(e.target.value) || 0
+                        handleInputChange("stampDuty", value)
+                        // Recalculate TTC
+                        const ttc =
+                          (formData.amountHT || 0) + (formData.amountTVA || 0) + value + (formData.expenses || 0)
+                        handleInputChange("amountTTC", ttc)
+                      }}
+                      disabled={!editMode}
+                      type="number"
+                      className="text-right"
+                    />
+                    <span className="ml-2">DH</span>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Débours</label>
-                  <Input
-                    value={formData.expenses}
-                    onChange={(e) => {
-                      const value = Number.parseFloat(e.target.value) || 0
-                      handleInputChange("expenses", value)
-                      // Recalculate TTC
-                      const ttc =
-                        (formData.amountHT || 0) + (formData.amountTVA || 0) + (formData.stampDuty || 0) + value
-                      handleInputChange("amountTTC", ttc)
-                    }}
-                    disabled={!editMode}
-                    type="number"
-                    className="text-right"
-                  />
+                  <div className="flex items-center">
+                    <Input
+                      value={formData.expenses}
+                      onChange={(e) => {
+                        const value = Number.parseFloat(e.target.value) || 0
+                        handleInputChange("expenses", value)
+                        // Recalculate TTC
+                        const ttc =
+                          (formData.amountHT || 0) + (formData.amountTVA || 0) + (formData.stampDuty || 0) + value
+                        handleInputChange("amountTTC", ttc)
+                      }}
+                      disabled={!editMode}
+                      type="number"
+                      className="text-right"
+                    />
+                    <span className="ml-2">DH</span>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Montant TTC</label>
-                  <Input
-                    value={formData.amountTTC}
-                    onChange={(e) => handleInputChange("amountTTC", Number.parseFloat(e.target.value) || 0)}
-                    disabled={!editMode}
-                    type="number"
-                    className="text-right"
-                  />
+                  <div className="flex items-center">
+                    <Input
+                      value={formData.amountTTC}
+                      onChange={(e) => handleInputChange("amountTTC", Number.parseFloat(e.target.value) || 0)}
+                      disabled={!editMode}
+                      type="number"
+                      className="text-right"
+                    />
+                    <span className="ml-2">DH</span>
+                  </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -426,6 +439,87 @@ export default function InvoiceDetailPage() {
                     Plusieurs montants de TVA
                   </label>
                 </div>
+
+                {/* Add Écritures button */}
+                <div className="mt-4">
+                  <Button
+                    variant="outline"
+                    className="w-32"
+                    onClick={() => setShowAccountingEntries(!showAccountingEntries)}
+                  >
+                    Écritures
+                  </Button>
+                </div>
+
+                {/* Accounting entries table */}
+                {showAccountingEntries && (
+                  <div className="mt-4 border rounded-md p-4">
+                    <div className="grid grid-cols-6 gap-2 font-medium text-sm mb-2">
+                      <div>Compte</div>
+                      <div>Libellé</div>
+                      <div>Débit</div>
+                      <div>Crédit</div>
+                      <div>Taxes</div>
+                      <div>Code de taxe</div>
+                    </div>
+
+                    <div className="grid grid-cols-6 gap-2 text-sm py-2 border-b">
+                      <div>61110000 Achats de...</div>
+                      <div>
+                        HITECK LAND - N<br />
+                        FA21 20210460
+                      </div>
+                      <div>5 829,20 DH</div>
+                      <div>0,00 DH</div>
+                      <div>
+                        <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">TVA 20% ACHATS</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span>140 - Prestations de...</span>
+                        <Button variant="ghost" size="sm" className="h-6 w-6 ml-1">
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-6 gap-2 text-sm py-2 border-b">
+                      <div>34552200 Etat - TV...</div>
+                      <div>
+                        HITECK LAND - N<br />
+                        FA21 20210460
+                      </div>
+                      <div>896,80 DH</div>
+                      <div>0,00 DH</div>
+                      <div></div>
+                      <div></div>
+                    </div>
+
+                    <div className="grid grid-cols-6 gap-2 text-sm py-2 border-b">
+                      <div>44110000 Fournisse...</div>
+                      <div>
+                        HITECK LAND - N<br />
+                        FA21 20210460
+                      </div>
+                      <div>0,00 DH</div>
+                      <div>6 726,00 DH</div>
+                      <div></div>
+                      <div></div>
+                    </div>
+
+                    <div className="mt-2">
+                      <Button variant="link" className="text-primary text-sm p-0">
+                        Ajouter une ligne
+                      </Button>
+                    </div>
+
+                    <div className="flex justify-end mt-4 text-sm font-medium">
+                      <div className="grid grid-cols-2 gap-8">
+                        <div>6 726,00</div>
+                        <div>6 726,00</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -483,21 +577,32 @@ export default function InvoiceDetailPage() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-auto bg-gray-100 p-4 flex items-center justify-center">
-            {/* Display the invoice image */}
-            <div
-              className="bg-white shadow-md"
-              style={{
-                transform: `scale(${zoomLevel / 100})`,
-                transformOrigin: "center",
-                transition: "transform 0.2s",
-              }}
-            >
-              {invoice.fileUrl ? (
-                <img src={invoice.fileUrl || "/placeholder.svg"} alt="Invoice document" className="max-w-full h-auto" />
-              ) : (
-                <div className="p-8 text-center text-muted-foreground">Aucun document disponible</div>
-              )}
+          <div className="flex-1 overflow-auto bg-gray-100 flex items-center justify-center">
+            <div className="relative w-full h-full">
+              <div className="absolute inset-0 flex items-center justify-center">
+                {invoice.fileUrl ? (
+                  <div
+                    className="bg-white shadow-md max-h-full"
+                    style={{
+                      transform: `scale(${zoomLevel / 100})`,
+                      transformOrigin: "center",
+                      transition: "transform 0.2s",
+                    }}
+                  >
+                    {invoice.fileUrl.endsWith(".pdf") ? (
+                      <iframe src={invoice.fileUrl} title="Invoice PDF" className="w-full h-[calc(100vh-200px)]" />
+                    ) : (
+                      <img
+                        src={invoice.fileUrl || "/placeholder.svg"}
+                        alt="Invoice document"
+                        className="max-w-full max-h-[calc(100vh-200px)] object-contain"
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center text-muted-foreground">Aucun document disponible</div>
+                )}
+              </div>
             </div>
           </div>
         </div>
