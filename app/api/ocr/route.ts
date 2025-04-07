@@ -111,12 +111,8 @@ function extractInvoiceData(ocrText: string) {
  */
 export async function POST(req: NextRequest) {
   try {
-    // OCR API credentials (hard-coded as requested)
-    const username = "RAMI"
-    const licenseCode = "F5D38AC1-0D82-4D17-93AA-CC8E2450B302"
-
-    // OCR API endpoint
-    const requestUrl = "https://www.ocrwebservice.com/restservices/processDocument?gettext=true"
+    // n8n workflow form URL
+    const n8nFormUrl = "https://r4mii.app.n8n.cloud/form/6323ea8b-3074-46ae-973a-52fae5cd24e2"
 
     // Create a temporary file path for storing the uploaded file
     const formData = await req.formData()
@@ -129,49 +125,39 @@ export async function POST(req: NextRequest) {
     // Log file information
     console.log(`Processing file: ${file.name}, type: ${file.type}, size: ${file.size} bytes`)
 
-    // Convert file to array buffer then to Buffer
-    const arrayBuffer = await file.arrayBuffer()
-    const fileData = Buffer.from(arrayBuffer)
+    // Create a new FormData object to send to n8n
+    const n8nFormData = new FormData()
+    n8nFormData.append("file", file)
 
-    // Create authorization header for Basic Auth
-    const authHeader = "Basic " + Buffer.from(`${username}:${licenseCode}`).toString("base64")
+    console.log("Sending request to n8n OCR service...")
 
-    console.log("Sending request to OCR service...")
-
-    // Send file data to the OCR API
-    const response = await fetch(requestUrl, {
+    // Send file data to the n8n workflow
+    const response = await fetch(n8nFormUrl, {
       method: "POST",
-      headers: {
-        Authorization: authHeader,
-        "Content-Type": "application/octet-stream",
-      },
-      body: fileData,
+      body: n8nFormData,
     })
 
-    console.log(`OCR service response status: ${response.status}`)
+    console.log(`n8n OCR service response status: ${response.status}`)
 
     // Handle HTTP errors
     if (!response.ok) {
-      if (response.status === 401) {
-        return NextResponse.json({ error: "Unauthorized: Invalid OCR API credentials" }, { status: 401 })
-      }
       return NextResponse.json(
-        { error: `OCR service returned status: ${response.status}` },
+        { error: `n8n OCR service returned status: ${response.status}` },
         { status: response.status },
       )
     }
 
     // Parse the JSON response
     const data = await response.json()
-    console.log(`OCR service response: ${JSON.stringify(data).substring(0, 200)}...`)
+    console.log(`n8n OCR service response: ${JSON.stringify(data).substring(0, 200)}...`)
 
     // Check for error message in the response
-    if (data.ErrorMessage) {
-      return NextResponse.json({ error: `OCR Error: ${data.ErrorMessage}` }, { status: 400 })
+    if (data.error) {
+      return NextResponse.json({ error: `OCR Error: ${data.error}` }, { status: 400 })
     }
 
-    // Extract OCR text from response
-    const ocrText = data.OCRText?.[0]?.[0] || ""
+    // Extract OCR text from response - adjust this based on your n8n workflow's actual response structure
+    const ocrText = data.text || data.ocrText || data.result || ""
 
     if (!ocrText) {
       return NextResponse.json({ error: "No text was extracted from the document" }, { status: 400 })
@@ -187,9 +173,6 @@ export async function POST(req: NextRequest) {
     // Return the structured invoice data along with OCR details
     return NextResponse.json({
       success: true,
-      taskDescription: data.TaskDescription,
-      availablePages: data.AvailablePages,
-      processedPages: data.ProcessedPages,
       confidence,
       invoice,
       rawText: ocrText,
