@@ -1,6 +1,5 @@
 import type React from "react"
-\
-"'use client';
+;("use client")
 
 import { useState } from "react"
 
@@ -175,4 +174,3 @@ export default function OcrUploader() {
     </div>
   )
 }
-"
