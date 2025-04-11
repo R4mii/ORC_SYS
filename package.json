@@ -59,9 +59,10 @@
     "vaul": "^0.9.6",
     "zod": "^3.24.1",
     "jspdf": "latest",
-    "express": "latest",
     "@emotion/is-prop-valid": "latest",
+    "express": "latest",
     "jspdf-autotable": "latest",
+    "framer-motion": "latest",
     "dotenv": "latest",
     "mongoose": "latest",
     "jsonwebtoken": "latest",
@@ -77,8 +78,7 @@
     "@aws-sdk/s3-request-presigner": "latest",
     "crypto": "latest",
     "isomorphic-dompurify": "latest",
-    "cors": "latest",
-    "framer-motion": "latest"
+    "cors": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",
