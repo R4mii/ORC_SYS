@@ -24,18 +24,14 @@ export function OcrResultViewer({ data, isProcessing, processingProgress, onSave
   useEffect(() => {
     try {
       // Improved data handling to handle different data structures
-      if (data) {
-        // Check if data is an array or a single object
-        const dataToProcess = Array.isArray(data) ? data[0] : data
+      if (data && Array.isArray(data) && data.length > 0) {
+        const dataToProcess = data[0]
 
         // Log the data structure for debugging
         console.log("Data received in OcrResultViewer:", dataToProcess)
 
         // Handle different data structures
-        if (dataToProcess?.invoice) {
-          setEditedData({ ...dataToProcess.invoice })
-          console.log("Data structure: invoice")
-        } else if (dataToProcess?.output) {
+        if (dataToProcess?.output) {
           // Handle n8n output format
           setEditedData({
             invoiceNumber: dataToProcess.output["Numéro de facture"] || "",
@@ -46,11 +42,16 @@ export function OcrResultViewer({ data, isProcessing, processingProgress, onSave
             amountWithTax: dataToProcess.output["Montant TTC"] || "",
           })
           console.log("Data structure: n8n output")
+        } else if (dataToProcess?.invoice) {
+          setEditedData({ ...dataToProcess.invoice })
+          console.log("Data structure: invoice")
         } else {
           // Direct data structure
           setEditedData(dataToProcess)
           console.log("Data structure: direct")
         }
+      } else {
+        console.warn("No data or invalid data format received in OcrResultViewer")
       }
     } catch (error: any) {
       console.error("Error processing data in OcrResultViewer:", error)
