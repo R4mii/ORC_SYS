@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { OcrResultViewer } from "@/components/ocr-result-viewer"
+import OcrResultViewer from "@/components/ocr-result-viewer"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 

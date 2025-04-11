@@ -319,7 +319,9 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
         </DialogHeader>
 
         {currentStep === "results" && ocrResults ? (
-          <OcrResultViewer data={[ocrResults]} />
+          <div className="p-6">
+            <OcrResultViewer data={ocrResults} />
+          </div>
         ) : (
           <FadeIn className="p-6 space-y-6">
             <div
