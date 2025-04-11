@@ -60,13 +60,13 @@ export function OcrInvoiceProcessor() {
     setIsDragging(false)
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFileSelection(e.dataTransfer.files[0])
+      handleFileSelection(Array.from(e.dataTransfer.files))
     }
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      handleFileSelection(e.target.files[0])
+      handleFileSelection(Array.from(e.target.files))
     }
   }
 
@@ -93,6 +93,29 @@ export function OcrInvoiceProcessor() {
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
+  }
+
+  function extractInvoiceData(data: any): InvoiceData | null {
+    if (!data || !Array.isArray(data) || data.length === 0 || !data[0].output) {
+      console.error("Invalid OCR data format:", data)
+      return null
+    }
+
+    const output = data[0].output
+
+    const invoiceData: InvoiceData = {
+      Fournisseur: output.Fournisseur || "",
+      date: output.date || "",
+      "name of the company": output["name of the company"] || "",
+      adresse: output.adresse || "",
+      "Numéro de facture": output["Numéro de facture"] || "",
+      "Montant HT": output["Montant HT"] || "",
+      "Montant TVA": output["Montant TVA"] || "",
+      "Montant TTC": output["Montant TTC"] || "",
+      "Détail de facture": output[" Détail de facture"] || "",
+    }
+
+    return invoiceData
   }
 
   const processInvoice = async () => {
@@ -133,11 +156,13 @@ export function OcrInvoiceProcessor() {
 
       const data = await response.json()
 
-      if (data.output) {
-        setResult(data.output)
+      const extractedData = extractInvoiceData(data)
+
+      if (extractedData) {
+        setResult(extractedData)
         setActiveTab("result")
       } else {
-        throw new Error("Invalid response format")
+        throw new Error("Failed to extract invoice data from the response.")
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred during processing")
