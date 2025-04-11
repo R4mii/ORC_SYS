@@ -1,7 +1,6 @@
 "use client"
 
 import { CardFooter } from "@/components/ui/card"
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -23,31 +22,38 @@ export function OcrResultViewer({ data, isProcessing, processingProgress, onSave
   const [editedData, setEditedData] = useState<any>(null)
 
   useEffect(() => {
-    // Improved data handling to handle different data structures
-    if (data) {
-      // Check if data is an array or a single object
-      const dataToProcess = Array.isArray(data) ? data[0] : data
+    try {
+      // Improved data handling to handle different data structures
+      if (data) {
+        // Check if data is an array or a single object
+        const dataToProcess = Array.isArray(data) ? data[0] : data
 
-      // Handle different data structures
-      if (dataToProcess?.invoice) {
-        setEditedData({ ...dataToProcess.invoice })
-        console.log("Data received in OcrResultViewer (invoice):", dataToProcess)
-      } else if (dataToProcess?.output) {
-        // Handle n8n output format
-        setEditedData({
-          invoiceNumber: dataToProcess.output["Numéro de facture"] || "",
-          invoiceDate: dataToProcess.output.date || "",
-          supplier: dataToProcess.output.Fournisseur || dataToProcess.output["name of the company"] || "",
-          amount: dataToProcess.output["Montant HT"] || "",
-          vatAmount: dataToProcess.output["Montant TVA"] || "",
-          amountWithTax: dataToProcess.output["Montant TTC"] || "",
-        })
-        console.log("Data received in OcrResultViewer (output):", dataToProcess)
-      } else {
-        // Direct data structure
-        setEditedData(dataToProcess)
-        console.log("Data received in OcrResultViewer (direct):", dataToProcess)
+        // Log the data structure for debugging
+        console.log("Data received in OcrResultViewer:", dataToProcess)
+
+        // Handle different data structures
+        if (dataToProcess?.invoice) {
+          setEditedData({ ...dataToProcess.invoice })
+          console.log("Data structure: invoice")
+        } else if (dataToProcess?.output) {
+          // Handle n8n output format
+          setEditedData({
+            invoiceNumber: dataToProcess.output["Numéro de facture"] || "",
+            invoiceDate: dataToProcess.output.date || "",
+            supplier: dataToProcess.output.Fournisseur || dataToProcess.output["name of the company"] || "",
+            amount: dataToProcess.output["Montant HT"] || "",
+            vatAmount: dataToProcess.output["Montant TVA"] || "",
+            amountWithTax: dataToProcess.output["Montant TTC"] || "",
+          })
+          console.log("Data structure: n8n output")
+        } else {
+          // Direct data structure
+          setEditedData(dataToProcess)
+          console.log("Data structure: direct")
+        }
       }
+    } catch (error: any) {
+      console.error("Error processing data in OcrResultViewer:", error)
     }
   }, [data])
 
