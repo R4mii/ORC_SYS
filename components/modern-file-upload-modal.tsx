@@ -132,6 +132,7 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
 
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
+      console.log("Sending form data to OCR service")
       const response = await fetch("https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload", {
         method: "POST",
         body: formData,
@@ -142,6 +143,7 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       }
 
       const data = await response.json()
+      console.log("OCR API response:", data)
 
       setProgress(100)
 
@@ -149,8 +151,7 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
         clearInterval(progressIntervalRef.current)
       }
 
-      // Now set the OCR results to be the actual data structure returned from the API
-      // This is the key change - we're not transforming the data, just passing it directly
+      // Set the raw API response as the OCR results
       setOcrResults(data)
       setCurrentStep("results")
 
@@ -315,7 +316,13 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
 
         {currentStep === "results" && ocrResults ? (
           <div className="p-6">
-            <OcrResultViewer data={ocrResults} />
+            {/* Add key prop to force re-render when data changes */}
+            <OcrResultViewer key={JSON.stringify(ocrResults)} data={ocrResults} onSave={handleConfirm} />
+
+            {/* Add user-friendly error message if parsing fails */}
+            <div className="mt-4 flex justify-end">
+              <Button onClick={handleConfirm}>Confirm and Save</Button>
+            </div>
           </div>
         ) : (
           <FadeIn className="p-6 space-y-6">
