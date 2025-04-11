@@ -24,34 +24,48 @@ export function OcrResultViewer({ data, isProcessing, processingProgress, onSave
   useEffect(() => {
     try {
       // Improved data handling to handle different data structures
-      if (data && Array.isArray(data) && data.length > 0) {
-        const dataToProcess = data[0]
+      if (data) {
+        console.log("Raw data received in OcrResultViewer:", data)
 
-        // Log the data structure for debugging
-        console.log("Data received in OcrResultViewer:", dataToProcess)
-
-        // Handle different data structures
-        if (dataToProcess?.output) {
-          // Handle n8n output format
+        // Check if data is an array (like the example format)
+        if (Array.isArray(data) && data[0]?.output) {
+          // Handle the exact format from the example
+          const output = data[0].output
           setEditedData({
-            invoiceNumber: dataToProcess.output["Numéro de facture"] || "",
-            invoiceDate: dataToProcess.output.date || "",
-            supplier: dataToProcess.output.Fournisseur || dataToProcess.output["name of the company"] || "",
-            amount: dataToProcess.output["Montant HT"] || "",
-            vatAmount: dataToProcess.output["Montant TVA"] || "",
-            amountWithTax: dataToProcess.output["Montant TTC"] || "",
+            invoiceNumber: output["Numéro de facture"] || "",
+            invoiceDate: output.date || "",
+            supplier: output.Fournisseur || output["name of the company"] || "",
+            amount: output["Montant HT"] || "",
+            vatAmount: output["Montant TVA"] || "",
+            amountWithTax: output["Montant TTC"] || "",
+            rawText: output[" Détail de facture"] || "",
           })
-          console.log("Data structure: n8n output")
-        } else if (dataToProcess?.invoice) {
-          setEditedData({ ...dataToProcess.invoice })
-          console.log("Data structure: invoice")
+          console.log("Processed array with output structure")
         } else {
-          // Direct data structure
-          setEditedData(dataToProcess)
-          console.log("Data structure: direct")
+          // Handle previous formats
+          const dataToProcess = Array.isArray(data) ? data[0] : data
+
+          if (dataToProcess?.invoice) {
+            setEditedData({ ...dataToProcess.invoice })
+            console.log("Data structure: invoice")
+          } else if (dataToProcess?.output) {
+            // Handle n8n output format for single object
+            setEditedData({
+              invoiceNumber: dataToProcess.output["Numéro de facture"] || "",
+              invoiceDate: dataToProcess.output.date || "",
+              supplier: dataToProcess.output.Fournisseur || dataToProcess.output["name of the company"] || "",
+              amount: dataToProcess.output["Montant HT"] || "",
+              vatAmount: dataToProcess.output["Montant TVA"] || "",
+              amountWithTax: dataToProcess.output["Montant TTC"] || "",
+              rawText: dataToProcess.output[" Détail de facture"] || "",
+            })
+            console.log("Data structure: n8n output (single object)")
+          } else {
+            // Direct data structure
+            setEditedData(dataToProcess)
+            console.log("Data structure: direct")
+          }
         }
-      } else {
-        console.warn("No data or invalid data format received in OcrResultViewer")
       }
     } catch (error: any) {
       console.error("Error processing data in OcrResultViewer:", error)
@@ -73,11 +87,24 @@ export function OcrResultViewer({ data, isProcessing, processingProgress, onSave
     setEditMode(false)
   }
 
-  // Get raw text from different possible data structures
+  // Update the getRawText function to correctly handle the array structure
   const getRawText = () => {
     if (!data) return ""
 
-    // Check if data is an array
+    // Handle array format first (like the example)
+    if (Array.isArray(data) && data[0]?.output) {
+      const output = data[0].output
+      if (output[" Détail de facture"]) {
+        return output[" Détail de facture"]
+      } else {
+        // Combine all output fields into a text representation
+        return Object.entries(output)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join("\n")
+      }
+    }
+
+    // Handle previous formats
     const dataToProcess = Array.isArray(data) ? data[0] : data
 
     if (dataToProcess?.rawText) {

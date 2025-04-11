@@ -149,14 +149,9 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
         clearInterval(progressIntervalRef.current)
       }
 
-      const ocrResults = {
-        rawText: data.text || "",
-        invoice: extractInvoiceData(data.text || ""),
-      }
-
-      console.log("OCR Results in ModernFileUploadModal:", ocrResults)
-
-      setOcrResults(ocrResults)
+      // Now set the OCR results to be the actual data structure returned from the API
+      // This is the key change - we're not transforming the data, just passing it directly
+      setOcrResults(data)
       setCurrentStep("results")
 
       toast({
