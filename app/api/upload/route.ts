@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server"
-import { processInvoiceImage } from "@/lib/ocr"
+import { type NextRequest, NextResponse } from "next/server"
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const file = formData.get("file") as File
@@ -10,31 +9,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
-    // Convert file to ArrayBuffer
-    const buffer = await file.arrayBuffer()
+    // Create a new FormData instance for forwarding the file
+    const forwardFormData = new FormData()
+    forwardFormData.append("file", file)
 
-    // Process the image with OCR
-    const ocrResult = await processInvoiceImage(buffer)
-
-    // Create a URL for the uploaded file
-    // In a real app, you would save this to a storage service like Vercel Blob Storage
-    // For demo purposes, we'll use a data URL
-    const fileReader = new FileReader()
-    const fileDataPromise = new Promise((resolve) => {
-      fileReader.onloadend = () => resolve(fileReader.result)
-      fileReader.readAsDataURL(file)
+    // Forward the file to the n8n webhook
+    const response = await fetch("https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload", {
+      method: "POST",
+      body: forwardFormData,
     })
 
-    const fileData = await fileDataPromise
-
-    // Return the OCR results and file URL
-    return NextResponse.json({
-      ...ocrResult,
-      fileUrl: fileData,
-      fileName: file.name,
-    })
+    // Return the response from the webhook
+    const data = await response.json()
+    return NextResponse.json(data)
   } catch (error) {
     console.error("Error processing file:", error)
-    return NextResponse.json({ error: "Failed to process file" }, { status: 500 })
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unknown error occurred" },
+      { status: 500 },
+    )
   }
 }
