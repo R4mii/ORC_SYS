@@ -5,13 +5,12 @@ import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { FileUp, X, FileText, ImageIcon, Upload, ArrowRight } from "lucide-react"
+import { FileUp, X, FileText, ImageIcon, Upload, ArrowRight, AlertTriangle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { FadeIn, ScaleIn } from "@/components/ui/motion"
 import { toast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
-import { AlertTriangle } from "lucide-react" // Import AlertTriangle
-import OcrResultViewer from "@/components/ocr-result-viewer" // Import OcrResultViewer
+import OcrResultViewer from "@/components/ocr-result-viewer"
 
 type DocumentType = "purchases" | "sales" | "cashReceipts" | "bankStatements"
 
@@ -31,13 +30,10 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
   const [currentStep, setCurrentStep] = useState<"upload" | "processing" | "results">("upload")
   const [ocrResults, setOcrResults] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState("preview")
-  const [isConfidenceHovered, setIsConfidenceHovered] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Clean up interval on unmount
   useEffect(() => {
     return () => {
       if (progressIntervalRef.current) {
@@ -71,7 +67,6 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
   }
 
   const handleFiles = (newFiles: File[]) => {
-    // Filter for supported file types
     const supportedFiles = newFiles.filter((file) => {
       const fileType = file.type.toLowerCase()
       return (
@@ -95,7 +90,6 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     setFiles(supportedFiles)
     setError(null)
 
-    // Show success toast
     toast({
       title: "Fichier ajouté",
       description: `${supportedFiles[0].name} est prêt à être traité`,
@@ -106,19 +100,15 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
   const simulateProgressUpdate = () => {
     setProgress(0)
 
-    // Clear any existing interval
     if (progressIntervalRef.current) {
       clearInterval(progressIntervalRef.current)
     }
 
-    // Create a new interval that updates progress
     progressIntervalRef.current = setInterval(() => {
       setProgress((prev) => {
-        // Slow down progress as it gets higher
         const increment = prev < 30 ? 5 : prev < 70 ? 2 : 1
         const newProgress = prev + increment
 
-        // Stop at 95% - the final jump to 100% happens when data is received
         if (newProgress >= 95) {
           clearInterval(progressIntervalRef.current!)
           return 95
@@ -137,14 +127,11 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     simulateProgressUpdate()
 
     try {
-      // Create form data with the field name 'invoice1' as required by the n8n endpoint
       const formData = new FormData()
       formData.append("invoice1", files[0])
 
-      // Add a slight delay to simulate network latency
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
-      // Directly submit to n8n endpoint
       const response = await fetch("https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload", {
         method: "POST",
         body: formData,
@@ -156,28 +143,22 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
 
       const data = await response.json()
 
-      // Complete the progress
       setProgress(100)
 
-      // Clear the interval
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current)
       }
 
-      // Process the OCR results
       const ocrResults = {
         rawText: data.text || "",
         invoice: extractInvoiceData(data.text || ""),
       }
 
-      // Log the OCR results to check if rawText is present
-      console.log("OCR Results:", ocrResults)
+      console.log("OCR Results in ModernFileUploadModal:", ocrResults)
 
-      // Set OCR results and move to results step
       setOcrResults(ocrResults)
       setCurrentStep("results")
 
-      // Show success toast
       toast({
         title: "Traitement OCR terminé",
         description: "Les données ont été extraites avec succès",
@@ -188,14 +169,12 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       setError(err instanceof Error ? err.message : "Une erreur s'est produite lors du traitement OCR")
       setCurrentStep("upload")
 
-      // Show error toast
       toast({
         title: "Erreur de traitement",
         description: err instanceof Error ? err.message : "Une erreur s'est produite lors du traitement OCR",
         variant: "destructive",
       })
 
-      // Clear the interval
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current)
       }
@@ -204,11 +183,9 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     }
   }
 
-  // Function to extract structured data from OCR text
   function extractInvoiceData(text: string) {
     const invoice: Record<string, any> = {}
 
-    // Extract invoice number
     const invoiceNumberMatch =
       text.match(/(?:invoice|facture|inv)[^\d]*(?:n[o°]?)?[^\d]*(\d+[-\s]?\d+)/i) ||
       text.match(/(?:invoice|facture|inv)[^\d]*(?:n[o°]?)?[^\d]*([A-Z0-9][-A-Z0-9/]+)/i)
@@ -216,14 +193,12 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       invoice.invoiceNumber = invoiceNumberMatch[1].trim()
     }
 
-    // Extract invoice date
     const dateMatch =
       text.match(/(?:date)[^\d]*(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/i) || text.match(/(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/i)
     if (dateMatch) {
       invoice.invoiceDate = dateMatch[1].trim()
     }
 
-    // Extract supplier name
     const supplierMatch =
       text.match(/(?:from|de|supplier|fournisseur)[^:]*(?::|)\s*([^
     ]+)/i) ||
@@ -232,11 +207,9 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     if (supplierMatch) {
       invoice.supplier = supplierMatch[1].trim()
     } else {
-      // If no supplier found, try to extract from the top of the document
       const lines = text.split("
-").slice(0, 5); // Check first 5 lines
+").slice(0, 5)
       for (const line of lines) {
-        // Look for a line that might be a company name (all caps, or contains SARL, SA, SAS, EURL, SASU)
         if (/^[A-Z\s]{5,}$/.test(line) || /\b(?:SARL|SA|SAS|EURL|SASU)\b/.test(line)) {
           invoice.supplier = line.trim()
           break
@@ -244,18 +217,15 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       }
     }
 
-    // Extract total amount
     const totalMatch =
       text.match(/(?:total\s*ttc|montant\s*total|total\s*amount)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i) ||
       text.match(/(?:total)[^0-9€$]*([0-9\s,.]+)[€$\s]*(?:dh|mad|dirham)/i) ||
       text.match(/(?:à\s*payer|to\s*pay)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i)
     if (totalMatch) {
-      // Clean up the number: remove spaces, replace comma with dot
       const cleanNumber = totalMatch[1].replace(/\s/g, "").replace(",", ".")
       invoice.amountWithTax = cleanNumber
     }
 
-    // Extract subtotal (amount without tax)
     const subtotalMatch =
       text.match(/(?:sous\s*total|subtotal|total\s*ht|montant\s*ht)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i) ||
       text.match(/(?:ht|hors\s*taxe)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i)
@@ -264,7 +234,6 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       invoice.amount = cleanNumber
     }
 
-    // Extract VAT amount
     const vatMatch =
       text.match(/(?:tva|t\.v\.a\.|vat)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i) ||
       text.match(/(?:montant\s*(?:tva|t\.v\.a\.|vat))[^0-9€$]*([0-9\s,.]+)[€$\s]*/i)
@@ -273,7 +242,6 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       invoice.vatAmount = cleanNumber
     }
 
-    // Extract currency
     const currencyMatch = text.match(/(?:€|\$|£|MAD|DH|DHs|EUR|USD|GBP)/i)
     if (currencyMatch) {
       const currencyMap: Record<string, string> = {
@@ -289,7 +257,7 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       }
       invoice.currency = currencyMap[currencyMatch[0].toUpperCase()] || "MAD"
     } else {
-      invoice.currency = "MAD" // Default currency
+      invoice.currency = "MAD"
     }
 
     return invoice
@@ -297,7 +265,6 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
 
   const handleConfirm = () => {
     if (ocrResults) {
-      // Add file information to the results
       const result = {
         ...ocrResults,
         originalFile: {
@@ -308,7 +275,6 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
         documentType: documentType,
       }
 
-      // Call the completion handler
       onUploadComplete(result)
       onClose()
     }
@@ -338,18 +304,6 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     } else {
       return <FileUp className="h-6 w-6 text-gray-500" />
     }
-  }
-
-  const getConfidenceLabel = (confidence: number) => {
-    if (confidence > 0.7) return "Élevée"
-    if (confidence > 0.4) return "Moyenne"
-    return "Faible"
-  }
-
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence > 0.7) return "bg-green-500"
-    if (confidence > 0.4) return "bg-amber-500"
-    return "bg-red-500"
   }
 
   return (
