@@ -5,7 +5,8 @@ import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { FileUp, X, FileText, ImageIcon, Upload, ArrowRight, AlertTriangle } from "lucide-react"
+import { Progress } from "@/components/ui/progress"
+import { FileUp, X, FileText, ImageIcon, Upload, ArrowRight, AlertTriangle, Check } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { FadeIn, ScaleIn } from "@/components/ui/motion"
 import { toast } from "@/hooks/use-toast"
@@ -132,7 +133,6 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
 
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
-      console.log("Sending form data to OCR service")
       const response = await fetch("https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload", {
         method: "POST",
         body: formData,
@@ -143,7 +143,7 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       }
 
       const data = await response.json()
-      console.log("OCR API response:", data)
+      console.log("OCR API response:", data) // Log the entire response
 
       setProgress(100)
 
@@ -151,8 +151,15 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
         clearInterval(progressIntervalRef.current)
       }
 
-      // Set the raw API response as the OCR results
-      setOcrResults(data)
+      // Prepare the OCR results with rawText included
+      const processedResults = {
+        ...data,
+        // Make sure rawText is included for OcrResultViewer
+        rawText: data[0]?.output?.[" Détail de facture"] || data.text || "No raw text available", // Fallback if not found
+      }
+
+      console.log("Processed OCR results:", processedResults)
+      setOcrResults(processedResults)
       setCurrentStep("results")
 
       toast({
@@ -177,86 +184,6 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     } finally {
       setIsUploading(false)
     }
-  }
-
-  function extractInvoiceData(text: string) {
-    const invoice: Record<string, any> = {}
-
-    const invoiceNumberMatch =
-      text.match(/(?:invoice|facture|inv)[^\d]*(?:n[o°]?)?[^\d]*(\d+[-\s]?\d+)/i) ||
-      text.match(/(?:invoice|facture|inv)[^\d]*(?:n[o°]?)?[^\d]*([A-Z0-9][-A-Z0-9/]+)/i)
-    if (invoiceNumberMatch) {
-      invoice.invoiceNumber = invoiceNumberMatch[1].trim()
-    }
-
-    const dateMatch =
-      text.match(/(?:date)[^\d]*(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/i) || text.match(/(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/i)
-    if (dateMatch) {
-      invoice.invoiceDate = dateMatch[1].trim()
-    }
-
-    const supplierMatch =
-      text.match(/(?:from|de|supplier|fournisseur)[^:]*(?::|)\s*([^
-    ]+)/i) ||
-      text.match(/(?:société|company|raison sociale)[^:]*(?::|)\s*([^
-]+)/i)
-    if (supplierMatch) {
-      invoice.supplier = supplierMatch[1].trim()
-    } else {
-      const lines = text.split("
-").slice(0, 5)
-      for (const line of lines) {
-        if (/^[A-Z\s]{5,}$/.test(line) || /\b(?:SARL|SA|SAS|EURL|SASU)\b/.test(line)) {
-          invoice.supplier = line.trim()
-          break
-        }
-      }
-    }
-
-    const totalMatch =
-      text.match(/(?:total\s*ttc|montant\s*total|total\s*amount)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i) ||
-      text.match(/(?:total)[^0-9€$]*([0-9\s,.]+)[€$\s]*(?:dh|mad|dirham)/i) ||
-      text.match(/(?:à\s*payer|to\s*pay)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i)
-    if (totalMatch) {
-      const cleanNumber = totalMatch[1].replace(/\s/g, "").replace(",", ".")
-      invoice.amountWithTax = cleanNumber
-    }
-
-    const subtotalMatch =
-      text.match(/(?:sous\s*total|subtotal|total\s*ht|montant\s*ht)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i) ||
-      text.match(/(?:ht|hors\s*taxe)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i)
-    if (subtotalMatch) {
-      const cleanNumber = subtotalMatch[1].replace(/\s/g, "").replace(",", ".")
-      invoice.amount = cleanNumber
-    }
-
-    const vatMatch =
-      text.match(/(?:tva|t\.v\.a\.|vat)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i) ||
-      text.match(/(?:montant\s*(?:tva|t\.v\.a\.|vat))[^0-9€$]*([0-9\s,.]+)[€$\s]*/i)
-    if (vatMatch) {
-      const cleanNumber = vatMatch[1].replace(/\s/g, "").replace(",", ".")
-      invoice.vatAmount = cleanNumber
-    }
-
-    const currencyMatch = text.match(/(?:€|\$|£|MAD|DH|DHs|EUR|USD|GBP)/i)
-    if (currencyMatch) {
-      const currencyMap: Record<string, string> = {
-        "€": "EUR",
-        $: "USD",
-        "£": "GBP",
-        MAD: "MAD",
-        DH: "MAD",
-        DHs: "MAD",
-        EUR: "EUR",
-        USD: "USD",
-        GBP: "GBP",
-      }
-      invoice.currency = currencyMap[currencyMatch[0].toUpperCase()] || "MAD"
-    } else {
-      invoice.currency = "MAD"
-    }
-
-    return invoice
   }
 
   const handleConfirm = () => {
@@ -314,17 +241,7 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
           </DialogTitle>
         </DialogHeader>
 
-        {currentStep === "results" && ocrResults ? (
-          <div className="p-6">
-            {/* Add key prop to force re-render when data changes */}
-            <OcrResultViewer key={JSON.stringify(ocrResults)} data={ocrResults} onSave={handleConfirm} />
-
-            {/* Add user-friendly error message if parsing fails */}
-            <div className="mt-4 flex justify-end">
-              <Button onClick={handleConfirm}>Confirm and Save</Button>
-            </div>
-          </div>
-        ) : (
+        {currentStep === "upload" && (
           <FadeIn className="p-6 space-y-6">
             <div
               className={cn(
@@ -409,6 +326,48 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
               </Button>
             </div>
           </FadeIn>
+        )}
+
+        {currentStep === "processing" && (
+          <div className="p-6 space-y-8 py-12">
+            <div className="text-center">
+              <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <div className="animate-spin h-8 w-8 border-3 border-primary border-t-transparent rounded-full" />
+              </div>
+              <h3 className="text-lg font-medium">Traitement OCR en cours</h3>
+              <p className="text-sm text-muted-foreground mt-2">
+                Veuillez patienter pendant que nous analysons votre document...
+              </p>
+            </div>
+
+            <div className="space-y-2 max-w-md mx-auto">
+              <Progress value={progress} className="h-2" />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{progress}%</span>
+                <span className="transition-opacity duration-200">
+                  {progress < 30 && "Préparation du document..."}
+                  {progress >= 30 && progress < 70 && "Analyse OCR en cours..."}
+                  {progress >= 70 && "Extraction des données..."}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {currentStep === "results" && ocrResults && (
+          <div className="p-6 space-y-6">
+            <OcrResultViewer data={ocrResults} />
+
+            <div className="flex justify-end space-x-3 pt-2">
+              <Button variant="outline" onClick={() => setCurrentStep("upload")} className="px-4">
+                Retour
+              </Button>
+              <Button onClick={handleConfirm} className="px-4 gap-2">
+                <Check className="h-4 w-4" />
+                Confirmer et enregistrer
+              </Button>
+            </div>
+          </div>
         )}
       </DialogContent>
     </Dialog>
