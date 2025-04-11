@@ -61,8 +61,8 @@
     "jspdf": "latest",
     "@emotion/is-prop-valid": "latest",
     "express": "latest",
-    "framer-motion": "latest",
     "jspdf-autotable": "latest",
+    "framer-motion": "latest",
     "dotenv": "latest",
     "mongoose": "latest",
     "jsonwebtoken": "latest",
@@ -78,8 +78,7 @@
     "@aws-sdk/s3-request-presigner": "latest",
     "crypto": "latest",
     "isomorphic-dompurify": "latest",
-    "cors": "latest",
-    "@nextui-org/react": "latest"
+    "cors": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",
