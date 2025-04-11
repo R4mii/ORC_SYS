@@ -48,16 +48,16 @@ export default function OcrUploader() {
 
       // You can either use the API route or directly call the webhook
       // Option 1: Using our API route
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      })
+      //const response = await fetch("/api/upload", {
+      //  method: "POST",
+      //  body: formData,
+      //})
 
       // Option 2: Direct call to webhook (if CORS allows)
-      // const response = await fetch('https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload', {
-      //   method: 'POST',
-      //   body: formData,
-      // });
+       const response = await fetch('https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload', {
+         method: 'POST',
+         body: formData,
+       });
 
       if (!response.ok) {
         throw new Error(`Error: ${response.status} ${response.statusText}`)
