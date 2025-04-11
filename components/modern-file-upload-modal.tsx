@@ -5,9 +5,7 @@ import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { FileUp, X, Check, FileText, ImageIcon, Upload, ArrowRight } from "lucide-react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { FileUp, X, FileText, ImageIcon, Upload, ArrowRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { FadeIn, ScaleIn } from "@/components/ui/motion"
 import { toast } from "@/hooks/use-toast"
@@ -171,6 +169,9 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
         rawText: data.text || "",
         invoice: extractInvoiceData(data.text || ""),
       }
+
+      // Log the OCR results to check if rawText is present
+      console.log("OCR Results:", ocrResults)
 
       // Set OCR results and move to results step
       setOcrResults(ocrResults)
@@ -363,7 +364,9 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
           </DialogTitle>
         </DialogHeader>
 
-        {currentStep === "upload" && (
+        {currentStep === "results" && ocrResults ? (
+          <OcrResultViewer data={[ocrResults]} />
+        ) : (
           <FadeIn className="p-6 space-y-6">
             <div
               className={cn(
@@ -445,75 +448,6 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
               <Button onClick={handleUpload} disabled={files.length === 0 || isUploading} className="px-4 gap-2">
                 Suivant
                 <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </FadeIn>
-        )}
-
-        {currentStep === "processing" && (
-          <FadeIn className="p-6 space-y-8 py-12">
-            <div className="text-center">
-              <ScaleIn>
-                <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <div className="animate-spin h-8 w-8 border-3 border-primary border-t-transparent rounded-full" />
-                </div>
-                <h3 className="text-lg font-medium">Traitement OCR en cours</h3>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Veuillez patienter pendant que nous analysons votre document...
-                </p>
-              </ScaleIn>
-            </div>
-
-            <div className="space-y-2 max-w-md mx-auto">
-              <Progress value={progress} className="h-2" />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{progress}%</span>
-                <span className="transition-opacity duration-200">
-                  {progress < 30 && "Préparation du document..."}
-                  {progress >= 30 && progress < 70 && "Analyse OCR en cours..."}
-                  {progress >= 70 && "Extraction des données..."}
-                </span>
-              </div>
-            </div>
-          </FadeIn>
-        )}
-
-        {currentStep === "results" && ocrResults && (
-          <FadeIn className="p-6 space-y-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="preview" className="text-sm">
-                  Aperçu
-                </TabsTrigger>
-                <TabsTrigger value="data" className="text-sm">
-                  Données extraites
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="preview" className="space-y-4 mt-2">
-                <div className="border rounded-lg p-5 bg-muted/30">
-                  <h3 className="font-medium mb-3 text-sm flex items-center">
-                    <FileText className="h-4 w-4 mr-2 text-primary" />
-                    Texte extrait
-                  </h3>
-                  <div className="max-h-[300px] overflow-y-auto text-sm whitespace-pre-wrap bg-background p-4 rounded-md border">
-                    {ocrResults.rawText || "Aucun texte extrait"}
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="data" className="space-y-4 mt-2">
-                <OcrResultViewer data={[{ output: ocrResults.invoice }]} />
-              </TabsContent>
-            </Tabs>
-
-            <div className="flex justify-end space-x-3 pt-2">
-              <Button variant="outline" onClick={() => setCurrentStep("upload")} className="px-4">
-                Retour
-              </Button>
-              <Button onClick={handleConfirm} className="px-4 gap-2">
-                <Check className="h-4 w-4" />
-                Confirmer et enregistrer
               </Button>
             </div>
           </FadeIn>
