@@ -1,18 +1,19 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { FileUp, X, Check, AlertTriangle, FileText, ImageIcon, Upload, ArrowRight } from "lucide-react"
+import { FileUp, X, Check, FileText, ImageIcon, Upload, ArrowRight } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { FadeIn, ScaleIn, Stagger } from "@/components/ui/motion"
+import { FadeIn, ScaleIn } from "@/components/ui/motion"
 import { toast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+import { AlertTriangle } from "lucide-react" // Import AlertTriangle
+import OcrResultViewer from "@/components/ocr-result-viewer" // Import OcrResultViewer
 
 type DocumentType = "purchases" | "sales" | "cashReceipts" | "bankStatements"
 
@@ -138,52 +139,24 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     simulateProgressUpdate()
 
     try {
-      // Call OCR.space API directly
+      // Create form data with the field name 'invoice1' as required by the n8n endpoint
       const formData = new FormData()
-      formData.append("file", files[0])
-      formData.append("apikey", "K83121963488957")
-      formData.append("language", "fre")
-      formData.append("isOverlayRequired", "true")
-      formData.append("detectOrientation", "true")
-      formData.append("scale", "true")
-      formData.append("OCREngine", "2") // More accurate engine
+      formData.append("invoice1", files[0])
 
       // Add a slight delay to simulate network latency
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
-      const response = await fetch("https://api.ocr.space/parse/image", {
+      // Directly submit to n8n endpoint
+      const response = await fetch("https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload", {
         method: "POST",
         body: formData,
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.ErrorMessage || "Erreur lors du traitement OCR")
+        throw new Error(`OCR service returned status: ${response.status}`)
       }
 
       const data = await response.json()
-
-      if (data.OCRExitCode !== 1) {
-        throw new Error(data.ErrorMessage || "Erreur lors du traitement OCR")
-      }
-
-      // Extract the text from OCR results
-      const parsedText = data.ParsedResults?.[0]?.ParsedText || ""
-
-      // Transform OCR.space response to our format
-      const ocrResults = {
-        rawText: parsedText,
-        invoice: {
-          supplier: extractSupplier(parsedText),
-          invoiceNumber: extractInvoiceNumber(parsedText),
-          invoiceDate: extractDate(parsedText),
-          amount: extractAmount(parsedText),
-          vatAmount: extractVatAmount(parsedText),
-          amountWithTax: extractTotalAmount(parsedText),
-          currency: extractCurrency(parsedText),
-          confidence: calculateConfidence(data),
-        },
-      }
 
       // Complete the progress
       setProgress(100)
@@ -191,6 +164,12 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       // Clear the interval
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current)
+      }
+
+      // Process the OCR results
+      const ocrResults = {
+        rawText: data.text || "",
+        invoice: extractInvoiceData(data.text || ""),
       }
 
       // Set OCR results and move to results step
@@ -224,188 +203,95 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     }
   }
 
-  // Helper functions for extracting data from OCR text
-  function extractSupplier(text) {
-    // Look for company name patterns
-    const companyPatterns = [
-      /société\s+([A-Za-z0-9\s]+(?:SARL|SA|SAS|EURL))/i,
-      /fournisseur\s*:?\s*([A-Za-z0-9\s]+)/i,
-      /émetteur\s*:?\s*([A-Za-z0-9\s]+)/i,
-      /(HITECK\s*LAND)/i,
-    ]
+  // Function to extract structured data from OCR text
+  function extractInvoiceData(text: string) {
+    const invoice: Record<string, any> = {}
 
-    for (const pattern of companyPatterns) {
-      const match = text.match(pattern)
-      if (match && match[1]) return match[1].trim()
+    // Extract invoice number
+    const invoiceNumberMatch =
+      text.match(/(?:invoice|facture|inv)[^\d]*(?:n[o°]?)?[^\d]*(\d+[-\s]?\d+)/i) ||
+      text.match(/(?:invoice|facture|inv)[^\d]*(?:n[o°]?)?[^\d]*([A-Z0-9][-A-Z0-9/]+)/i)
+    if (invoiceNumberMatch) {
+      invoice.invoiceNumber = invoiceNumberMatch[1].trim()
     }
 
-    // If no match found with patterns, look at the first few lines
-    const lines = text.split("\n")
-    for (let i = 0; i < Math.min(5, lines.length); i++) {
-      if (lines[i].length > 3 && !lines[i].match(/facture|invoice|date|montant|amount|total|ttc|ht|tva|vat/i)) {
-        return lines[i].trim()
-      }
+    // Extract invoice date
+    const dateMatch =
+      text.match(/(?:date)[^\d]*(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/i) || text.match(/(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/i)
+    if (dateMatch) {
+      invoice.invoiceDate = dateMatch[1].trim()
     }
 
-    return "HITECK LAND" // Fallback based on the example
-  }
-
-  function extractInvoiceNumber(text) {
-    const invoicePatterns = [
-      /facture\s*n[o°]?\s*:?\s*([A-Za-z0-9-_/]+)/i,
-      /invoice\s*n[o°]?\s*:?\s*([A-Za-z0-9-_/]+)/i,
-      /n[o°]?\s*facture\s*:?\s*([A-Za-z0-9-_/]+)/i,
-      /n[o°]?\s*:?\s*FA21\s*([0-9]+)/i,
-      /FA21\s*([0-9]+)/i,
-      /référence\s*:?\s*([A-Za-z0-9-_/]+)/i,
-    ]
-
-    for (const pattern of invoicePatterns) {
-      const match = text.match(pattern)
-      if (match) {
-        // If the pattern is the FA21 pattern, combine the prefix with the number
-        if (pattern.toString().includes("FA21")) {
-          return `FA21 ${match[1]}`
+    // Extract supplier name
+    const supplierMatch =
+      text.match(/(?:from|de|supplier|fournisseur)[^:]*(?::|)\s*([^
+    ]+)/i) ||
+      text.match(/(?:société|company|raison sociale)[^:]*(?::|)\s*([^
+]+)/i)
+    if (supplierMatch) {
+      invoice.supplier = supplierMatch[1].trim()
+    } else {
+      // If no supplier found, try to extract from the top of the document
+      const lines = text.split("
+").slice(0, 5); // Check first 5 lines
+      for (const line of lines) {
+        // Look for a line that might be a company name (all caps, or contains SARL, SA, SAS, EURL, SASU)
+        if (/^[A-Z\s]{5,}$/.test(line) || /\b(?:SARL|SA|SAS|EURL|SASU)\b/.test(line)) {
+          invoice.supplier = line.trim()
+          break
         }
-        return match[1].trim()
       }
     }
 
-    return "FA21 20210460" // Fallback
-  }
-
-  function extractDate(text) {
-    const datePatterns = [
-      /date\s*(?:de)?\s*facture\s*:?\s*(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/i,
-      /date\s*:?\s*(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/i,
-      /(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/,
-    ]
-
-    for (const pattern of datePatterns) {
-      const match = text.match(pattern)
-      if (match) return match[1].trim()
+    // Extract total amount
+    const totalMatch =
+      text.match(/(?:total\s*ttc|montant\s*total|total\s*amount)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i) ||
+      text.match(/(?:total)[^0-9€$]*([0-9\s,.]+)[€$\s]*(?:dh|mad|dirham)/i) ||
+      text.match(/(?:à\s*payer|to\s*pay)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i)
+    if (totalMatch) {
+      // Clean up the number: remove spaces, replace comma with dot
+      const cleanNumber = totalMatch[1].replace(/\s/g, "").replace(",", ".")
+      invoice.amountWithTax = cleanNumber
     }
 
-    return "13/02/2021" // Fallback
-  }
-
-  function extractAmount(text) {
-    const amountPatterns = [
-      /montant\s*ht\s*:?\s*(\d+[.,]\d+)/i,
-      /total\s*ht\s*:?\s*(\d+[.,]\d+)/i,
-      /ht\s*:?\s*(\d+[.,]\d+)/i,
-      /prix\s*ht\s*:?\s*(\d+[.,]\d+)/i,
-    ]
-
-    for (const pattern of amountPatterns) {
-      const match = text.match(pattern)
-      if (match) return Number.parseFloat(match[1].replace(",", "."))
+    // Extract subtotal (amount without tax)
+    const subtotalMatch =
+      text.match(/(?:sous\s*total|subtotal|total\s*ht|montant\s*ht)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i) ||
+      text.match(/(?:ht|hors\s*taxe)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i)
+    if (subtotalMatch) {
+      const cleanNumber = subtotalMatch[1].replace(/\s/g, "").replace(",", ".")
+      invoice.amount = cleanNumber
     }
 
-    // If no specific HT amount found, try to find any amount that might be HT
-    const amounts = extractAllAmounts(text)
-    if (amounts.length >= 3) {
-      // If we have at least 3 amounts, the first one is likely the HT amount
-      return amounts[0]
+    // Extract VAT amount
+    const vatMatch =
+      text.match(/(?:tva|t\.v\.a\.|vat)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i) ||
+      text.match(/(?:montant\s*(?:tva|t\.v\.a\.|vat))[^0-9€$]*([0-9\s,.]+)[€$\s]*/i)
+    if (vatMatch) {
+      const cleanNumber = vatMatch[1].replace(/\s/g, "").replace(",", ".")
+      invoice.vatAmount = cleanNumber
     }
 
-    return 5605.0 // Fallback
-  }
-
-  function extractVatAmount(text) {
-    const vatPatterns = [/tva\s*:?\s*(\d+[.,]\d+)/i, /vat\s*:?\s*(\d+[.,]\d+)/i, /montant\s*tva\s*:?\s*(\d+[.,]\d+)/i]
-
-    for (const pattern of vatPatterns) {
-      const match = text.match(pattern)
-      if (match) return Number.parseFloat(match[1].replace(",", "."))
-    }
-
-    // If no specific VAT amount found, try to find any amount that might be VAT
-    const amounts = extractAllAmounts(text)
-    if (amounts.length >= 3) {
-      // If we have at least 3 amounts, the second one is likely the VAT amount
-      return amounts[1]
-    }
-
-    return 1121.0 // Fallback
-  }
-
-  function extractTotalAmount(text) {
-    const totalPatterns = [
-      /total\s*ttc\s*:?\s*(\d+[.,]\d+)/i,
-      /ttc\s*:?\s*(\d+[.,]\d+)/i,
-      /montant\s*ttc\s*:?\s*(\d+[.,]\d+)/i,
-      /total\s*:?\s*(\d+[.,]\d+)/i,
-      /à\s*payer\s*:?\s*(\d+[.,]\d+)/i,
-    ]
-
-    for (const pattern of totalPatterns) {
-      const match = text.match(pattern)
-      if (match) return Number.parseFloat(match[1].replace(",", "."))
-    }
-
-    // If no specific TTC amount found, try to find any amount that might be TTC
-    const amounts = extractAllAmounts(text)
-    if (amounts.length >= 3) {
-      // If we have at least 3 amounts, the last one is likely the TTC amount
-      return amounts[amounts.length - 1]
-    }
-
-    return 6726.0 // Fallback
-  }
-
-  function extractCurrency(text) {
-    const currencyPatterns = [/(€|\$|£|MAD|DH|EUR|USD|GBP|DHs)/i]
-
-    for (const pattern of currencyPatterns) {
-      const match = text.match(pattern)
-      if (match) {
-        const currency = match[1].toUpperCase()
-        if (currency === "€") return "EUR"
-        if (currency === "$") return "USD"
-        if (currency === "£") return "GBP"
-        if (currency === "DHS") return "MAD"
-        return currency
+    // Extract currency
+    const currencyMatch = text.match(/(?:€|\$|£|MAD|DH|DHs|EUR|USD|GBP)/i)
+    if (currencyMatch) {
+      const currencyMap: Record<string, string> = {
+        "€": "EUR",
+        $: "USD",
+        "£": "GBP",
+        MAD: "MAD",
+        DH: "MAD",
+        DHs: "MAD",
+        EUR: "EUR",
+        USD: "USD",
+        GBP: "GBP",
       }
+      invoice.currency = currencyMap[currencyMatch[0].toUpperCase()] || "MAD"
+    } else {
+      invoice.currency = "MAD" // Default currency
     }
 
-    return "MAD" // Fallback
-  }
-
-  function extractAllAmounts(text) {
-    const amounts = []
-    const amountPattern = /(\d+[.,]\d+)/g
-    let match
-
-    while ((match = amountPattern.exec(text)) !== null) {
-      amounts.push(Number.parseFloat(match[1].replace(",", ".")))
-    }
-
-    // Sort amounts in ascending order
-    return amounts.sort((a, b) => a - b)
-  }
-
-  function calculateConfidence(data) {
-    // Calculate confidence based on OCR results
-    if (!data.ParsedResults || data.ParsedResults.length === 0) {
-      return 0.3
-    }
-
-    const parsedResult = data.ParsedResults[0]
-
-    // If we have TextOverlay data, use it to calculate confidence
-    if (parsedResult.TextOverlay && parsedResult.TextOverlay.Lines) {
-      const lineCount = parsedResult.TextOverlay.Lines.length
-
-      // More lines generally means better recognition
-      if (lineCount > 20) return 0.85
-      if (lineCount > 10) return 0.75
-      if (lineCount > 5) return 0.6
-      return 0.5
-    }
-
-    // If no TextOverlay, use a default medium confidence
-    return 0.5
+    return invoice
   }
 
   const handleConfirm = () => {
@@ -421,80 +307,9 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
         documentType: documentType,
       }
 
-      // Save the document and get its ID
-      const companyId = localStorage.getItem("selectedCompanyId")
-      if (!companyId) return
-
-      // Create a new document from OCR results
-      const newDocument = {
-        id: Math.random().toString(36).substring(2, 9),
-        name: result.invoice.supplier
-          ? `Facture ${result.invoice.supplier}`
-          : `Document ${new Date().toLocaleDateString()}`,
-        description: result.originalFile.name,
-        invoiceNumber:
-          result.invoice.invoiceNumber ||
-          `INV-${Math.floor(Math.random() * 10000)
-            .toString()
-            .padStart(4, "0")}`,
-        partner: result.invoice.supplier || "Fournisseur inconnu",
-        invoiceDate: result.invoice.invoiceDate || new Date().toLocaleDateString(),
-        dueDate: result.invoice.invoiceDate || new Date().toLocaleDateString(),
-        createdAt: new Date().toLocaleDateString(),
-        amount: result.invoice.amount || 0,
-        amountWithTax: result.invoice.amountWithTax || 0,
-        vatAmount: result.invoice.vatAmount || 0,
-        type: "facture",
-        paymentStatus: "non-paye",
-        declarationStatus: "non-declare",
-        status: "en-cours",
-        hasWarning: result.invoice.confidence < 0.7,
-        documentType: documentType,
-        ocrConfidence: result.invoice.confidence,
-        rawText: result.rawText,
-        // Add the file URL
-        fileUrl: URL.createObjectURL(files[0]),
-      }
-
-      // Get existing documents
-      const storageKey = `${documentType}_${companyId}`
-      const existingDocumentsJson = localStorage.getItem(storageKey)
-      const existingDocuments = existingDocumentsJson ? JSON.parse(existingDocumentsJson) : []
-
-      // Save to localStorage
-      const updatedDocuments = [newDocument, ...existingDocuments]
-      localStorage.setItem(storageKey, JSON.stringify(updatedDocuments))
-
-      // Close the modal
+      // Call the completion handler
+      onUploadComplete(result)
       onClose()
-
-      // Show success toast
-      toast({
-        title: "Document enregistré",
-        description: "Le document a été enregistré avec succès",
-        variant: "default",
-      })
-
-      // Redirect to the invoice detail page
-      let redirectPath = ""
-      switch (documentType) {
-        case "purchases":
-          redirectPath = `/dashboard/invoices/${newDocument.id}`
-          break
-        case "sales":
-          redirectPath = `/dashboard/sales/${newDocument.id}`
-          break
-        case "cashReceipts":
-          redirectPath = `/dashboard/cash-receipts/${newDocument.id}`
-          break
-        case "bankStatements":
-          redirectPath = `/dashboard/bank-statements/${newDocument.id}`
-          break
-      }
-
-      if (redirectPath) {
-        router.push(redirectPath)
-      }
     }
   }
 
@@ -665,7 +480,7 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
 
         {currentStep === "results" && ocrResults && (
           <FadeIn className="p-6 space-y-6">
-            <Tabs defaultValue="preview" onValueChange={setActiveTab} className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-4">
                 <TabsTrigger value="preview" className="text-sm">
                   Aperçu
@@ -688,75 +503,7 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
               </TabsContent>
 
               <TabsContent value="data" className="space-y-4 mt-2">
-                <div className="border rounded-lg p-5">
-                  <h3 className="font-medium mb-4 text-sm flex items-center">
-                    <FileText className="h-4 w-4 mr-2 text-primary" />
-                    Données de la facture
-                  </h3>
-                  <Stagger className="grid grid-cols-2 gap-4 text-sm" staggerDelay={0.05}>
-                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                      <p className="text-xs text-muted-foreground">Fournisseur</p>
-                      <p className="font-medium">{ocrResults.invoice.supplier || "Non détecté"}</p>
-                    </div>
-                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                      <p className="text-xs text-muted-foreground">Numéro de facture</p>
-                      <p className="font-medium">{ocrResults.invoice.invoiceNumber || "Non détecté"}</p>
-                    </div>
-                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                      <p className="text-xs text-muted-foreground">Date de facture</p>
-                      <p className="font-medium">{ocrResults.invoice.invoiceDate || "Non détecté"}</p>
-                    </div>
-                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                      <p className="text-xs text-muted-foreground">Montant HT</p>
-                      <p className="font-medium">
-                        {ocrResults.invoice.amount
-                          ? `${ocrResults.invoice.amount.toFixed(2)} ${ocrResults.invoice.currency || "MAD"}`
-                          : "Non détecté"}
-                      </p>
-                    </div>
-                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                      <p className="text-xs text-muted-foreground">TVA</p>
-                      <p className="font-medium">
-                        {ocrResults.invoice.vatAmount
-                          ? `${ocrResults.invoice.vatAmount.toFixed(2)} ${ocrResults.invoice.currency || "MAD"}`
-                          : "Non détecté"}
-                      </p>
-                    </div>
-                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                      <p className="text-xs text-muted-foreground">Montant TTC</p>
-                      <p className="font-medium">
-                        {ocrResults.invoice.amountWithTax
-                          ? `${ocrResults.invoice.amountWithTax.toFixed(2)} ${ocrResults.invoice.currency || "MAD"}`
-                          : "Non détecté"}
-                      </p>
-                    </div>
-                  </Stagger>
-                </div>
-
-                <div
-                  className="flex items-center space-x-2 text-sm p-3 border rounded-lg bg-muted/30"
-                  onMouseEnter={() => setIsConfidenceHovered(true)}
-                  onMouseLeave={() => setIsConfidenceHovered(false)}
-                >
-                  <div className={`w-2 h-2 rounded-full ${getConfidenceColor(ocrResults.invoice.confidence)}`}></div>
-                  <span>
-                    Confiance: {Math.round(ocrResults.invoice.confidence * 100)}%
-                    <span
-                      className={`ml-1 transition-opacity duration-200 ${isConfidenceHovered ? "opacity-100" : "opacity-70"}`}
-                    >
-                      ({getConfidenceLabel(ocrResults.invoice.confidence)})
-                    </span>
-                  </span>
-                  {isConfidenceHovered && (
-                    <div className="text-xs text-muted-foreground ml-auto">
-                      {ocrResults.invoice.confidence > 0.7
-                        ? "Les données extraites sont fiables"
-                        : ocrResults.invoice.confidence > 0.4
-                          ? "Vérifiez les données extraites"
-                          : "Les données extraites peuvent contenir des erreurs"}
-                    </div>
-                  )}
-                </div>
+                <OcrResultViewer data={[{ output: ocrResults.invoice }]} />
               </TabsContent>
             </Tabs>
 
