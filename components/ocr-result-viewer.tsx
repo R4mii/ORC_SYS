@@ -87,40 +87,15 @@ export function OcrResultViewer({ data, isProcessing, processingProgress, onSave
     setEditMode(false)
   }
 
-  // Update the getRawText function to correctly handle the array structure
+  // Update the getRawText function to simply stringify the data
   const getRawText = () => {
-    if (!data) return ""
-
-    // Handle array format first (like the example)
-    if (Array.isArray(data) && data[0]?.output) {
-      const output = data[0].output
-      if (output[" Détail de facture"]) {
-        return output[" Détail de facture"]
-      } else {
-        // Combine all output fields into a text representation
-        return Object.entries(output)
-          .map(([key, value]) => `${key}: ${value}`)
-          .join("\n")
-      }
+    if (!data) return "Aucun texte disponible."
+    try {
+      return JSON.stringify(data, null, 2) // Use JSON.stringify for the entire data object
+    } catch (error) {
+      console.error("Error stringifying data:", error)
+      return "Erreur lors de la conversion des données en texte."
     }
-
-    // Handle previous formats
-    const dataToProcess = Array.isArray(data) ? data[0] : data
-
-    if (dataToProcess?.rawText) {
-      return dataToProcess.rawText
-    } else if (dataToProcess?.text) {
-      return dataToProcess.text
-    } else if (dataToProcess?.output && dataToProcess.output[" Détail de facture"]) {
-      return dataToProcess.output[" Détail de facture"]
-    } else if (dataToProcess?.output) {
-      // Combine all output fields into a text representation
-      return Object.entries(dataToProcess.output)
-        .map(([key, value]) => `${key}: ${value}`)
-        .join("\n")
-    }
-
-    return "Aucun texte disponible."
   }
 
   return (
@@ -128,7 +103,7 @@ export function OcrResultViewer({ data, isProcessing, processingProgress, onSave
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="details">Données de la facture</TabsTrigger>
-          <TabsTrigger value="raw">Texte extrait</TabsTrigger>
+          <TabsTrigger value="raw">Texte brut</TabsTrigger>
         </TabsList>
         <TabsContent value="details">
           <Card>
