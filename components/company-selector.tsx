@@ -445,4 +445,3 @@ export function CompanySelector({ isOpen, onClose }: CompanySelectorProps) {
     </div>
   )
 }
-

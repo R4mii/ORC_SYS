@@ -75,4 +75,3 @@ export async function deleteFileFromS3(key: string): Promise<void> {
     throw new Error("Failed to delete file from storage")
   }
 }
-

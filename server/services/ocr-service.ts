@@ -276,4 +276,3 @@ function extractSupplier(text: string): string {
 
   return '';
 }
-

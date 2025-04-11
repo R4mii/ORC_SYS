@@ -1,4 +1,4 @@
-// OCR processing logic using Google Vision API
+// OCR processing logic using n8n workflow
 
 // Function to process an invoice image
 export async function processInvoiceImage(fileBuffer: ArrayBuffer) {
@@ -6,7 +6,7 @@ export async function processInvoiceImage(fileBuffer: ArrayBuffer) {
     // Convert ArrayBuffer to base64
     const base64Image = Buffer.from(fileBuffer).toString("base64")
 
-    // Call the Google Vision API through our API route
+    // Call the n8n workflow through our API route
     const response = await fetch("/api/ocr", {
       method: "POST",
       headers: {
@@ -33,7 +33,7 @@ export function extractInvoiceData(text: string) {
   const invoiceNumberMatch = text.match(/(?:invoice|facture|inv)[^\d]*(\d+[-\s]?\d+)/i)
   const dateMatch = text.match(/(?:date)[^\d]*(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/i)
   const amountMatch = text.match(/(?:total|amount|montant)[^\d]*(\d+(?:[.,]\d+)?)/i)
-  const supplierMatch = text.match(/(?:from|de|supplier|fournisseur)[^\n:]*(?:\n|:)\s*([^\n]+)/i)
+  const supplierMatch = text.match(/(?:from|de|supplier|fournisseur)[^:]*(?::|)\s*([^\n]+)/i)
 
   return {
     invoiceNumber: invoiceNumberMatch ? invoiceNumberMatch[1].trim() : "",
@@ -42,4 +42,3 @@ export function extractInvoiceData(text: string) {
     supplier: supplierMatch ? supplierMatch[1].trim() : "Unknown Supplier",
   }
 }
-

@@ -53,7 +53,6 @@ export async function POST(req: NextRequest) {
     console.log(`n8n OCR service response received`)
 
     // Return the n8n workflow response directly
-    // The frontend will handle parsing the specific format from the n8n workflow
     return NextResponse.json(data)
   } catch (error) {
     console.error("Error processing OCR:", error)
@@ -63,4 +62,3 @@ export async function POST(req: NextRequest) {
     )
   }
 }
-

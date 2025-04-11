@@ -166,4 +166,3 @@ export interface InvoiceDocument extends Document {
 
 // Only create the model if it doesn't already exist
 export const Invoice = mongoose.models.Invoice || mongoose.model<InvoiceDocument>("Invoice", InvoiceSchema)
-

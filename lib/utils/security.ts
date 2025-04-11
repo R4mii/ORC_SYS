@@ -50,4 +50,3 @@ export function verifyJwtToken(token: string, secret: string): any {
     return null
   }
 }
-

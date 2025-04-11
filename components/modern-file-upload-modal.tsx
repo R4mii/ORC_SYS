@@ -775,4 +775,3 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     </Dialog>
   )
 }
-

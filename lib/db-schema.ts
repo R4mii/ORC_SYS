@@ -73,4 +73,3 @@ const newInvoice: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'> = {
   status: 'pending'
 };
 */
-

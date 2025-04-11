@@ -286,4 +286,3 @@ export function EnhancedDataTable<T>({
     </div>
   )
 }
-

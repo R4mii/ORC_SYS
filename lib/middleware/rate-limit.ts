@@ -27,4 +27,3 @@ export const ocrRateLimiter = rateLimit({
     retryAfter: Math.ceil(config.rateLimit.windowMs / 1000 / 60), // minutes
   },
 })
-

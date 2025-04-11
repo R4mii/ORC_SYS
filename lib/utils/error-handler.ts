@@ -47,4 +47,3 @@ export const UnauthorizedError = (message: string) => new ApiError(401, message)
 export const ForbiddenError = (message: string) => new ApiError(403, message)
 export const NotFoundError = (message: string) => new ApiError(404, message)
 export const InternalServerError = (message: string) => new ApiError(500, message, false)
-

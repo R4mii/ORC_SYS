@@ -35,4 +35,3 @@ export function UploadModal({ title, isOpen, onClose, onAccept }: UploadModalPro
     </Dialog>
   )
 }
-

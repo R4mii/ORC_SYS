@@ -110,4 +110,3 @@ export function StatusTag({ status, size = "md" }: StatusTagProps) {
     </Badge>
   )
 }
-

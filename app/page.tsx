@@ -385,4 +385,3 @@ function PricingCard({
     </Card>
   )
 }
-

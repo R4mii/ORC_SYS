@@ -298,4 +298,3 @@ export function extractInvoiceData(text: string): InvoiceData {
     return invoiceData
   }
 }
-

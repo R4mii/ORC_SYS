@@ -102,4 +102,3 @@ export default function InvoiceUploadPage() {
     </div>
   )
 }
-

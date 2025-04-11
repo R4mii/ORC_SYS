@@ -81,4 +81,3 @@ async function getFileHash(filePath: string): Promise<string> {
   hashSum.update(fileBuffer)
   return hashSum.digest("hex")
 }
-

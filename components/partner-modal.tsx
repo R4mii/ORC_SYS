@@ -290,4 +290,3 @@ export function PartnerModal({ isOpen, onClose, onSave, initialPartner }: Partne
     </Dialog>
   )
 }
-

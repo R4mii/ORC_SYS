@@ -156,4 +156,3 @@ function StepCard({ number, title, description }: { number: string; title: strin
     </Card>
   )
 }
-

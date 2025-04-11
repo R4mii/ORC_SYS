@@ -7,4 +7,3 @@ export type MainNavItem = {
   icon?: React.ReactNode
   label?: string
 }
-

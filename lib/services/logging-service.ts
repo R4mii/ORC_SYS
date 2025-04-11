@@ -83,4 +83,3 @@ export const logOcrProcessing = (fileInfo: { name: string; size: number }, succe
     logger.error(`OCR processing failed for ${fileInfo.name} (${fileInfo.size} bytes) after ${duration}ms`)
   }
 }
-

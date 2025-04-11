@@ -129,4 +129,3 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode; titl
     </Card>
   )
 }
-

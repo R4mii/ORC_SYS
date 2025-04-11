@@ -96,4 +96,3 @@ Merci pour votre confiance!`,
 export async function GET() {
   return NextResponse.json({ message: "OCR API is running. Use POST to process documents." }, { status: 200 })
 }
-

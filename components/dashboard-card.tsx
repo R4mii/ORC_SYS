@@ -68,4 +68,3 @@ export function DashboardCard({ title, icon: Icon, color, actionLabel, onAction,
     </Card>
   )
 }
-

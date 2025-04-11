@@ -806,4 +806,3 @@ export function ModernInvoiceDetail({ id, documentType }: ModernInvoiceDetailPro
     </div>
   )
 }
-
