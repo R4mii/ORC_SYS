@@ -13,7 +13,7 @@ export const config = {
 export async function POST(req: NextRequest) {
   try {
     // n8n workflow form URL
-    const n8nFormUrl = "https://r4mii.app.n8n.cloud/form/6323ea8b-3074-46ae-973a-52fae5cd24e2"
+    const n8nFormUrl = "https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload"
 
     // Get the form data from the request
     const formData = await req.formData()
