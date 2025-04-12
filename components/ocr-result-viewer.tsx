@@ -19,94 +19,25 @@ export function OcrResultViewer({ data, isProcessing, processingProgress, onSave
   const [activeTab, setActiveTab] = useState("details")
   const [editMode, setEditMode] = useState(false)
   const [editedData, setEditedData] = useState<any>(null)
-  const [rawText, setRawText] = useState<string>("")
 
   useEffect(() => {
-    console.log("Data received in OcrResultViewer:", data)
-
-    try {
-      if (data) {
-        // Extract the raw text
-        let extractedRawText = ""
-        if (data.rawText) {
-          // Direct rawText field
-          extractedRawText = data.rawText
-        } else if (Array.isArray(data) && data[0]?.output) {
-          // Array format with output object
-          extractedRawText = data[0].output[" Détail de facture"] || ""
-        } else if (data[0]?.output?.[" Détail de facture"]) {
-          // Direct access to array
-          extractedRawText = data[0].output[" Détail de facture"]
-        } else if (typeof data === "object") {
-          // Try to find rawText in a nested object
-          extractedRawText = findRawText(data)
-        }
-
-        setRawText(extractedRawText || "No raw text available")
-
-        // Process the invoice data
-        if (Array.isArray(data) && data[0]?.output) {
-          // Handle array format
-          const output = data[0].output
-          setEditedData({
-            invoiceNumber: output["Numéro de facture"] || "",
-            invoiceDate: output.date || "",
-            supplier: output.Fournisseur || output["name of the company"] || "",
-            amount: output["Montant HT"] || "",
-            vatAmount: output["Montant TVA"] || "",
-            amountWithTax: output["Montant TTC"] || "",
-          })
-        } else if (data.invoice) {
-          // Handle invoice object format
-          setEditedData({ ...data.invoice })
-        } else if (data.output) {
-          // Handle output object format
-          const output = data.output
-          setEditedData({
-            invoiceNumber: output["Numéro de facture"] || "",
-            invoiceDate: output.date || "",
-            supplier: output.Fournisseur || output["name of the company"] || "",
-            amount: output["Montant HT"] || "",
-            vatAmount: output["Montant TVA"] || "",
-            amountWithTax: output["Montant TTC"] || "",
-          })
-        } else {
-          // Direct data structure or unknown format
-          setEditedData(data)
-        }
-      }
-    } catch (error) {
-      console.error("Error processing data in OcrResultViewer:", error)
-      setRawText(`Error processing OCR data: ${error instanceof Error ? error.message : "Unknown error"}`)
+    if (data && Array.isArray(data) && data.length > 0) {
+      const ocrOutput = data[0].output
+      setEditedData({
+        Fournisseur: ocrOutput.Fournisseur || "Not available",
+        date: ocrOutput.date || "Not available",
+        "name of the company": ocrOutput["name of the company"] || "Not available",
+        adresse: ocrOutput.adresse || "Not available",
+        "Numéro de facture": ocrOutput["Numéro de facture"] || "Not available",
+        "Montant HT": ocrOutput["Montant HT"] || "Not available",
+        "Montant TVA": ocrOutput["Montant TVA"] || "Not available",
+        "Montant TTC": ocrOutput["Montant TTC"] || "Not available",
+        "Détail de facture": ocrOutput[" Détail de facture"] || "Not available", // Corrected field name
+      })
     }
   }, [data])
 
-  // Helper function to recursively search for raw text in nested objects
-  const findRawText = (obj: any): string => {
-    if (!obj || typeof obj !== "object") return ""
-
-    // Direct properties that might contain raw text
-    const textProperties = ["rawText", "text", " Détail de facture", "Détail de facture"]
-
-    for (const prop of textProperties) {
-      if (obj[prop] && typeof obj[prop] === "string") {
-        return obj[prop]
-      }
-    }
-
-    // Check nested properties
-    for (const key in obj) {
-      if (typeof obj[key] === "object") {
-        const found = findRawText(obj[key])
-        if (found) return found
-      }
-    }
-
-    return ""
-  }
-
   const handleFieldChange = (field: string, value: any) => {
-    if (!editedData) return
     setEditedData((prev) => ({
       ...prev,
       [field]: value,
@@ -138,48 +69,48 @@ export function OcrResultViewer({ data, isProcessing, processingProgress, onSave
                 <div>
                   <Label>Numéro de facture</Label>
                   <Input
-                    value={editedData?.invoiceNumber || ""}
-                    onChange={(e) => handleFieldChange("invoiceNumber", e.target.value)}
+                    value={editedData?.["Numéro de facture"] || ""}
+                    onChange={(e) => handleFieldChange("Numéro de facture", e.target.value)}
                     disabled={!editMode}
                   />
                 </div>
                 <div>
                   <Label>Date de facture</Label>
                   <Input
-                    value={editedData?.invoiceDate || ""}
-                    onChange={(e) => handleFieldChange("invoiceDate", e.target.value)}
+                    value={editedData?.date || ""}
+                    onChange={(e) => handleFieldChange("date", e.target.value)}
                     disabled={!editMode}
                   />
                 </div>
                 <div>
                   <Label>Fournisseur</Label>
                   <Input
-                    value={editedData?.supplier || ""}
-                    onChange={(e) => handleFieldChange("supplier", e.target.value)}
+                    value={editedData?.Fournisseur || ""}
+                    onChange={(e) => handleFieldChange("Fournisseur", e.target.value)}
                     disabled={!editMode}
                   />
                 </div>
                 <div>
                   <Label>Montant HT</Label>
                   <Input
-                    value={editedData?.amount || ""}
-                    onChange={(e) => handleFieldChange("amount", e.target.value)}
+                    value={editedData?.["Montant HT"] || ""}
+                    onChange={(e) => handleFieldChange("Montant HT", e.target.value)}
                     disabled={!editMode}
                   />
                 </div>
                 <div>
                   <Label>Montant TVA</Label>
                   <Input
-                    value={editedData?.vatAmount || ""}
-                    onChange={(e) => handleFieldChange("vatAmount", e.target.value)}
+                    value={editedData?.["Montant TVA"] || ""}
+                    onChange={(e) => handleFieldChange("Montant TVA", e.target.value)}
                     disabled={!editMode}
                   />
                 </div>
                 <div>
                   <Label>Montant TTC</Label>
                   <Input
-                    value={editedData?.amountWithTax || ""}
-                    onChange={(e) => handleFieldChange("amountWithTax", e.target.value)}
+                    value={editedData?.["Montant TTC"] || ""}
+                    onChange={(e) => handleFieldChange("Montant TTC", e.target.value)}
                     disabled={!editMode}
                   />
                 </div>
@@ -207,7 +138,7 @@ export function OcrResultViewer({ data, isProcessing, processingProgress, onSave
             </CardHeader>
             <CardContent>
               <pre className="whitespace-pre-wrap bg-muted p-4 rounded-md overflow-auto max-h-[400px]">
-                {rawText || "Aucun texte brut disponible."}
+                {editedData?.[" Détail de facture"] || "Aucun texte extrait"}
               </pre>
             </CardContent>
           </Card>
@@ -217,5 +148,4 @@ export function OcrResultViewer({ data, isProcessing, processingProgress, onSave
   )
 }
 
-// Add default export as well to support both import styles
 export default OcrResultViewer

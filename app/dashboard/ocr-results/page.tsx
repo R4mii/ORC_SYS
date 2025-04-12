@@ -41,7 +41,7 @@ export default function OcrResultsPage() {
             "Montant TVA": "0,00",
             "Montant TTC": "1.085,00",
             " Détail de facture":
-              "Bol - série NØDT\n Bol diamètre 25 cm . Céramique, fait main en France. : 10 pièces x 14,50\n Carafe - série NØDT\n Carafe hauteur 35 cm . Céramique, faite main en France. : 20 pièces x 47,00",
+              "Bol - série NØDT Bol diamètre 25 cm . Céramique, fait main en France. : 10 pièces x 14,50\nCarafe - série NØDT Carafe hauteur 35 cm . Céramique, faite main en France. : 20 pièces x 47,00",
           },
         },
       ]
