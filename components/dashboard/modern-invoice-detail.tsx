@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "@/hooks/use-toast"
@@ -23,10 +23,7 @@ import {
   Save,
   X,
   AlertTriangle,
-  Plus,
-  Trash2,
   FileText,
-  Check,
 } from "lucide-react"
 
 interface ModernInvoiceDetailProps {
@@ -300,9 +297,8 @@ export function ModernInvoiceDetail({ id, documentType }: ModernInvoiceDetailPro
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <FadeIn className="space-y-6" delay={0.1}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-1">
               <TabsTrigger value="details">Détails</TabsTrigger>
-              <TabsTrigger value="accounting">Comptabilité</TabsTrigger>
             </TabsList>
 
             <TabsContent value="details" className="space-y-6 pt-4">
@@ -537,171 +533,6 @@ export function ModernInvoiceDetail({ id, documentType }: ModernInvoiceDetailPro
                   </CardContent>
                 </Card>
               )}
-            </TabsContent>
-
-            <TabsContent value="accounting" className="space-y-6 pt-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center">
-                    <FileText className="h-4 w-4 mr-2 text-primary" />
-                    Écritures comptables
-                  </CardTitle>
-                  <CardDescription>Gérez les écritures comptables associées à ce document</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left py-2 px-2 text-sm font-medium">Compte</th>
-                          <th className="text-left py-2 px-2 text-sm font-medium">Libellé</th>
-                          <th className="text-right py-2 px-2 text-sm font-medium">Débit</th>
-                          <th className="text-right py-2 px-2 text-sm font-medium">Crédit</th>
-                          <th className="text-left py-2 px-2 text-sm font-medium">Taxes</th>
-                          <th className="text-left py-2 px-2 text-sm font-medium">Code de taxe</th>
-                          <th className="text-center py-2 px-2 text-sm font-medium w-10">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {accountingEntries.map((entry, index) => (
-                          <tr key={entry.id} className="border-b">
-                            <td className="py-2 px-2">
-                              {isEditing ? (
-                                <Input
-                                  value={entry.account}
-                                  onChange={(e) => handleAccountingEntryChange(entry.id, "account", e.target.value)}
-                                  className="h-8 text-sm"
-                                />
-                              ) : (
-                                <span className="text-sm">{entry.account}</span>
-                              )}
-                            </td>
-                            <td className="py-2 px-2">
-                              {isEditing ? (
-                                <Input
-                                  value={entry.label}
-                                  onChange={(e) => handleAccountingEntryChange(entry.id, "label", e.target.value)}
-                                  className="h-8 text-sm"
-                                />
-                              ) : (
-                                <span className="text-sm">{entry.label}</span>
-                              )}
-                            </td>
-                            <td className="py-2 px-2 text-right">
-                              {isEditing ? (
-                                <Input
-                                  type="number"
-                                  value={entry.debit}
-                                  onChange={(e) =>
-                                    handleAccountingEntryChange(
-                                      entry.id,
-                                      "debit",
-                                      Number.parseFloat(e.target.value) || 0,
-                                    )
-                                  }
-                                  className="h-8 text-sm text-right"
-                                />
-                              ) : (
-                                <span className="text-sm">{entry.debit.toFixed(2)}</span>
-                              )}
-                            </td>
-                            <td className="py-2 px-2 text-right">
-                              {isEditing ? (
-                                <Input
-                                  type="number"
-                                  value={entry.credit}
-                                  onChange={(e) =>
-                                    handleAccountingEntryChange(
-                                      entry.id,
-                                      "credit",
-                                      Number.parseFloat(e.target.value) || 0,
-                                    )
-                                  }
-                                  className="h-8 text-sm text-right"
-                                />
-                              ) : (
-                                <span className="text-sm">{entry.credit.toFixed(2)}</span>
-                              )}
-                            </td>
-                            <td className="py-2 px-2">
-                              {isEditing ? (
-                                <Input
-                                  value={entry.tax}
-                                  onChange={(e) => handleAccountingEntryChange(entry.id, "tax", e.target.value)}
-                                  className="h-8 text-sm"
-                                />
-                              ) : (
-                                <span className="text-sm">{entry.tax}</span>
-                              )}
-                            </td>
-                            <td className="py-2 px-2">
-                              {isEditing ? (
-                                <Input
-                                  value={entry.taxCode}
-                                  onChange={(e) => handleAccountingEntryChange(entry.id, "taxCode", e.target.value)}
-                                  className="h-8 text-sm"
-                                />
-                              ) : (
-                                <span className="text-sm">{entry.taxCode}</span>
-                              )}
-                            </td>
-                            <td className="py-2 px-2 text-center">
-                              {isEditing && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleRemoveAccountingEntry(entry.id)}
-                                  className="h-8 w-8 text-destructive hover:text-destructive/80"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot>
-                        <tr className="border-t-2">
-                          <td colSpan={2} className="py-2 px-2 text-sm font-medium">
-                            Total
-                          </td>
-                          <td className="py-2 px-2 text-right text-sm font-medium">{totalDebit.toFixed(2)}</td>
-                          <td className="py-2 px-2 text-right text-sm font-medium">{totalCredit.toFixed(2)}</td>
-                          <td colSpan={3} className="py-2 px-2">
-                            {!isBalanced && (
-                              <Badge
-                                variant="outline"
-                                className="text-destructive border-destructive/20 bg-destructive/10"
-                              >
-                                <AlertTriangle className="h-3 w-3 mr-1" />
-                                Déséquilibré
-                              </Badge>
-                            )}
-                            {isBalanced && (
-                              <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
-                                <Check className="h-3 w-3 mr-1" />
-                                Équilibré
-                              </Badge>
-                            )}
-                          </td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-
-                  {isEditing && (
-                    <Button variant="outline" size="sm" onClick={handleAddAccountingEntry} className="mt-2">
-                      <Plus className="h-4 w-4 mr-1" />
-                      Ajouter une ligne
-                    </Button>
-                  )}
-                </CardContent>
-                <CardFooter className="flex justify-between pt-0">
-                  <p className="text-sm text-muted-foreground">
-                    Les écritures comptables seront générées automatiquement lors de la validation du document.
-                  </p>
-                </CardFooter>
-              </Card>
             </TabsContent>
           </Tabs>
         </FadeIn>

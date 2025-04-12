@@ -31,10 +31,12 @@ import {
 import { CompanySelector } from "@/components/company-selector"
 import { ModeToggle } from "@/components/mode-toggle"
 
+// Define the updated NavItem interface with optional children
 interface NavItem {
   title: string
   href: string
   icon: React.ElementType
+  children?: NavItem[]
 }
 
 // Update the navItems array
@@ -48,6 +50,18 @@ const navItems: NavItem[] = [
     title: "Invoices",
     href: "/dashboard/invoices",
     icon: FileText,
+    children: [
+      {
+        title: "Achats",
+        href: "/dashboard/invoices/achats",
+        icon: FileText,
+      },
+      {
+        title: "Ventes",
+        href: "/dashboard/invoices/ventes",
+        icon: FileText,
+      },
+    ],
   },
   {
     title: "Reports",
@@ -198,18 +212,39 @@ export default function DashboardLayout({
               </div>
               <nav className="grid gap-2 p-4">
                 {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                      pathname === item.href
-                        ? "bg-primary text-primary-foreground font-medium"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.title}
-                  </Link>
+                  <div key={item.href} className="space-y-1">
+                    <Link
+                      href={item.href}
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                        pathname === item.href
+                          ? "bg-primary text-primary-foreground font-medium"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.title}
+                      {item.children && <ChevronDown className="h-4 w-4 ml-auto" />}
+                    </Link>
+
+                    {item.children && (
+                      <div className="ml-6 space-y-1">
+                        {item.children.map((child) => (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                              pathname === child.href
+                                ? "bg-primary text-primary-foreground font-medium"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            }`}
+                          >
+                            <child.icon className="h-4 w-4" />
+                            {child.title}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </nav>
             </div>
@@ -273,18 +308,39 @@ export default function DashboardLayout({
         >
           <nav className="grid gap-2 p-4">
             {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                  pathname === item.href
-                    ? "bg-primary text-primary-foreground font-medium"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.title}
-              </Link>
+              <div key={item.href} className="space-y-1">
+                <Link
+                  href={item.href}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                    pathname === item.href
+                      ? "bg-primary text-primary-foreground font-medium"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.title}
+                  {item.children && <ChevronDown className="h-4 w-4 ml-auto" />}
+                </Link>
+
+                {item.children && (
+                  <div className="ml-6 space-y-1">
+                    {item.children.map((child) => (
+                      <Link
+                        key={child.href}
+                        href={child.href}
+                        className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                          pathname === child.href
+                            ? "bg-primary text-primary-foreground font-medium"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        }`}
+                      >
+                        <child.icon className="h-4 w-4" />
+                        {child.title}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
           </nav>
         </aside>

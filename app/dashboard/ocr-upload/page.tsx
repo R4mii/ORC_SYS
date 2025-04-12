@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -57,29 +59,16 @@ export default function OcrUploadPage() {
         <CardContent>
           <div className="space-y-6">
             <div>
-              <Input
-                type="file"
-                onChange={handleFileChange}
-                accept=".pdf,.jpg,.jpeg,.png"
-                disabled={loading}
-              />
-              <p className="text-sm text-gray-500 mt-1">
-                Supported formats: PDF, JPG, PNG
-              </p>
+              <Input type="file" onChange={handleFileChange} accept=".pdf,.jpg,.jpeg,.png" disabled={loading} />
+              <p className="text-sm text-gray-500 mt-1">Supported formats: PDF, JPG, PNG</p>
             </div>
 
-            <Button
-              onClick={handleSubmit}
-              disabled={loading || !file}
-              className="w-full"
-            >
+            <Button onClick={handleSubmit} disabled={loading || !file} className="w-full">
               <UploadCloud className="mr-2 h-4 w-4" />
               {loading ? "Processing..." : "Upload Document"}
             </Button>
 
-            {error && (
-              <div className="text-red-500 text-sm">{error}</div>
-            )}
+            {error && <div className="text-red-500 text-sm">{error}</div>}
 
             {result && (
               <div className="mt-6">
