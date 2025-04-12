@@ -1,162 +1,171 @@
 "use client"
 
-import { CardFooter } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useEffect, useState } from "react"
+import { FileText } from "lucide-react"
 
 interface OcrResultViewerProps {
   data: any
-  isProcessing?: boolean
-  processingProgress?: number
-  onSave?: (data: any) => void
 }
 
-export function OcrResultViewer({ data, isProcessing, processingProgress, onSave }: OcrResultViewerProps) {
-  const [activeTab, setActiveTab] = useState("details")
-  const [editMode, setEditMode] = useState(false)
-  const [editedData, setEditedData] = useState<any>(null)
-
-  useEffect(() => {
-    console.log("Raw OCR data:", data) // Debug log
-    if (data && Array.isArray(data) && data.length > 0 && data[0].output) {
-      const ocrOutput = data[0].output
-      console.log("Processing OCR output:", ocrOutput) // Debug log
-
-      setEditedData({
-        Fournisseur: ocrOutput.Fournisseur || "Not available",
-        date: ocrOutput.date || "Not available",
-        "name of the company": ocrOutput["name of the company"] || "Not available",
-        "Numéro de facture": ocrOutput["Numéro de facture"] || "Not available",
-        "Montant HT": ocrOutput["Montant HT"] || "Not available",
-        "Montant TVA": ocrOutput["Montant TVA"] || "Not available",
-        "Montant TTC": ocrOutput["Montant TTC"] || "Not available",
-        "Détail de facture": ocrOutput[" Détail de facture"] || "Not available",
-      })
-    } else {
-      console.log("Invalid or empty OCR data:", data)
-      setEditedData(null)
-    }
-  }, [data])
-
-  const handleFieldChange = (field: string, value: any) => {
-    setEditedData((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
-  }
-
-  const handleSave = () => {
-    if (onSave && editedData) {
-      onSave(editedData)
-    }
-    setEditMode(false)
-  }
+export default function OcrResultViewer({ data }: OcrResultViewerProps) {
+  // Process the data to ensure it has the expected structure
+  const processedData = processData(data)
 
   return (
-    <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="details">Données de la facture</TabsTrigger>
-          <TabsTrigger value="raw">Texte brut</TabsTrigger>
-        </TabsList>
-        <TabsContent value="details">
-          <Card>
-            <CardHeader>
-              <CardTitle>Détails de la facture</CardTitle>
-              <CardDescription>Informations extraites de la facture</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Numéro de facture</Label>
-                  <Input
-                    value={editedData?.["Numéro de facture"] || ""}
-                    onChange={(e) => handleFieldChange("Numéro de facture", e.target.value)}
-                    disabled={!editMode}
-                  />
-                </div>
-                <div>
-                  <Label>Date de facture</Label>
-                  <Input
-                    value={editedData?.date || ""}
-                    onChange={(e) => handleFieldChange("date", e.target.value)}
-                    disabled={!editMode}
-                  />
-                </div>
-                <div>
-                  <Label>Fournisseur</Label>
-                  <Input
-                    value={editedData?.Fournisseur || ""}
-                    onChange={(e) => handleFieldChange("Fournisseur", e.target.value)}
-                    disabled={!editMode}
-                  />
-                </div>
-                <div>
-                  <Label>Montant HT</Label>
-                  <Input
-                    value={editedData?.["Montant HT"] || ""}
-                    onChange={(e) => handleFieldChange("Montant HT", e.target.value)}
-                    disabled={!editMode}
-                  />
-                </div>
-                <div>
-                  <Label>Montant TVA</Label>
-                  <Input
-                    value={editedData?.["Montant TVA"] || ""}
-                    onChange={(e) => handleFieldChange("Montant TVA", e.target.value)}
-                    disabled={!editMode}
-                  />
-                </div>
-                <div>
-                  <Label>Montant TTC</Label>
-                  <Input
-                    value={editedData?.["Montant TTC"] || ""}
-                    onChange={(e) => handleFieldChange("Montant TTC", e.target.value)}
-                    disabled={!editMode}
-                  />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              {editMode ? (
-                <>
-                  <Button variant="outline" onClick={() => setEditMode(false)}>
-                    Annuler
-                  </Button>
-                  <Button onClick={handleSave}>Enregistrer</Button>
-                </>
-              ) : (
-                <Button onClick={() => setEditMode(true)}>Modifier</Button>
-              )}
-            </CardFooter>
-          </Card>
-        </TabsContent>
-        <TabsContent value="raw">
-          <Card>
-            <CardHeader>
-              <CardTitle>Texte brut</CardTitle>
-              <CardDescription>Texte extrait du document</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isProcessing ? (
-                <div>Processing... {processingProgress}%</div>
-              ) : editedData ? (
-                <pre className="whitespace-pre-wrap bg-muted p-4 rounded-md overflow-auto max-h-[400px]">
-                  {editedData?.[" Détail de facture"] || "Aucun texte extrait"}
-                </pre>
-              ) : (
-                <div>Aucun texte extrait</div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+    <Tabs defaultValue="preview" className="w-full">
+      <TabsList className="grid w-full grid-cols-2 mb-4">
+        <TabsTrigger value="preview" className="text-sm">
+          Aperçu
+        </TabsTrigger>
+        <TabsTrigger value="data" className="text-sm">
+          Données extraites
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="preview" className="space-y-4 mt-2">
+        <div className="border rounded-lg p-5 bg-muted/30">
+          <h3 className="font-medium mb-3 text-sm flex items-center">
+            <FileText className="h-4 w-4 mr-2 text-primary" />
+            Texte extrait
+          </h3>
+          <div className="max-h-[300px] overflow-y-auto text-sm whitespace-pre-wrap bg-background p-4 rounded-md border">
+            {processedData.rawText || "Aucun texte extrait"}
+          </div>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="data" className="space-y-4 mt-2">
+        <div className="border rounded-lg p-5">
+          <h3 className="font-medium mb-4 text-sm flex items-center">
+            <FileText className="h-4 w-4 mr-2 text-primary" />
+            Données de la facture
+          </h3>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+              <p className="text-xs text-muted-foreground">Fournisseur</p>
+              <p className="font-medium">{processedData.invoice.supplier || "Non détecté"}</p>
+            </div>
+            <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+              <p className="text-xs text-muted-foreground">Numéro de facture</p>
+              <p className="font-medium">{processedData.invoice.invoiceNumber || "Non détecté"}</p>
+            </div>
+            <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+              <p className="text-xs text-muted-foreground">Date de facture</p>
+              <p className="font-medium">{processedData.invoice.invoiceDate || "Non détecté"}</p>
+            </div>
+            <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+              <p className="text-xs text-muted-foreground">Montant HT</p>
+              <p className="font-medium">
+                {processedData.invoice.amount
+                  ? `${processedData.invoice.amount.toFixed(2)} ${processedData.invoice.currency || "MAD"}`
+                  : "Non détecté"}
+              </p>
+            </div>
+            <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+              <p className="text-xs text-muted-foreground">TVA</p>
+              <p className="font-medium">
+                {processedData.invoice.vatAmount
+                  ? `${processedData.invoice.vatAmount.toFixed(2)} ${processedData.invoice.currency || "MAD"}`
+                  : "Non détecté"}
+              </p>
+            </div>
+            <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+              <p className="text-xs text-muted-foreground">Montant TTC</p>
+              <p className="font-medium">
+                {processedData.invoice.amountWithTax
+                  ? `${processedData.invoice.amountWithTax.toFixed(2)} ${processedData.invoice.currency || "MAD"}`
+                  : "Non détecté"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2 text-sm p-3 border rounded-lg bg-muted/30">
+          <div
+            className={`w-2 h-2 rounded-full ${
+              processedData.invoice.confidence > 0.7
+                ? "bg-green-500"
+                : processedData.invoice.confidence > 0.4
+                  ? "bg-amber-500"
+                  : "bg-red-500"
+            }`}
+          ></div>
+          <span>
+            Confiance: {Math.round((processedData.invoice.confidence || 0) * 100)}%
+            <span className="ml-1 transition-opacity duration-200">
+              (
+              {processedData.invoice.confidence > 0.7
+                ? "Élevée"
+                : processedData.invoice.confidence > 0.4
+                  ? "Moyenne"
+                  : "Faible"}
+              )
+            </span>
+          </span>
+        </div>
+      </TabsContent>
+    </Tabs>
   )
 }
 
-export default OcrResultViewer
+// Helper function to ensure data has the expected structure
+function processData(data: any) {
+  // If data is already in the expected format, return it
+  if (data && data.invoice) return data
+
+  // Check if data is an array
+  if (Array.isArray(data) && data.length > 0) {
+    const firstItem = data[0]
+
+    // Extract output if it exists
+    const output = firstItem.output || {}
+
+    // Create a standardized structure
+    return {
+      rawText: firstItem.text || "",
+      invoice: {
+        supplier: output.Fournisseur || "",
+        invoiceNumber: output["Numéro de facture"] || "",
+        invoiceDate: output.date || "",
+        amount: Number.parseFloat(output["Montant HT"] || "0"),
+        vatAmount: Number.parseFloat(output["Montant TVA"] || "0"),
+        amountWithTax: Number.parseFloat(output["Montant TTC"] || "0"),
+        currency: "MAD",
+        confidence: 0.8, // Default confidence
+      },
+      originalResponse: data,
+    }
+  } else if (data && typeof data === "object") {
+    // Try to extract data from the object
+    return {
+      rawText: data.text || "",
+      invoice: {
+        supplier: data.supplier || "",
+        invoiceNumber: data.invoiceNumber || "",
+        invoiceDate: data.date || "",
+        amount: Number.parseFloat(data.amount || "0"),
+        vatAmount: Number.parseFloat(data.vatAmount || "0"),
+        amountWithTax: Number.parseFloat(data.total || "0"),
+        currency: data.currency || "MAD",
+        confidence: data.confidence || 0.5,
+      },
+      originalResponse: data,
+    }
+  }
+
+  // Fallback to empty structure
+  return {
+    rawText: "",
+    invoice: {
+      supplier: "",
+      invoiceNumber: "",
+      invoiceDate: "",
+      amount: 0,
+      vatAmount: 0,
+      amountWithTax: 0,
+      currency: "MAD",
+      confidence: 0,
+    },
+    originalResponse: data,
+  }
+}

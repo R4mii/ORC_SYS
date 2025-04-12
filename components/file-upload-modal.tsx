@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { FileUp, X, Check, AlertTriangle, FileText, ImageIcon, Upload, ArrowRight } from "lucide-react"
@@ -151,8 +151,9 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
       const data = await response.json()
       console.log("OCR response:", data) // Debug log
 
-      // Don't transform the data
-      setOcrResults(data)
+      // Process the OCR response
+      const processedData = processOcrResponse(data)
+      setOcrResults(processedData)
       setCurrentStep("results")
 
       toast({
@@ -180,98 +181,65 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
     }
   }
 
-  // Function to extract structured data from OCR text
-  function extractInvoiceData(text: string) {
-    const invoice: Record<string, any> = {}
+  // Process the OCR response to handle different formats
+  const processOcrResponse = (data: any) => {
+    // Check if data is an array
+    if (Array.isArray(data) && data.length > 0) {
+      const firstItem = data[0]
 
-    // Extract invoice number
-    const invoiceNumberMatch =
-      text.match(/(?:invoice|facture|inv)[^\d]*(?:n[o°]?)?[^\d]*(\d+[-\s]?\d+)/i) ||
-      text.match(/(?:invoice|facture|inv)[^\d]*(?:n[o°]?)?[^\d]*([A-Z0-9][-A-Z0-9/]+)/i)
-    if (invoiceNumberMatch) {
-      invoice.invoiceNumber = invoiceNumberMatch[1].trim()
-    }
+      // Extract output if it exists
+      const output = firstItem.output || {}
 
-    // Extract invoice date
-    const dateMatch =
-      text.match(/(?:date)[^\d]*(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/i) || text.match(/(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/i)
-    if (dateMatch) {
-      invoice.invoiceDate = dateMatch[1].trim()
-    }
+      // Create a standardized structure
+      return {
+        rawText: firstItem.text || "",
+        invoice: {
+          supplier: output.Fournisseur || "",
+          invoiceNumber: output["Numéro de facture"] || "",
+          invoiceDate: output.date || "",
+          amount: Number.parseFloat(output["Montant HT"] || "0"),
+          vatAmount: Number.parseFloat(output["Montant TVA"] || "0"),
+          amountWithTax: Number.parseFloat(output["Montant TTC"] || "0"),
+          currency: "MAD",
+          confidence: 0.8, // Default confidence
+        },
+        originalResponse: data,
+      }
+    } else if (data && typeof data === "object") {
+      // If it's already in the expected format, return it
+      if (data.invoice) return data
 
-    // Extract supplier name
-    const supplierMatch =
-      text.match(/(?:from|de|supplier|fournisseur)[^:]*(?::|)\s*([^\n]+)/i) ||
-      text.match(/(?:société|company|raison sociale)[^:]*(?::|)\s*([^\n]+)/i)
-    if (supplierMatch) {
-      invoice.supplier = supplierMatch[1].trim()
-    } else {
-      // If no supplier found, try to extract from the top of the document
-      const lines = text.split("\n").slice(0, 5) // Check first 5 lines
-      for (const line of lines) {
-        // Look for a line that might be a company name (all caps, or contains SARL, SA, etc.)
-        if (/^[A-Z\s]{5,}$/.test(line) || /\b(?:SARL|SA|SAS|EURL|SASU)\b/.test(line)) {
-          invoice.supplier = line.trim()
-          break
-        }
+      // Otherwise, try to extract data from the object
+      return {
+        rawText: data.text || "",
+        invoice: {
+          supplier: data.supplier || "",
+          invoiceNumber: data.invoiceNumber || "",
+          invoiceDate: data.date || "",
+          amount: Number.parseFloat(data.amount || "0"),
+          vatAmount: Number.parseFloat(data.vatAmount || "0"),
+          amountWithTax: Number.parseFloat(data.total || "0"),
+          currency: data.currency || "MAD",
+          confidence: data.confidence || 0.5,
+        },
+        originalResponse: data,
       }
     }
 
-    // Extract total amount
-    const totalMatch =
-      text.match(/(?:total\s*ttc|montant\s*total|total\s*amount)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i) ||
-      text.match(/(?:total)[^0-9€$]*([0-9\s,.]+)[€$\s]*(?:dh|mad|dirham)/i) ||
-      text.match(/(?:à\s*payer|to\s*pay)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i)
-    if (totalMatch) {
-      // Clean up the number: remove spaces, replace comma with dot
-      const cleanNumber = totalMatch[1].replace(/\s/g, "").replace(",", ".")
-      invoice.amountWithTax = Number.parseFloat(cleanNumber)
-    }
-
-    // Extract subtotal (amount without tax)
-    const subtotalMatch =
-      text.match(/(?:sous\s*total|subtotal|total\s*ht|montant\s*ht)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i) ||
-      text.match(/(?:ht|hors\s*taxe)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i)
-    if (subtotalMatch) {
-      const cleanNumber = subtotalMatch[1].replace(/\s/g, "").replace(",", ".")
-      invoice.amount = Number.parseFloat(cleanNumber)
-    }
-
-    // Extract VAT amount
-    const vatMatch =
-      text.match(/(?:tva|t\.v\.a\.|vat)[^0-9€$]*([0-9\s,.]+)[€$\s]*/i) ||
-      text.match(/(?:montant\s*(?:tva|t\.v\.a\.|vat))[^0-9€$]*([0-9\s,.]+)[€$\s]*/i)
-    if (vatMatch) {
-      const cleanNumber = vatMatch[1].replace(/\s/g, "").replace(",", ".")
-      invoice.vatAmount = Number.parseFloat(cleanNumber)
-    }
-
-    // Extract currency
-    const currencyMatch = text.match(/(?:€|\$|£|MAD|DH|DHs|EUR|USD|GBP)/i)
-    if (currencyMatch) {
-      const currencyMap: Record<string, string> = {
-        "€": "EUR",
-        $: "USD",
-        "£": "GBP",
-        MAD: "MAD",
-        DH: "MAD",
-        DHs: "MAD",
-        EUR: "EUR",
-        USD: "USD",
-        GBP: "GBP",
-      }
-      invoice.currency = currencyMap[currencyMatch[0].toUpperCase()] || "MAD"
-    } else {
-      invoice.currency = "MAD" // Default currency
-    }
-
-    // Calculate confidence score based on how many fields were successfully extracted
-    const extractedFields = Object.keys(invoice).filter((key) => !!invoice[key]).length
-    const confidence = Math.min(1, extractedFields / 5) // 5 is the total number of fields we try to extract
-
+    // Fallback to empty structure
     return {
-      ...invoice,
-      confidence: confidence,
+      rawText: "",
+      invoice: {
+        supplier: "",
+        invoiceNumber: "",
+        invoiceDate: "",
+        amount: 0,
+        vatAmount: 0,
+        amountWithTax: 0,
+        currency: "MAD",
+        confidence: 0,
+      },
+      originalResponse: data,
     }
   }
 
@@ -330,6 +298,9 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
             </Badge>
             Charger un document
           </DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            Téléchargez un document pour extraction automatique des données
+          </DialogDescription>
         </DialogHeader>
 
         {currentStep === "upload" && (
