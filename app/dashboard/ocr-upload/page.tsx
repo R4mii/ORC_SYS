@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { UploadCloud } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import axios from "axios"
 
 export default function OcrUploadPage() {
   const [file, setFile] = useState<File | null>(null)
@@ -15,8 +14,8 @@ export default function OcrUploadPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null
-      setFile(selectedFile)
-      setError(null)
+    setFile(selectedFile)
+    setError(null)
   }
 
   const handleSubmit = async () => {
@@ -25,22 +24,24 @@ export default function OcrUploadPage() {
     setError(null)
 
     const formData = new FormData()
-    formData.append("invoice1", file) // Using "invoice1" as per your webhook requirements
+    formData.append("invoice1", file)
 
     try {
-      const response = await axios.post(
-        "https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload",
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      )
+      const response = await fetch("https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload", {
+        method: "POST",
+        body: formData,
+      })
 
-      console.log("OCR Response:", response.data)
-      setResult(response.data)
-    } catch (err: any) {
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log("OCR Response:", data)
+      setResult(data)
+    } catch (err) {
       console.error("Upload error:", err)
-      setError(err.message || "Upload failed")
+      setError(err instanceof Error ? err.message : "Upload failed")
     } finally {
       setLoading(false)
     }
@@ -57,24 +58,24 @@ export default function OcrUploadPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-            <Card>
-              <CardHeader>
+      <Card>
+        <CardHeader>
           <CardTitle>OCR Document Upload</CardTitle>
           <CardDescription>Upload an invoice for OCR processing</CardDescription>
-              </CardHeader>
+        </CardHeader>
         <CardContent>
           <div className="space-y-6">
             <div>
               <Input
-                    type="file"
-                    onChange={handleFileChange}
-                    accept=".pdf,.jpg,.jpeg,.png"
+                type="file"
+                onChange={handleFileChange}
+                accept=".pdf,.jpg,.jpeg,.png"
                 disabled={loading}
               />
               <p className="text-sm text-gray-500 mt-1">
                 Supported formats: PDF, JPG, PNG
               </p>
-                </div>
+            </div>
 
             <Button
               onClick={handleSubmit}
@@ -85,7 +86,7 @@ export default function OcrUploadPage() {
               {loading ? "Processing..." : "Upload Document"}
             </Button>
 
-                {error && (
+            {error && (
               <div className="text-red-500 text-sm">{error}</div>
             )}
 
@@ -142,9 +143,9 @@ export default function OcrUploadPage() {
                 </div>
               </div>
             )}
-                  </div>
-                </CardContent>
-              </Card>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
