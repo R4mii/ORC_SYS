@@ -21,7 +21,7 @@ interface OcrResult {
 export default function OcrUploader() {
   const [file, setFile] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [result, setResult] = useState<OcrResult | null>(null)
+  const [result, setResult] = useState<OcrResult[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,7 +64,13 @@ export default function OcrUploader() {
       }
 
       const data = await response.json()
-      setResult(data)
+      console.log('Raw response:', data)
+      
+      // If the response is an array, use the first item
+      const processedResult = Array.isArray(data) ? data : [data];
+      console.log('Processed result:', processedResult);
+      
+      setResult(processedResult)
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred")
       console.error("Upload error:", err)
@@ -116,58 +122,58 @@ export default function OcrUploader() {
         </div>
       )}
 
-      {result && (
+      {result && result[0]?.output && (
         <div className="bg-gray-50 p-4 rounded-md shadow">
           <h2 className="text-lg font-semibold mb-4">OCR Results</h2>
 
           <div className="space-y-4">
             <div>
               <h3 className="font-medium">Supplier:</h3>
-              <div className="mt-1 text-gray-700">{formatNestedText(result.output.Fournisseur)}</div>
+              <div className="mt-1 text-gray-700">{formatNestedText(result[0].output.Fournisseur)}</div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <h3 className="font-medium">Date:</h3>
-                <p className="mt-1 text-gray-700">{result.output.date}</p>
+                <p className="mt-1 text-gray-700">{result[0].output.date}</p>
               </div>
 
               <div>
                 <h3 className="font-medium">Company:</h3>
-                <p className="mt-1 text-gray-700">{result.output["name of the company"]}</p>
+                <p className="mt-1 text-gray-700">{result[0].output["name of the company"]}</p>
               </div>
 
               <div>
                 <h3 className="font-medium">Address:</h3>
-                <p className="mt-1 text-gray-700">{result.output.adresse}</p>
+                <p className="mt-1 text-gray-700">{result[0].output.adresse}</p>
               </div>
 
               <div>
                 <h3 className="font-medium">Invoice Number:</h3>
-                <p className="mt-1 text-gray-700">{result.output["Numéro de facture"]}</p>
+                <p className="mt-1 text-gray-700">{result[0].output["Numéro de facture"]}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <h3 className="font-medium">Amount (excl. tax):</h3>
-                <p className="mt-1 text-gray-700">{result.output["Montant HT"]}</p>
+                <p className="mt-1 text-gray-700">{result[0].output["Montant HT"]}</p>
               </div>
 
               <div>
                 <h3 className="font-medium">VAT Amount:</h3>
-                <p className="mt-1 text-gray-700">{result.output["Montant TVA"]}</p>
+                <p className="mt-1 text-gray-700">{result[0].output["Montant TVA"]}</p>
               </div>
 
               <div>
                 <h3 className="font-medium">Total Amount:</h3>
-                <p className="mt-1 text-gray-700">{result.output["Montant TTC"]}</p>
+                <p className="mt-1 text-gray-700">{result[0].output["Montant TTC"]}</p>
               </div>
             </div>
 
             <div>
               <h3 className="font-medium">Invoice Details:</h3>
-              <div className="mt-1 text-gray-700">{formatNestedText(result.output["Détail de facture"])}</div>
+              <div className="mt-1 text-gray-700">{formatNestedText(result[0].output["Détail de facture"])}</div>
             </div>
           </div>
         </div>
