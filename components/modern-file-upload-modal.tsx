@@ -133,12 +133,6 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
 
       const response = await fetch("https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload", {
         method: "POST",
-        headers: {
-          "accept": "*/*",
-          "sec-fetch-dest": "empty",
-          "sec-fetch-mode": "cors",
-          "sec-fetch-site": "cross-site",
-        },
         body: formData,
       })
 
@@ -148,11 +142,6 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
 
       const data = await response.json()
       console.log("OCR API response:", data)
-
-      setProgress(100)
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current)
-      }
 
       setOcrResults(data)
       setCurrentStep("results")

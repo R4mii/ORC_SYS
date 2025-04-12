@@ -136,14 +136,9 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
     simulateProgressUpdate()
 
     try {
-      // Create form data with the field name 'invoice1' as required by the n8n endpoint
       const formData = new FormData()
       formData.append("invoice1", files[0])
 
-      // Add a slight delay to simulate network latency
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-
-      // Directly submit to n8n endpoint
       const response = await fetch("https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload", {
         method: "POST",
         body: formData,
@@ -154,30 +149,15 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
       }
 
       const data = await response.json()
+      console.log("OCR response:", data) // Debug log
 
-      // Complete the progress
-      setProgress(100)
-
-      // Clear the interval
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current)
-      }
-
-      // Process the OCR results
-      const ocrResults = {
-        rawText: data.text || "",
-        invoice: extractInvoiceData(data.text || ""),
-      }
-
-      // Set OCR results and move to results step
-      setOcrResults(ocrResults)
+      // Don't transform the data
+      setOcrResults(data)
       setCurrentStep("results")
 
-      // Show success toast
       toast({
         title: "Traitement OCR terminé",
         description: "Les données ont été extraites avec succès",
-        variant: "default",
       })
     } catch (err) {
       console.error("OCR Error:", err)

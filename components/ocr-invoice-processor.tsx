@@ -96,26 +96,26 @@ export function OcrInvoiceProcessor() {
   }
 
   function extractInvoiceData(data: any): InvoiceData | null {
-    if (!data || !Array.isArray(data) || data.length === 0 || !data[0].output) {
-      console.error("Invalid OCR data format:", data)
-      return null
+    console.log("Processing data:", data); // Debug log
+
+    // Check if data is already in the correct format
+    if (data && Array.isArray(data) && data.length > 0 && data[0].output) {
+      const output = data[0].output;
+      return {
+        Fournisseur: output.Fournisseur || "",
+        date: output.date || "",
+        "name of the company": output["name of the company"] || "",
+        adresse: output.adresse || "",
+        "Numéro de facture": output["Numéro de facture"] || "",
+        "Montant HT": output["Montant HT"] || "",
+        "Montant TVA": output["Montant TVA"] || "",
+        "Montant TTC": output["Montant TTC"] || "",
+        "Détail de facture": output[" Détail de facture"] || "", // Note the space in key
+      };
     }
 
-    const output = data[0].output
-
-    const invoiceData: InvoiceData = {
-      Fournisseur: output.Fournisseur || "",
-      date: output.date || "",
-      "name of the company": output["name of the company"] || "",
-      adresse: output.adresse || "",
-      "Numéro de facture": output["Numéro de facture"] || "",
-      "Montant HT": output["Montant HT"] || "",
-      "Montant TVA": output["Montant TVA"] || "",
-      "Montant TTC": output["Montant TTC"] || "",
-      "Détail de facture": output[" Détail de facture"] || "",
-    }
-
-    return invoiceData
+    console.error("Invalid OCR data format:", data);
+    return null;
   }
 
   const processInvoice = async () => {

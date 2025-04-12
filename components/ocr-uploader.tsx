@@ -22,6 +22,7 @@ export default function OcrUploader() {
   const [file, setFile] = useState<File | null>(null)
   const [result, setResult] = useState<any>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -32,6 +33,7 @@ export default function OcrUploader() {
   const handleUpload = async () => {
     if (!file) return
     setIsUploading(true)
+    setError(null)
 
     try {
       const formData = new FormData()
@@ -39,12 +41,6 @@ export default function OcrUploader() {
 
       const response = await fetch("https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload", {
         method: "POST",
-        headers: {
-          "accept": "*/*",
-          "sec-fetch-dest": "empty",
-          "sec-fetch-mode": "cors",
-          "sec-fetch-site": "cross-site",
-        },
         body: formData,
       })
 
@@ -53,10 +49,16 @@ export default function OcrUploader() {
       }
 
       const data = await response.json()
-      console.log("Upload response:", data)
+      console.log("Raw response:", data)
+
+      if (!data || !Array.isArray(data) || !data[0]?.output) {
+        throw new Error("Invalid response format")
+      }
+
       setResult(data)
     } catch (error) {
       console.error("Upload error:", error)
+      setError(error instanceof Error ? error.message : "Upload failed")
     } finally {
       setIsUploading(false)
     }
@@ -105,7 +107,11 @@ export default function OcrUploader() {
         </button>
       </form>
 
-      {result && result[0]?.output ? (
+      {error ? (
+        <p className="text-red-500">{error}</p>
+      ) : isUploading ? (
+        <p>Uploading...</p>
+      ) : result && result[0]?.output ? (
         <div className="bg-gray-50 p-4 rounded-md shadow">
           <h2 className="text-lg font-semibold mb-4">Texte extrait</h2>
 
