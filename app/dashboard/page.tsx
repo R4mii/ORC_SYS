@@ -128,9 +128,15 @@ export default function DashboardPage() {
   }
 
   const handleUploadClick = (type: DocumentType) => {
-    // setCurrentUploadType(type)
-    // setUploadModalOpen(true)
-    router.push(`/invoices/${type}`)
+    if (type === "purchases") {
+      router.push(`/dashboard/invoices/achats`)
+    } else if (type === "sales") {
+      router.push(`/dashboard/invoices/ventes`)
+    } else {
+      // For other types, just open the modal directly
+      setCurrentUploadType(type)
+      setUploadModalOpen(true)
+    }
   }
 
   const handleUploadComplete = (result: any) => {
