@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useRouter, useParams, useSearchParams } from "next/navigation"
 import {
   ChevronLeft,
   ChevronRight,
@@ -24,6 +24,9 @@ import { Separator } from "@/components/ui/separator"
 export default function InvoiceDetailPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
+  const invoiceType = searchParams.get("type") || "purchases" // Default to purchases if not specified
+
   const [invoice, setInvoice] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [zoomLevel, setZoomLevel] = useState(100)
@@ -44,17 +47,22 @@ export default function InvoiceDetailPage() {
       return
     }
 
-    // Get invoice data from localStorage
-    const purchasesDocuments = localStorage.getItem(`purchases_${companyId}`)
-    if (purchasesDocuments) {
-      const invoices = JSON.parse(purchasesDocuments)
-      const foundInvoice = invoices.find((inv: any) => inv.id === invoiceId)
+    // Get invoice data from localStorage based on the invoice type
+    const storageKey = `${invoiceType}_${companyId}`
+    const documentsJson = localStorage.getItem(storageKey)
+
+    if (documentsJson) {
+      const documents = JSON.parse(documentsJson)
+      const foundInvoice = documents.find((inv: any) => inv.id === invoiceId)
 
       if (foundInvoice) {
         setInvoice(foundInvoice)
         setFormData({
           supplier: foundInvoice.partner || "",
-          accountCode: '61110000 Achats de marchandises "groupe A"',
+          accountCode:
+            invoiceType === "purchases"
+              ? '61110000 Achats de marchandises "groupe A"'
+              : "70110000 Ventes de produits finis",
           currency: "MAD",
           invoiceNumber: foundInvoice.invoiceNumber || "",
           invoiceDate: foundInvoice.invoiceDate || "",
@@ -69,12 +77,14 @@ export default function InvoiceDetailPage() {
           multipleTVAAmounts: false,
         })
       } else {
-        router.push("/dashboard/invoices")
+        router.push(`/dashboard/invoices/${invoiceType}`)
       }
+    } else {
+      router.push(`/dashboard/invoices/${invoiceType}`)
     }
 
     setLoading(false)
-  }, [params.id, router])
+  }, [params.id, router, invoiceType])
 
   const handleZoomIn = () => {
     setZoomLevel((prev) => Math.min(prev + 10, 200))
@@ -110,15 +120,17 @@ export default function InvoiceDetailPage() {
     }
 
     // Update in localStorage
-    const purchasesDocuments = localStorage.getItem(`purchases_${companyId}`)
-    if (purchasesDocuments) {
-      const invoices = JSON.parse(purchasesDocuments)
-      const updatedInvoices = invoices.map((inv: any) => (inv.id === invoice.id ? updatedInvoice : inv))
+    const storageKey = `${invoiceType}_${companyId}`
+    const documentsJson = localStorage.getItem(storageKey)
 
-      localStorage.setItem(`purchases_${companyId}`, JSON.stringify(updatedInvoices))
+    if (documentsJson) {
+      const documents = JSON.parse(documentsJson)
+      const updatedDocuments = documents.map((inv: any) => (inv.id === invoice.id ? updatedInvoice : inv))
+
+      localStorage.setItem(storageKey, JSON.stringify(updatedDocuments))
 
       // Redirect to invoices page
-      router.push("/dashboard/invoices")
+      router.push(`/dashboard/invoices/${invoiceType}`)
     }
   }
 
@@ -127,7 +139,10 @@ export default function InvoiceDetailPage() {
     if (invoice) {
       setFormData({
         supplier: invoice.partner || "",
-        accountCode: '61110000 Achats de marchandises "groupe A"',
+        accountCode:
+          invoiceType === "purchases"
+            ? '61110000 Achats de marchandises "groupe A"'
+            : "70110000 Ventes de produits finis",
         currency: "MAD",
         invoiceNumber: invoice.invoiceNumber || "",
         invoiceDate: invoice.invoiceDate || "",
@@ -165,12 +180,12 @@ export default function InvoiceDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard/invoices")}>
+          <Button variant="ghost" size="icon" onClick={() => router.push(`/dashboard/invoices/${invoiceType}`)}>
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <div className="flex items-center">
             <Menu className="h-5 w-5 mr-2" />
-            <h1 className="text-lg font-medium">Achats</h1>
+            <h1 className="text-lg font-medium">{invoiceType === "purchases" ? "Achats" : "Ventes"}</h1>
           </div>
           <div className="text-sm text-muted-foreground ml-2">{invoice.description || invoice.name}</div>
         </div>
@@ -238,7 +253,7 @@ export default function InvoiceDetailPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Fournisseur</label>
+                <label className="text-sm font-medium">{invoiceType === "purchases" ? "Fournisseur" : "Client"}</label>
                 <Input
                   value={formData.supplier}
                   onChange={(e) => handleInputChange("supplier", e.target.value)}
@@ -247,7 +262,9 @@ export default function InvoiceDetailPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Compte de charge</label>
+                <label className="text-sm font-medium">
+                  Compte de {invoiceType === "purchases" ? "charge" : "produit"}
+                </label>
                 <Input
                   value={formData.accountCode}
                   onChange={(e) => handleInputChange("accountCode", e.target.value)}
@@ -454,15 +471,21 @@ export default function InvoiceDetailPage() {
                   </div>
 
                   <div className="grid grid-cols-6 gap-2 text-sm py-2 border-b">
-                    <div>61110000 Achats de...</div>
+                    <div>{invoiceType === "purchases" ? "61110000 Achats de..." : "70110000 Ventes de..."}</div>
                     <div>
-                      HITECK LAND - N<br />
-                      FA21 20210460
+                      {invoice.partner} - N<br />
+                      {invoice.invoiceNumber}
                     </div>
-                    <div className="text-right">5 829,20 DH</div>
-                    <div className="text-right">0,00 DH</div>
+                    <div className="text-right">
+                      {invoiceType === "purchases" ? formData.amountHT.toFixed(2) : "0,00"} DH
+                    </div>
+                    <div className="text-right">
+                      {invoiceType === "purchases" ? "0,00" : formData.amountHT.toFixed(2)} DH
+                    </div>
                     <div>
-                      <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">TVA 20% ACHATS</span>
+                      <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                        TVA 20% {invoiceType === "purchases" ? "ACHATS" : "VENTES"}
+                      </span>
                     </div>
                     <div className="flex items-center">
                       <span>140 - Prestations de...</span>
@@ -473,25 +496,33 @@ export default function InvoiceDetailPage() {
                   </div>
 
                   <div className="grid grid-cols-6 gap-2 text-sm py-2 border-b">
-                    <div>34552200 Etat - TV...</div>
+                    <div>{invoiceType === "purchases" ? "34552200 Etat - TV..." : "44571100 Etat - TV..."}</div>
                     <div>
-                      HITECK LAND - N<br />
-                      FA21 20210460
+                      {invoice.partner} - N<br />
+                      {invoice.invoiceNumber}
                     </div>
-                    <div className="text-right">896,80 DH</div>
-                    <div className="text-right">0,00 DH</div>
+                    <div className="text-right">
+                      {invoiceType === "purchases" ? formData.amountTVA.toFixed(2) : "0,00"} DH
+                    </div>
+                    <div className="text-right">
+                      {invoiceType === "purchases" ? "0,00" : formData.amountTVA.toFixed(2)} DH
+                    </div>
                     <div></div>
                     <div></div>
                   </div>
 
                   <div className="grid grid-cols-6 gap-2 text-sm py-2 border-b">
-                    <div>44110000 Fournisse...</div>
+                    <div>{invoiceType === "purchases" ? "44110000 Fournisse..." : "41110000 Clients..."}</div>
                     <div>
-                      HITECK LAND - N<br />
-                      FA21 20210460
+                      {invoice.partner} - N<br />
+                      {invoice.invoiceNumber}
                     </div>
-                    <div className="text-right">0,00 DH</div>
-                    <div className="text-right">6 726,00 DH</div>
+                    <div className="text-right">
+                      {invoiceType === "purchases" ? "0,00" : formData.amountTTC.toFixed(2)} DH
+                    </div>
+                    <div className="text-right">
+                      {invoiceType === "purchases" ? formData.amountTTC.toFixed(2) : "0,00"} DH
+                    </div>
                     <div></div>
                     <div></div>
                   </div>
@@ -504,8 +535,8 @@ export default function InvoiceDetailPage() {
 
                   <div className="flex justify-end mt-4 text-sm font-medium">
                     <div className="grid grid-cols-2 gap-8">
-                      <div className="text-right">6 726,00</div>
-                      <div className="text-right">6 726,00</div>
+                      <div className="text-right">{formData.amountTTC.toFixed(2)}</div>
+                      <div className="text-right">{formData.amountTTC.toFixed(2)}</div>
                     </div>
                   </div>
                 </div>

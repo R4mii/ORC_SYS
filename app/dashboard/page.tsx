@@ -128,8 +128,9 @@ export default function DashboardPage() {
   }
 
   const handleUploadClick = (type: DocumentType) => {
-    setCurrentUploadType(type)
-    setUploadModalOpen(true)
+    // setCurrentUploadType(type)
+    // setUploadModalOpen(true)
+    router.push(`/invoices/${type}`)
   }
 
   const handleUploadComplete = (result: any) => {
