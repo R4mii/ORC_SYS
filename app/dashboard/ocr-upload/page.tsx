@@ -47,15 +47,6 @@ export default function OcrUploadPage() {
     }
   }
 
-  const formatNestedText = (text: string) => {
-    if (!text) return null
-    return text.split(/\n|<br>/).map((line, i) => (
-      <div key={i} className="py-1">
-        {line.trim()}
-      </div>
-    ))
-  }
-
   return (
     <div className="container mx-auto px-4 py-8">
       <Card>
@@ -90,57 +81,12 @@ export default function OcrUploadPage() {
               <div className="text-red-500 text-sm">{error}</div>
             )}
 
-            {result && result[0]?.output && (
-              <div className="mt-6 space-y-4">
-                <h3 className="font-medium">Extracted Data:</h3>
-                <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                  <div>
-                    <span className="font-medium">Fournisseur:</span>
-                    <div className="text-gray-700">
-                      {formatNestedText(result[0].output.Fournisseur)}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="font-medium">Date:</span>
-                    <div className="text-gray-700">{result[0].output.date}</div>
-                  </div>
-                  <div>
-                    <span className="font-medium">Company:</span>
-                    <div className="text-gray-700">
-                      {result[0].output["name of the company"]}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="font-medium">Invoice Number:</span>
-                    <div className="text-gray-700">
-                      {result[0].output["Numéro de facture"]}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="font-medium">Amount (HT):</span>
-                    <div className="text-gray-700">
-                      {result[0].output["Montant HT"]}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="font-medium">TVA:</span>
-                    <div className="text-gray-700">
-                      {result[0].output["Montant TVA"]}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="font-medium">Total (TTC):</span>
-                    <div className="text-gray-700">
-                      {result[0].output["Montant TTC"]}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="font-medium">Details:</span>
-                    <div className="text-gray-700">
-                      {formatNestedText(result[0].output[" Détail de facture"])}
-                    </div>
-                  </div>
-                </div>
+            {result && (
+              <div className="mt-6">
+                <h3 className="font-medium mb-2">Aperçu:</h3>
+                <pre className="bg-gray-50 p-4 rounded-lg overflow-auto max-h-[500px] text-sm">
+                  {JSON.stringify(result, null, 2)}
+                </pre>
               </div>
             )}
           </div>
