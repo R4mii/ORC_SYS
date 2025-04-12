@@ -172,20 +172,33 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
 
   const handleConfirm = () => {
     if (ocrResults) {
+      console.log("Processing OCR results:", ocrResults); // Debug log
+
+      // Extract data from the array format response
+      const output = ocrResults[0]?.output || {};
+      
       const result = {
-        ...ocrResults,
+        supplier: output.Fournisseur || "",
+        invoiceNumber: output["Numéro de facture"] || "",
+        invoiceDate: output.date || "",
+        amount: output["Montant HT"] || "0",
+        vatAmount: output["Montant TVA"] || "0",
+        amountWithTax: output["Montant TTC"] || "0",
+        details: output[" Détail de facture"] || "",
         originalFile: {
           name: files[0].name,
           type: files[0].type,
           size: files[0].size,
         },
         documentType: documentType,
-      }
+        rawResponse: ocrResults // Keep the original response
+      };
 
-      onUploadComplete(result)
-      onClose()
+      console.log("Processed result:", result); // Debug log
+      onUploadComplete(result);
+      onClose();
     }
-  }
+  };
 
   const getDocumentTypeLabel = () => {
     switch (documentType) {
