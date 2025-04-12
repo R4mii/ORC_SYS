@@ -172,11 +172,11 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
 
   const handleConfirm = () => {
     if (ocrResults) {
-      console.log("Processing OCR results:", ocrResults); // Debug log
+      console.log("Processing OCR results:", ocrResults) // Debug log
 
       // Extract data from the array format response
-      const output = ocrResults[0]?.output || {};
-      
+      const output = ocrResults[0]?.output || {}
+
       const result = {
         supplier: output.Fournisseur || "",
         invoiceNumber: output["Numéro de facture"] || "",
@@ -191,14 +191,14 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
           size: files[0].size,
         },
         documentType: documentType,
-        rawResponse: ocrResults // Keep the original response
-      };
+        rawResponse: ocrResults, // Keep the original response
+      }
 
-      console.log("Processed result:", result); // Debug log
-      onUploadComplete(result);
-      onClose();
+      console.log("Processed result:", result) // Debug log
+      onUploadComplete(result)
+      onClose()
     }
-  };
+  }
 
   const getDocumentTypeLabel = () => {
     switch (documentType) {

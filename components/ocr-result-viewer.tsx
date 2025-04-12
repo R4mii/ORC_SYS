@@ -21,11 +21,11 @@ export function OcrResultViewer({ data, isProcessing, processingProgress, onSave
   const [editedData, setEditedData] = useState<any>(null)
 
   useEffect(() => {
-    console.log("Raw OCR data:", data); // Debug log
+    console.log("Raw OCR data:", data) // Debug log
     if (data && Array.isArray(data) && data.length > 0 && data[0].output) {
-      const ocrOutput = data[0].output;
-      console.log("Processing OCR output:", ocrOutput); // Debug log
-      
+      const ocrOutput = data[0].output
+      console.log("Processing OCR output:", ocrOutput) // Debug log
+
       setEditedData({
         Fournisseur: ocrOutput.Fournisseur || "Not available",
         date: ocrOutput.date || "Not available",
@@ -35,12 +35,12 @@ export function OcrResultViewer({ data, isProcessing, processingProgress, onSave
         "Montant TVA": ocrOutput["Montant TVA"] || "Not available",
         "Montant TTC": ocrOutput["Montant TTC"] || "Not available",
         "Détail de facture": ocrOutput[" Détail de facture"] || "Not available",
-      });
+      })
     } else {
-      console.log("Invalid or empty OCR data:", data);
-      setEditedData(null);
+      console.log("Invalid or empty OCR data:", data)
+      setEditedData(null)
     }
-  }, [data]);
+  }, [data])
 
   const handleFieldChange = (field: string, value: any) => {
     setEditedData((prev) => ({

@@ -4,31 +4,6 @@ import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import {
-  FileUp,
-  Check,
-  FileText,
-  Save,
-  RotateCw,
-  ZoomIn,
-  ZoomOut,
-  Edit,
-  Eye,
-  Loader2,
-  ArrowRight,
-  Info,
-  AlertCircle,
-} from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { ModernFileUploadModal } from "@/components/modern-file-upload-modal"
@@ -349,16 +324,16 @@ export default function OcrUploadPage() {
     <ErrorBoundary>
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold mb-6">OCR Document Upload</h1>
-        
-        <ModernFileUploadModal 
+
+        <ModernFileUploadModal
           open={true}
           onClose={() => router.back()}
           documentType="invoice"
           onUploadComplete={(result) => {
-            console.log('Upload complete:', result)
+            console.log("Upload complete:", result)
           }}
         />
-                          </div>
+      </div>
     </ErrorBoundary>
   )
 }

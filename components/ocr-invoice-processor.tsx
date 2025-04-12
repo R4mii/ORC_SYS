@@ -96,11 +96,11 @@ export function OcrInvoiceProcessor() {
   }
 
   function extractInvoiceData(data: any): InvoiceData | null {
-    console.log("Processing data:", data); // Debug log
+    console.log("Processing data:", data) // Debug log
 
     // Check if data is already in the correct format
     if (data && Array.isArray(data) && data.length > 0 && data[0].output) {
-      const output = data[0].output;
+      const output = data[0].output
       return {
         Fournisseur: output.Fournisseur || "",
         date: output.date || "",
@@ -111,11 +111,11 @@ export function OcrInvoiceProcessor() {
         "Montant TVA": output["Montant TVA"] || "",
         "Montant TTC": output["Montant TTC"] || "",
         "Détail de facture": output[" Détail de facture"] || "", // Note the space in key
-      };
+      }
     }
 
-    console.error("Invalid OCR data format:", data);
-    return null;
+    console.error("Invalid OCR data format:", data)
+    return null
   }
 
   const processInvoice = async () => {
@@ -132,7 +132,7 @@ export function OcrInvoiceProcessor() {
       const response = await fetch("https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload", {
         method: "POST",
         headers: {
-          "accept": "*/*",
+          accept: "*/*",
           "sec-fetch-dest": "empty",
           "sec-fetch-mode": "cors",
           "sec-fetch-site": "cross-site",

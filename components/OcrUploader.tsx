@@ -64,12 +64,12 @@ export default function OcrUploader() {
       }
 
       const data = await response.json()
-      console.log('Raw response:', data)
-      
+      console.log("Raw response:", data)
+
       // If the response is an array, use the first item
-      const processedResult = Array.isArray(data) ? data : [data];
-      console.log('Processed result:', processedResult);
-      
+      const processedResult = Array.isArray(data) ? data : [data]
+      console.log("Processed result:", processedResult)
+
       setResult(processedResult)
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred")

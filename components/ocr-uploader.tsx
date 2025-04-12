@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 
 import { useState } from "react"
 
@@ -65,14 +65,14 @@ export default function OcrUploader() {
   }
 
   const formatNestedText = (text: string) => {
-    if (!text) return null;
+    if (!text) return null
     return text.split(/\n|<br>/).map((line, i) => (
       <React.Fragment key={i}>
         {line.trim()}
         <br />
       </React.Fragment>
-    ));
-  };
+    ))
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-4">

@@ -5,24 +5,25 @@ export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   // Define public paths that don't require authentication
-  const isPublicPath = path === "/auth/login" || path === "/auth/register" || path === "/auth/forgot-password"
+  const isPublicPath =
+    path === "/auth/login" ||
+    path === "/auth/register" ||
+    path === "/auth/forgot-password" ||
+    path === "/" ||
+    path.startsWith("/about") ||
+    path.startsWith("/pricing") ||
+    path.startsWith("/services") ||
+    path.startsWith("/solutions") ||
+    path.startsWith("/contact")
 
-  // Get the token from localStorage (client-side only)
-  // For server-side middleware, we need to use cookies instead
-  const token = request.cookies.get("token")?.value || ""
-
-  // For this demo, we'll simplify the middleware to allow access to dashboard routes
-  // In a real app, you would verify the token properly
-
-  // If the path is public and there's a token, redirect to dashboard
-  if (isPublicPath && token) {
-    return NextResponse.redirect(new URL("/dashboard", request.url))
-  }
+  // For this demo, we'll simplify the middleware
+  // Since we're using localStorage for auth in this demo app,
+  // we'll just allow access to all routes and handle auth on the client side
 
   return NextResponse.next()
 }
 
 // Configure the middleware to run on specific paths
 export const config = {
-  matcher: ["/auth/:path*"],
+  matcher: ["/auth/:path*", "/dashboard/:path*"],
 }
