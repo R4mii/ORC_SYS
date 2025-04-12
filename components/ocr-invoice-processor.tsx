@@ -126,38 +126,28 @@ export function OcrInvoiceProcessor() {
     setError(null)
 
     try {
-      // Create form data
       const formData = new FormData()
-      formData.append("file", file)
+      formData.append("invoice1", file)
 
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(progressInterval)
-            return 90
-          }
-          return prev + 10
-        })
-      }, 300)
-
-      // Send to webhook
       const response = await fetch("https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload", {
         method: "POST",
+        headers: {
+          "accept": "*/*",
+          "sec-fetch-dest": "empty",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-site": "cross-site",
+        },
         body: formData,
       })
-
-      clearInterval(progressInterval)
-      setProgress(100)
 
       if (!response.ok) {
         throw new Error(`Error: ${response.status} ${response.statusText}`)
       }
 
       const data = await response.json()
+      console.log("OCR Response:", data)
 
       const extractedData = extractInvoiceData(data)
-
       if (extractedData) {
         setResult(extractedData)
         setActiveTab("result")
@@ -165,10 +155,12 @@ export function OcrInvoiceProcessor() {
         throw new Error("Failed to extract invoice data from the response.")
       }
     } catch (err) {
+      console.error("Processing error:", err)
       setError(err instanceof Error ? err.message : "An error occurred during processing")
       setActiveTab("upload")
     } finally {
       setIsProcessing(false)
+      setProgress(100)
     }
   }
 

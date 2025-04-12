@@ -21,9 +21,11 @@ export function OcrResultViewer({ data, isProcessing, processingProgress, onSave
   const [editedData, setEditedData] = useState<any>(null)
 
   useEffect(() => {
-    console.log("Received data:", data); // Debug log
+    console.log("Raw OCR data:", data); // Debug log
     if (data && Array.isArray(data) && data.length > 0 && data[0].output) {
       const ocrOutput = data[0].output;
+      console.log("Processing OCR output:", ocrOutput); // Debug log
+      
       setEditedData({
         Fournisseur: ocrOutput.Fournisseur || "Not available",
         date: ocrOutput.date || "Not available",
@@ -35,9 +37,10 @@ export function OcrResultViewer({ data, isProcessing, processingProgress, onSave
         "Détail de facture": ocrOutput[" Détail de facture"] || "Not available",
       });
     } else {
-      console.log("Invalid or empty OCR data");
+      console.log("Invalid or empty OCR data:", data);
+      setEditedData(null);
     }
-  }, [data])
+  }, [data]);
 
   const handleFieldChange = (field: string, value: any) => {
     setEditedData((prev) => ({
@@ -139,9 +142,15 @@ export function OcrResultViewer({ data, isProcessing, processingProgress, onSave
               <CardDescription>Texte extrait du document</CardDescription>
             </CardHeader>
             <CardContent>
-              <pre className="whitespace-pre-wrap bg-muted p-4 rounded-md overflow-auto max-h-[400px]">
-                {editedData?.[" Détail de facture"] || "Aucun texte extrait"}
-              </pre>
+              {isProcessing ? (
+                <div>Processing... {processingProgress}%</div>
+              ) : editedData ? (
+                <pre className="whitespace-pre-wrap bg-muted p-4 rounded-md overflow-auto max-h-[400px]">
+                  {editedData?.[" Détail de facture"] || "Aucun texte extrait"}
+                </pre>
+              ) : (
+                <div>Aucun texte extrait</div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
