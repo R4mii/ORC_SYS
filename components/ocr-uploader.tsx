@@ -14,14 +14,14 @@ interface OcrResult {
     "Montant HT": string
     "Montant TVA": string
     "Montant TTC": string
-    "Détail de facture": string
+    " Détail de facture": string
   }
 }
 
 export default function OcrUploader() {
   const [file, setFile] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [result, setResult] = useState<OcrResult | null>(null)
+  const [result, setResult] = useState<OcrResult[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,35 +46,35 @@ export default function OcrUploader() {
       const formData = new FormData()
       formData.append("file", file)
 
-      // You can either use the API route or directly call the webhook
-      // Option 1: Using our API route
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
+      console.log('Uploading file:', file.name)
+      const response = await fetch('YOUR_N8N_WEBHOOK_URL', {
+        method: 'POST',
+        body: formData
       })
-
-      // Option 2: Direct call to webhook (if CORS allows)
-      // const response = await fetch('https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload', {
-      //   method: 'POST',
-      //   body: formData,
-      // });
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status} ${response.statusText}`)
-      }
-
+      
       const data = await response.json()
+      console.log('Raw response:', data)
+      console.log('Response structure:', {
+        isArray: Array.isArray(data),
+        hasOutput: data[0]?.output ? 'yes' : 'no',
+        firstItem: data[0]
+      })
+      
       setResult(data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An unknown error occurred")
-      console.error("Upload error:", err)
+    } catch (error) {
+      console.error('Upload error:', error)
     } finally {
       setIsLoading(false)
     }
   }
 
   const formatNestedText = (text: string) => {
-    return text.split("\n").map((line, i) => <div key={i}>{line}</div>)
+    return text.split('\n').map((line, i) => (
+      <React.Fragment key={i}>
+        {line}
+        <br />
+      </React.Fragment>
+    ))
   }
 
   return (
@@ -116,61 +116,63 @@ export default function OcrUploader() {
         </div>
       )}
 
-      {result && (
+      {result && result[0]?.output ? (
         <div className="bg-gray-50 p-4 rounded-md shadow">
-          <h2 className="text-lg font-semibold mb-4">OCR Results</h2>
+          <h2 className="text-lg font-semibold mb-4">Texte extrait</h2>
 
           <div className="space-y-4">
             <div>
-              <h3 className="font-medium">Supplier:</h3>
-              <div className="mt-1 text-gray-700">{formatNestedText(result.output.Fournisseur)}</div>
+              <h3 className="font-medium">Fournisseur:</h3>
+              <div className="mt-1 text-gray-700">{formatNestedText(result[0].output.Fournisseur)}</div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <h3 className="font-medium">Date:</h3>
-                <p className="mt-1 text-gray-700">{result.output.date}</p>
+                <p className="mt-1 text-gray-700">{result[0].output.date}</p>
               </div>
 
               <div>
-                <h3 className="font-medium">Company:</h3>
-                <p className="mt-1 text-gray-700">{result.output["name of the company"]}</p>
+                <h3 className="font-medium">Société:</h3>
+                <p className="mt-1 text-gray-700">{result[0].output["name of the company"]}</p>
               </div>
 
               <div>
-                <h3 className="font-medium">Address:</h3>
-                <p className="mt-1 text-gray-700">{result.output.adresse}</p>
+                <h3 className="font-medium">Adresse:</h3>
+                <p className="mt-1 text-gray-700">{result[0].output.adresse}</p>
               </div>
 
               <div>
-                <h3 className="font-medium">Invoice Number:</h3>
-                <p className="mt-1 text-gray-700">{result.output["Numéro de facture"]}</p>
+                <h3 className="font-medium">Numéro de facture:</h3>
+                <p className="mt-1 text-gray-700">{result[0].output["Numéro de facture"]}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <h3 className="font-medium">Amount (excl. tax):</h3>
-                <p className="mt-1 text-gray-700">{result.output["Montant HT"]}</p>
+                <h3 className="font-medium">Montant HT:</h3>
+                <p className="mt-1 text-gray-700">{result[0].output["Montant HT"]}</p>
               </div>
 
               <div>
-                <h3 className="font-medium">VAT Amount:</h3>
-                <p className="mt-1 text-gray-700">{result.output["Montant TVA"]}</p>
+                <h3 className="font-medium">Montant TVA:</h3>
+                <p className="mt-1 text-gray-700">{result[0].output["Montant TVA"]}</p>
               </div>
 
               <div>
-                <h3 className="font-medium">Total Amount:</h3>
-                <p className="mt-1 text-gray-700">{result.output["Montant TTC"]}</p>
+                <h3 className="font-medium">Montant TTC:</h3>
+                <p className="mt-1 text-gray-700">{result[0].output["Montant TTC"]}</p>
               </div>
             </div>
 
             <div>
-              <h3 className="font-medium">Invoice Details:</h3>
-              <div className="mt-1 text-gray-700">{formatNestedText(result.output["Détail de facture"])}</div>
+              <h3 className="font-medium">Détail de facture:</h3>
+              <div className="mt-1 text-gray-700">{formatNestedText(result[0].output[" Détail de facture"])}</div>
             </div>
           </div>
         </div>
+      ) : (
+        <p>Aucun texte extrait</p>
       )}
     </div>
   )
