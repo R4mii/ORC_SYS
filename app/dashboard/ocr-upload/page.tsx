@@ -347,7 +347,18 @@ export default function OcrUploadPage() {
 
   return (
     <ErrorBoundary>
-      <ModernFileUploadModal {...props} />
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6">OCR Document Upload</h1>
+        
+        <ModernFileUploadModal 
+          open={true}
+          onClose={() => router.back()}
+          documentType="invoice"
+          onUploadComplete={(result) => {
+            console.log('Upload complete:', result)
+          }}
+        />
+                          </div>
     </ErrorBoundary>
   )
 }
