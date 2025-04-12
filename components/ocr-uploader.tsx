@@ -20,66 +20,55 @@ interface OcrResult {
 
 export default function OcrUploader() {
   const [file, setFile] = useState<File | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [result, setResult] = useState<OcrResult[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [result, setResult] = useState<any>(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setFile(e.target.files[0])
-      setError(null)
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!file) {
-      setError("Please select a file first")
-      return
-    }
-
-    setIsLoading(true)
-    setError(null)
-    setResult(null)
+  const handleUpload = async () => {
+    if (!file) return
+    setIsUploading(true)
 
     try {
       const formData = new FormData()
-      formData.append("file", file)
+      formData.append("invoice1", file)
 
-      console.log('Uploading file:', file.name)
-      const response = await fetch('YOUR_N8N_WEBHOOK_URL', {
-        method: 'POST',
-        body: formData
+      const response = await fetch("https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload", {
+        method: "POST",
+        body: formData,
       })
-      
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.status}`)
+      }
+
       const data = await response.json()
-      console.log('Raw response:', data)
-      console.log('Response structure:', {
-        isArray: Array.isArray(data),
-        hasOutput: data[0]?.output ? 'yes' : 'no',
-        firstItem: data[0]
-      })
-      
+      console.log("Upload response:", data)
       setResult(data)
     } catch (error) {
-      console.error('Upload error:', error)
+      console.error("Upload error:", error)
     } finally {
-      setIsLoading(false)
+      setIsUploading(false)
     }
   }
 
   const formatNestedText = (text: string) => {
-    return text.split('\n').map((line, i) => (
+    if (!text) return null;
+    return text.split(/\n|<br>/).map((line, i) => (
       <React.Fragment key={i}>
-        {line}
+        {line.trim()}
         <br />
       </React.Fragment>
-    ))
-  }
+    ));
+  };
 
   return (
     <div className="max-w-2xl mx-auto p-4">
-      <form onSubmit={handleSubmit} className="mb-6">
+      <form onSubmit={handleUpload} className="mb-6">
         <div className="mb-4">
           <label htmlFor="fileInput" className="block text-sm font-medium text-gray-700 mb-2">
             Select Invoice File
@@ -101,20 +90,14 @@ export default function OcrUploader() {
 
         <button
           type="submit"
-          disabled={isLoading || !file}
+          disabled={isUploading || !file}
           className={`w-full py-2 px-4 rounded-md ${
-            isLoading || !file ? "bg-gray-300 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 text-white"
+            isUploading || !file ? "bg-gray-300 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 text-white"
           } font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
         >
-          {isLoading ? "Processing..." : "Process Invoice"}
+          {isUploading ? "Processing..." : "Process Invoice"}
         </button>
       </form>
-
-      {error && (
-        <div className="bg-red-50 p-4 rounded-md mb-6">
-          <p className="text-red-700">{error}</p>
-        </div>
-      )}
 
       {result && result[0]?.output ? (
         <div className="bg-gray-50 p-4 rounded-md shadow">

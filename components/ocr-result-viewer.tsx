@@ -21,19 +21,21 @@ export function OcrResultViewer({ data, isProcessing, processingProgress, onSave
   const [editedData, setEditedData] = useState<any>(null)
 
   useEffect(() => {
-    if (data && Array.isArray(data) && data.length > 0) {
-      const ocrOutput = data[0].output
+    console.log("Received data:", data); // Debug log
+    if (data && Array.isArray(data) && data.length > 0 && data[0].output) {
+      const ocrOutput = data[0].output;
       setEditedData({
         Fournisseur: ocrOutput.Fournisseur || "Not available",
         date: ocrOutput.date || "Not available",
         "name of the company": ocrOutput["name of the company"] || "Not available",
-        adresse: ocrOutput.adresse || "Not available",
         "Numéro de facture": ocrOutput["Numéro de facture"] || "Not available",
         "Montant HT": ocrOutput["Montant HT"] || "Not available",
         "Montant TVA": ocrOutput["Montant TVA"] || "Not available",
         "Montant TTC": ocrOutput["Montant TTC"] || "Not available",
-        "Détail de facture": ocrOutput[" Détail de facture"] || "Not available", // Corrected field name
-      })
+        "Détail de facture": ocrOutput[" Détail de facture"] || "Not available",
+      });
+    } else {
+      console.log("Invalid or empty OCR data");
     }
   }, [data])
 

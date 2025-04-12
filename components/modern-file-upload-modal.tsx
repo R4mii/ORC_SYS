@@ -131,8 +131,6 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       const formData = new FormData()
       formData.append("invoice1", files[0])
 
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-
       const response = await fetch("https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload", {
         method: "POST",
         body: formData,
@@ -143,23 +141,14 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       }
 
       const data = await response.json()
-      console.log("OCR API response:", data) // Log the entire response
+      console.log("OCR API response:", data)
 
       setProgress(100)
-
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current)
       }
 
-      // Prepare the OCR results with rawText included
-      const processedResults = {
-        ...data,
-        // Make sure rawText is included for OcrResultViewer
-        rawText: data[0]?.output?.[" Détail de facture"] || data.text || "No raw text available", // Fallback if not found
-      }
-
-      console.log("Processed OCR results:", processedResults)
-      setOcrResults(processedResults)
+      setOcrResults(data)
       setCurrentStep("results")
 
       toast({
