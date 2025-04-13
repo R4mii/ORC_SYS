@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { FileUp, X, FileText, ImageIcon, Upload, ArrowRight, AlertTriangle, Check } from "lucide-react"
@@ -143,9 +143,7 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       const data = await response.json()
       console.log("OCR API response:", data)
 
-      // Process the OCR response
-      const processedData = processOcrResponse(data)
-      setOcrResults(processedData)
+      setOcrResults(data)
       setCurrentStep("results")
 
       toast({
@@ -172,83 +170,31 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     }
   }
 
-  // Process the OCR response to handle different formats
-  const processOcrResponse = (data: any) => {
-    // Check if data is an array
-    if (Array.isArray(data) && data.length > 0) {
-      const firstItem = data[0]
-
-      // Extract output if it exists
-      const output = firstItem.output || {}
-
-      // Create a standardized structure
-      return {
-        rawText: firstItem.text || "",
-        invoice: {
-          supplier: output.Fournisseur || "",
-          invoiceNumber: output["Numéro de facture"] || "",
-          invoiceDate: output.date || "",
-          amount: Number.parseFloat(output["Montant HT"] || "0"),
-          vatAmount: Number.parseFloat(output["Montant TVA"] || "0"),
-          amountWithTax: Number.parseFloat(output["Montant TTC"] || "0"),
-          currency: "MAD",
-          confidence: 0.8, // Default confidence
-        },
-        originalResponse: data,
-      }
-    } else if (data && typeof data === "object") {
-      // If it's already in the expected format, return it
-      if (data.invoice) return data
-
-      // Otherwise, try to extract data from the object
-      return {
-        rawText: data.text || "",
-        invoice: {
-          supplier: data.supplier || "",
-          invoiceNumber: data.invoiceNumber || "",
-          invoiceDate: data.date || "",
-          amount: Number.parseFloat(data.amount || "0"),
-          vatAmount: Number.parseFloat(data.vatAmount || "0"),
-          amountWithTax: Number.parseFloat(data.total || "0"),
-          currency: data.currency || "MAD",
-          confidence: data.confidence || 0.5,
-        },
-        originalResponse: data,
-      }
-    }
-
-    // Fallback to empty structure
-    return {
-      rawText: "",
-      invoice: {
-        supplier: "",
-        invoiceNumber: "",
-        invoiceDate: "",
-        amount: 0,
-        vatAmount: 0,
-        amountWithTax: 0,
-        currency: "MAD",
-        confidence: 0,
-      },
-      originalResponse: data,
-    }
-  }
-
   const handleConfirm = () => {
     if (ocrResults) {
       console.log("Processing OCR results:", ocrResults) // Debug log
 
+      // Extract data from the array format response
+      const output = ocrResults[0]?.output || {}
+
       const result = {
-        ...ocrResults,
+        supplier: output.Fournisseur || "",
+        invoiceNumber: output["Numéro de facture"] || "",
+        invoiceDate: output.date || "",
+        amount: output["Montant HT"] || "0",
+        vatAmount: output["Montant TVA"] || "0",
+        amountWithTax: output["Montant TTC"] || "0",
+        details: output[" Détail de facture"] || "",
         originalFile: {
           name: files[0].name,
           type: files[0].type,
           size: files[0].size,
         },
         documentType: documentType,
+        rawResponse: ocrResults, // Keep the original response
       }
 
-      // Call the completion handler
+      console.log("Processed result:", result) // Debug log
       onUploadComplete(result)
       onClose()
     }
@@ -290,9 +236,6 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
             </Badge>
             Charger un document
           </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
-            Téléchargez un document pour extraction automatique des données
-          </DialogDescription>
         </DialogHeader>
 
         {currentStep === "upload" && (
