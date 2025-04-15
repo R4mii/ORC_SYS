@@ -85,7 +85,7 @@ export function InvoiceUploadForm({
       formData.append("invoice1", file)
 
       // Directly submit to n8n endpoint
-      const response = await fetch("https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload", {
+      const response = await fetch("https://ocr-sys-u41198.vm.elestio.app/webhook/upload", {
         method: "POST",
         body: formData,
       })

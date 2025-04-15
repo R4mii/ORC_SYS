@@ -76,9 +76,9 @@
     "@aws-sdk/s3-request-presigner": "latest",
     "crypto": "latest",
     "isomorphic-dompurify": "latest",
-    "cors": "latest",
     "jspdf-autotable": "latest",
-    "framer-motion": "latest"
+    "framer-motion": "latest",
+    "cors": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

@@ -129,7 +129,7 @@ export function OcrInvoiceProcessor() {
       const formData = new FormData()
       formData.append("invoice1", file)
 
-      const response = await fetch("https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload", {
+      const response = await fetch("https://ocr-sys-u41198.vm.elestio.app/webhook/upload", {
         method: "POST",
         headers: {
           accept: "*/*",

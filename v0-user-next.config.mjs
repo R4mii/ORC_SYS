@@ -27,6 +27,8 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
+  // Add proper output configuration
+  output: 'standalone',
 }
 
 if (userConfig) {
