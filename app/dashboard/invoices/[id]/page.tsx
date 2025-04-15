@@ -20,7 +20,6 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function InvoiceDetailPage() {
   const router = useRouter()
@@ -56,19 +55,22 @@ export default function InvoiceDetailPage() {
         setInvoice(foundInvoice)
         setFormData({
           supplier: foundInvoice.partner || "",
-          accountCode: '61110000 Achats de marchandises "groupe A"',
-          currency: "MAD",
+          accountCode: foundInvoice.accountCode || '61110000 Achats de marchandises "groupe A"',
+          currency: foundInvoice.currency || "MAD",
           invoiceNumber: foundInvoice.invoiceNumber || "",
           invoiceDate: foundInvoice.invoiceDate || "",
-          withholding: false,
-          prorataTVA: true,
+          withholding: foundInvoice.withholding || false,
+          prorataTVA: foundInvoice.prorataTVA || true,
           amountHT: foundInvoice.amount || 0,
           amountTVA: foundInvoice.vatAmount || 0,
-          stampDuty: 0,
-          expenses: 0,
+          stampDuty: foundInvoice.stampDuty || 0,
+          expenses: foundInvoice.expenses || 0,
           amountTTC: foundInvoice.amountWithTax || 0,
-          nonRecoverableTVA: false,
-          multipleTVAAmounts: false,
+          nonRecoverableTVA: foundInvoice.nonRecoverableTVA || false,
+          multipleTVAAmounts: foundInvoice.multipleTVAAmounts || false,
+          details: foundInvoice.details || "",
+          companyName: foundInvoice.companyName || "",
+          address: foundInvoice.address || "",
         })
       } else {
         router.push("/dashboard/invoices")
@@ -237,319 +239,323 @@ export default function InvoiceDetailPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel - Form */}
         <div className="w-1/2 overflow-y-auto p-4 border-r">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="form">Formulaire</TabsTrigger>
-              <TabsTrigger value="ocr">Texte OCR</TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          {activeTab === "form" && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
+              {invoice.companyName && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Fournisseur</label>
+                  <label className="text-sm font-medium">Nom de l'entreprise</label>
                   <Input
-                    value={formData.supplier}
-                    onChange={(e) => handleInputChange("supplier", e.target.value)}
+                    value={formData.companyName}
+                    onChange={(e) => handleInputChange("companyName", e.target.value)}
                     disabled={!editMode}
                   />
                 </div>
+              )}
 
+              {invoice.address && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Compte de charge</label>
+                  <label className="text-sm font-medium">Adresse</label>
                   <Input
-                    value={formData.accountCode}
-                    onChange={(e) => handleInputChange("accountCode", e.target.value)}
+                    value={formData.address}
+                    onChange={(e) => handleInputChange("address", e.target.value)}
                     disabled={!editMode}
                   />
                 </div>
+              )}
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Devise</label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Fournisseur</label>
+                <Input
+                  value={formData.supplier}
+                  onChange={(e) => handleInputChange("supplier", e.target.value)}
+                  disabled={!editMode}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Compte de charge</label>
+                <Input
+                  value={formData.accountCode}
+                  onChange={(e) => handleInputChange("accountCode", e.target.value)}
+                  disabled={!editMode}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Devise</label>
+                <Input
+                  value={formData.currency}
+                  onChange={(e) => handleInputChange("currency", e.target.value)}
+                  disabled={!editMode}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Numéro de facture</label>
+                <Input
+                  value={formData.invoiceNumber}
+                  onChange={(e) => handleInputChange("invoiceNumber", e.target.value)}
+                  disabled={!editMode}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Date de facturation</label>
+                <Input
+                  value={formData.invoiceDate}
+                  onChange={(e) => handleInputChange("invoiceDate", e.target.value)}
+                  disabled={!editMode}
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="withholding"
+                  checked={formData.withholding}
+                  onCheckedChange={(checked) => handleInputChange("withholding", checked)}
+                  disabled={!editMode}
+                />
+                <label htmlFor="withholding" className="text-sm font-medium">
+                  Retenue à la source
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="prorataTVA"
+                  checked={formData.prorataTVA}
+                  onCheckedChange={(checked) => handleInputChange("prorataTVA", checked)}
+                  disabled={!editMode}
+                />
+                <label htmlFor="prorataTVA" className="text-sm font-medium">
+                  Prorata de TVA
+                </label>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Montant HT</label>
+                <div className="flex items-center">
                   <Input
-                    value={formData.currency}
-                    onChange={(e) => handleInputChange("currency", e.target.value)}
+                    value={formData.amountHT}
+                    onChange={(e) => {
+                      const value = Number.parseFloat(e.target.value) || 0
+                      handleInputChange("amountHT", value)
+                      // Recalculate TTC
+                      const ttc =
+                        value + (formData.amountTVA || 0) + (formData.stampDuty || 0) + (formData.expenses || 0)
+                      handleInputChange("amountTTC", ttc)
+                    }}
                     disabled={!editMode}
+                    type="number"
+                    className="text-right"
                   />
+                  <span className="ml-2 text-sm text-muted-foreground">{formData.currency || "DH"}</span>
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Numéro de facture</label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Montant TVA</label>
+                <div className="flex items-center">
                   <Input
-                    value={formData.invoiceNumber}
-                    onChange={(e) => handleInputChange("invoiceNumber", e.target.value)}
+                    value={formData.amountTVA}
+                    onChange={(e) => {
+                      const value = Number.parseFloat(e.target.value) || 0
+                      handleInputChange("amountTVA", value)
+                      // Recalculate TTC
+                      const ttc =
+                        (formData.amountHT || 0) + value + (formData.stampDuty || 0) + (formData.expenses || 0)
+                      handleInputChange("amountTTC", ttc)
+                    }}
                     disabled={!editMode}
+                    type="number"
+                    className="text-right"
                   />
+                  <span className="ml-2 text-sm text-muted-foreground">{formData.currency || "DH"}</span>
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Date de facturation</label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Droits de timbre</label>
+                <div className="flex items-center">
                   <Input
-                    value={formData.invoiceDate}
-                    onChange={(e) => handleInputChange("invoiceDate", e.target.value)}
+                    value={formData.stampDuty}
+                    onChange={(e) => {
+                      const value = Number.parseFloat(e.target.value) || 0
+                      handleInputChange("stampDuty", value)
+                      // Recalculate TTC
+                      const ttc =
+                        (formData.amountHT || 0) + (formData.amountTVA || 0) + value + (formData.expenses || 0)
+                      handleInputChange("amountTTC", ttc)
+                    }}
                     disabled={!editMode}
+                    type="number"
+                    className="text-right"
+                  />
+                  <span className="ml-2 text-sm text-muted-foreground">{formData.currency || "DH"}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Débours</label>
+                <div className="flex items-center">
+                  <Input
+                    value={formData.expenses}
+                    onChange={(e) => {
+                      const value = Number.parseFloat(e.target.value) || 0
+                      handleInputChange("expenses", value)
+                      // Recalculate TTC
+                      const ttc =
+                        (formData.amountHT || 0) + (formData.amountTVA || 0) + (formData.stampDuty || 0) + value
+                      handleInputChange("amountTTC", ttc)
+                    }}
+                    disabled={!editMode}
+                    type="number"
+                    className="text-right"
+                  />
+                  <span className="ml-2 text-sm text-muted-foreground">{formData.currency || "DH"}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Montant TTC</label>
+                <div className="flex items-center">
+                  <Input
+                    value={formData.amountTTC}
+                    onChange={(e) => handleInputChange("amountTTC", Number.parseFloat(e.target.value) || 0)}
+                    disabled={!editMode}
+                    type="number"
+                    className="text-right"
+                  />
+                  <span className="ml-2 text-sm text-muted-foreground">{formData.currency || "DH"}</span>
+                </div>
+              </div>
+
+              {invoice.details && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Détails de la facture</label>
+                  <textarea
+                    value={formData.details}
+                    onChange={(e) => handleInputChange("details", e.target.value)}
+                    disabled={!editMode}
+                    className="w-full min-h-[100px] p-2 border rounded-md"
                   />
                 </div>
+              )}
 
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="withholding"
-                    checked={formData.withholding}
-                    onCheckedChange={(checked) => handleInputChange("withholding", checked)}
-                    disabled={!editMode}
-                  />
-                  <label htmlFor="withholding" className="text-sm font-medium">
-                    Retenue à la source
-                  </label>
-                </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="nonRecoverableTVA"
+                  checked={formData.nonRecoverableTVA}
+                  onCheckedChange={(checked) => handleInputChange("nonRecoverableTVA", checked)}
+                  disabled={!editMode}
+                />
+                <label htmlFor="nonRecoverableTVA" className="text-sm font-medium">
+                  TVA non Récupérable
+                </label>
+              </div>
 
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="prorataTVA"
-                    checked={formData.prorataTVA}
-                    onCheckedChange={(checked) => handleInputChange("prorataTVA", checked)}
-                    disabled={!editMode}
-                  />
-                  <label htmlFor="prorataTVA" className="text-sm font-medium">
-                    Prorata de TVA
-                  </label>
-                </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="multipleTVAAmounts"
+                  checked={formData.multipleTVAAmounts}
+                  onCheckedChange={(checked) => handleInputChange("multipleTVAAmounts", checked)}
+                  disabled={!editMode}
+                />
+                <label htmlFor="multipleTVAAmounts" className="text-sm font-medium">
+                  Plusieurs montants de TVA
+                </label>
+              </div>
 
-                <Separator />
+              {/* Add Écritures button */}
+              <div className="mt-4">
+                <Button
+                  variant="outline"
+                  className="w-32"
+                  onClick={() => setShowAccountingEntries(!showAccountingEntries)}
+                >
+                  Écritures
+                </Button>
+              </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Montant HT</label>
-                  <div className="flex items-center">
-                    <Input
-                      value={formData.amountHT}
-                      onChange={(e) => {
-                        const value = Number.parseFloat(e.target.value) || 0
-                        handleInputChange("amountHT", value)
-                        // Recalculate TTC
-                        const ttc =
-                          value + (formData.amountTVA || 0) + (formData.stampDuty || 0) + (formData.expenses || 0)
-                        handleInputChange("amountTTC", ttc)
-                      }}
-                      disabled={!editMode}
-                      type="number"
-                      className="text-right"
-                    />
-                    <span className="ml-2 text-sm text-muted-foreground">DH</span>
+              {/* Accounting entries table */}
+              {showAccountingEntries && (
+                <div className="mt-4 border rounded-md p-4">
+                  <div className="grid grid-cols-6 gap-2 font-medium text-sm mb-2">
+                    <div>Compte</div>
+                    <div>Libellé</div>
+                    <div className="text-right">Débit</div>
+                    <div className="text-right">Crédit</div>
+                    <div>Taxes</div>
+                    <div>Code de taxe</div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Montant TVA</label>
-                  <div className="flex items-center">
-                    <Input
-                      value={formData.amountTVA}
-                      onChange={(e) => {
-                        const value = Number.parseFloat(e.target.value) || 0
-                        handleInputChange("amountTVA", value)
-                        // Recalculate TTC
-                        const ttc =
-                          (formData.amountHT || 0) + value + (formData.stampDuty || 0) + (formData.expenses || 0)
-                        handleInputChange("amountTTC", ttc)
-                      }}
-                      disabled={!editMode}
-                      type="number"
-                      className="text-right"
-                    />
-                    <span className="ml-2 text-sm text-muted-foreground">DH</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Droits de timbre</label>
-                  <div className="flex items-center">
-                    <Input
-                      value={formData.stampDuty}
-                      onChange={(e) => {
-                        const value = Number.parseFloat(e.target.value) || 0
-                        handleInputChange("stampDuty", value)
-                        // Recalculate TTC
-                        const ttc =
-                          (formData.amountHT || 0) + (formData.amountTVA || 0) + value + (formData.expenses || 0)
-                        handleInputChange("amountTTC", ttc)
-                      }}
-                      disabled={!editMode}
-                      type="number"
-                      className="text-right"
-                    />
-                    <span className="ml-2 text-sm text-muted-foreground">DH</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Débours</label>
-                  <div className="flex items-center">
-                    <Input
-                      value={formData.expenses}
-                      onChange={(e) => {
-                        const value = Number.parseFloat(e.target.value) || 0
-                        handleInputChange("expenses", value)
-                        // Recalculate TTC
-                        const ttc =
-                          (formData.amountHT || 0) + (formData.amountTVA || 0) + (formData.stampDuty || 0) + value
-                        handleInputChange("amountTTC", ttc)
-                      }}
-                      disabled={!editMode}
-                      type="number"
-                      className="text-right"
-                    />
-                    <span className="ml-2 text-sm text-muted-foreground">DH</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Montant TTC</label>
-                  <div className="flex items-center">
-                    <Input
-                      value={formData.amountTTC}
-                      onChange={(e) => handleInputChange("amountTTC", Number.parseFloat(e.target.value) || 0)}
-                      disabled={!editMode}
-                      type="number"
-                      className="text-right"
-                    />
-                    <span className="ml-2 text-sm text-muted-foreground">DH</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="nonRecoverableTVA"
-                    checked={formData.nonRecoverableTVA}
-                    onCheckedChange={(checked) => handleInputChange("nonRecoverableTVA", checked)}
-                    disabled={!editMode}
-                  />
-                  <label htmlFor="nonRecoverableTVA" className="text-sm font-medium">
-                    TVA non Récupérable
-                  </label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="multipleTVAAmounts"
-                    checked={formData.multipleTVAAmounts}
-                    onCheckedChange={(checked) => handleInputChange("multipleTVAAmounts", checked)}
-                    disabled={!editMode}
-                  />
-                  <label htmlFor="multipleTVAAmounts" className="text-sm font-medium">
-                    Plusieurs montants de TVA
-                  </label>
-                </div>
-
-                {/* Add Écritures button */}
-                <div className="mt-4">
-                  <Button
-                    variant="outline"
-                    className="w-32"
-                    onClick={() => setShowAccountingEntries(!showAccountingEntries)}
-                  >
-                    Écritures
-                  </Button>
-                </div>
-
-                {/* Accounting entries table */}
-                {showAccountingEntries && (
-                  <div className="mt-4 border rounded-md p-4">
-                    <div className="grid grid-cols-6 gap-2 font-medium text-sm mb-2">
-                      <div>Compte</div>
-                      <div>Libellé</div>
-                      <div className="text-right">Débit</div>
-                      <div className="text-right">Crédit</div>
-                      <div>Taxes</div>
-                      <div>Code de taxe</div>
+                  <div className="grid grid-cols-6 gap-2 text-sm py-2 border-b">
+                    <div>61110000 Achats de...</div>
+                    <div>
+                      {invoice.partner} - N<br />
+                      {invoice.invoiceNumber}
                     </div>
-
-                    <div className="grid grid-cols-6 gap-2 text-sm py-2 border-b">
-                      <div>61110000 Achats de...</div>
-                      <div>
-                        HITECK LAND - N<br />
-                        FA21 20210460
-                      </div>
-                      <div className="text-right">5 829,20 DH</div>
-                      <div className="text-right">0,00 DH</div>
-                      <div>
-                        <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">TVA 20% ACHATS</span>
-                      </div>
-                      <div className="flex items-center">
-                        <span>140 - Prestations de...</span>
-                        <Button variant="ghost" size="sm" className="h-6 w-6 ml-1">
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                      </div>
+                    <div className="text-right">
+                      {invoice.amount?.toFixed(2)} {invoice.currency || "DH"}
                     </div>
-
-                    <div className="grid grid-cols-6 gap-2 text-sm py-2 border-b">
-                      <div>34552200 Etat - TV...</div>
-                      <div>
-                        HITECK LAND - N<br />
-                        FA21 20210460
-                      </div>
-                      <div className="text-right">896,80 DH</div>
-                      <div className="text-right">0,00 DH</div>
-                      <div></div>
-                      <div></div>
+                    <div className="text-right">0,00 {invoice.currency || "DH"}</div>
+                    <div>
+                      <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">TVA 20% ACHATS</span>
                     </div>
-
-                    <div className="grid grid-cols-6 gap-2 text-sm py-2 border-b">
-                      <div>44110000 Fournisse...</div>
-                      <div>
-                        HITECK LAND - N<br />
-                        FA21 20210460
-                      </div>
-                      <div className="text-right">0,00 DH</div>
-                      <div className="text-right">6 726,00 DH</div>
-                      <div></div>
-                      <div></div>
-                    </div>
-
-                    <div className="mt-2">
-                      <Button variant="link" className="text-primary text-sm p-0">
-                        Ajouter une ligne
+                    <div className="flex items-center">
+                      <span>140 - Prestations de...</span>
+                      <Button variant="ghost" size="sm" className="h-6 w-6 ml-1">
+                        <Edit className="h-3 w-3" />
                       </Button>
                     </div>
+                  </div>
 
-                    <div className="flex justify-end mt-4 text-sm font-medium">
-                      <div className="grid grid-cols-2 gap-8">
-                        <div className="text-right">6 726,00</div>
-                        <div className="text-right">6 726,00</div>
-                      </div>
+                  <div className="grid grid-cols-6 gap-2 text-sm py-2 border-b">
+                    <div>34552200 Etat - TV...</div>
+                    <div>
+                      {invoice.partner} - N<br />
+                      {invoice.invoiceNumber}
+                    </div>
+                    <div className="text-right">
+                      {invoice.vatAmount?.toFixed(2)} {invoice.currency || "DH"}
+                    </div>
+                    <div className="text-right">0,00 {invoice.currency || "DH"}</div>
+                    <div></div>
+                    <div></div>
+                  </div>
+
+                  <div className="grid grid-cols-6 gap-2 text-sm py-2 border-b">
+                    <div>44110000 Fournisse...</div>
+                    <div>
+                      {invoice.partner} - N<br />
+                      {invoice.invoiceNumber}
+                    </div>
+                    <div className="text-right">0,00 {invoice.currency || "DH"}</div>
+                    <div className="text-right">
+                      {invoice.amountWithTax?.toFixed(2)} {invoice.currency || "DH"}
+                    </div>
+                    <div></div>
+                    <div></div>
+                  </div>
+
+                  <div className="mt-2">
+                    <Button variant="link" className="text-primary text-sm p-0">
+                      Ajouter une ligne
+                    </Button>
+                  </div>
+
+                  <div className="flex justify-end mt-4 text-sm font-medium">
+                    <div className="grid grid-cols-2 gap-8">
+                      <div className="text-right">{invoice.amountWithTax?.toFixed(2)}</div>
+                      <div className="text-right">{invoice.amountWithTax?.toFixed(2)}</div>
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {activeTab === "ocr" && (
-            <div className="space-y-4">
-              <div className="border rounded-md p-4 bg-muted/30">
-                <h3 className="font-medium mb-2">Texte extrait par OCR</h3>
-                <div className="max-h-[500px] overflow-y-auto text-sm whitespace-pre-wrap bg-background p-3 rounded border">
-                  {invoice.rawText || "Aucun texte OCR disponible pour ce document"}
-                </div>
-              </div>
-
-              {invoice.ocrConfidence && (
-                <div className="flex items-center space-x-2 text-sm">
-                  <div
-                    className={`w-2 h-2 rounded-full ${invoice.ocrConfidence > 0.7 ? "bg-green-500" : invoice.ocrConfidence > 0.4 ? "bg-amber-500" : "bg-red-500"}`}
-                  ></div>
-                  <span>
-                    Confiance OCR: {Math.round(invoice.ocrConfidence * 100)}%
-                    {invoice.ocrConfidence > 0.7
-                      ? " (Élevée)"
-                      : invoice.ocrConfidence > 0.4
-                        ? " (Moyenne)"
-                        : " (Faible)"}
-                  </span>
                 </div>
               )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Right panel - Document viewer */}

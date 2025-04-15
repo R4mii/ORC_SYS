@@ -120,6 +120,7 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     }, 200)
   }
 
+  // Update the handleUpload function to include a fileUrl for document display
   const handleUpload = async () => {
     if (files.length === 0) return
 
@@ -143,9 +144,15 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       const data = await response.json()
       console.log("OCR API response:", data)
 
+      // Create a file URL for preview
+      const fileUrl = URL.createObjectURL(files[0])
+
       // Process the OCR response
       const processedData = processOcrResponse(data)
-      setOcrResults(processedData)
+      setOcrResults({
+        ...processedData,
+        fileUrl: fileUrl, // Add the file URL to the results
+      })
       setCurrentStep("results")
 
       toast({
@@ -172,27 +179,27 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     }
   }
 
-  // Process the OCR response to handle different formats
+  // Update the processOcrResponse function to handle the new format
   const processOcrResponse = (data: any) => {
-    // Check if data is an array
-    if (Array.isArray(data) && data.length > 0) {
-      const firstItem = data[0]
+    // Check if data is an array with the specific format from the example
+    if (Array.isArray(data) && data.length > 0 && data[0].output) {
+      const output = data[0].output
 
-      // Extract output if it exists
-      const output = firstItem.output || {}
-
-      // Create a standardized structure
       return {
-        rawText: firstItem.text || "",
+        rawText: JSON.stringify(data, null, 2),
+        ocrOutput: data[0].output, // Store the complete output object
         invoice: {
           supplier: output.Fournisseur || "",
           invoiceNumber: output["Numéro de facture"] || "",
           invoiceDate: output.date || "",
-          amount: Number.parseFloat(output["Montant HT"] || "0"),
-          vatAmount: Number.parseFloat(output["Montant TVA"] || "0"),
-          amountWithTax: Number.parseFloat(output["Montant TTC"] || "0"),
-          currency: "MAD",
-          confidence: 0.8, // Default confidence
+          amount: Number.parseFloat(output["Montant HT"]?.replace(/\./g, "")?.replace(",", ".") || "0"),
+          vatAmount: Number.parseFloat(output["Montant TVA"]?.replace(/\./g, "")?.replace(",", ".") || "0"),
+          amountWithTax: Number.parseFloat(output["Montant TTC"]?.replace(/\./g, "")?.replace(",", ".") || "0"),
+          currency: output.Devise || "MAD",
+          confidence: 0.8,
+          details: output[" Détail de facture"] || "",
+          companyName: output["name of the company"] || "",
+          address: output.adresse || "",
         },
         originalResponse: data,
       }
