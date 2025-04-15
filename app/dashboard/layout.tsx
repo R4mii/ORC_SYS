@@ -37,7 +37,7 @@ interface NavItem {
   icon: React.ElementType
 }
 
-// Update the navItems array
+// Update the navItems array by adding Achats and Ventes items after the Invoices item
 const navItems: NavItem[] = [
   {
     title: "Dashboard",
@@ -47,6 +47,16 @@ const navItems: NavItem[] = [
   {
     title: "Invoices",
     href: "/dashboard/invoices",
+    icon: FileText,
+  },
+  {
+    title: "Achats",
+    href: "/dashboard/achats",
+    icon: FileText,
+  },
+  {
+    title: "Ventes",
+    href: "/dashboard/ventes",
     icon: FileText,
   },
   {

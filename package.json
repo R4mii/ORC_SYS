@@ -58,11 +58,9 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.6",
     "zod": "^3.24.1",
+    "express": "latest",
     "jspdf": "latest",
     "@emotion/is-prop-valid": "latest",
-    "express": "latest",
-    "jspdf-autotable": "latest",
-    "framer-motion": "latest",
     "dotenv": "latest",
     "mongoose": "latest",
     "jsonwebtoken": "latest",
@@ -78,7 +76,9 @@
     "@aws-sdk/s3-request-presigner": "latest",
     "crypto": "latest",
     "isomorphic-dompurify": "latest",
-    "cors": "latest"
+    "cors": "latest",
+    "jspdf-autotable": "latest",
+    "framer-motion": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",
