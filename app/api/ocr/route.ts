@@ -10,6 +10,10 @@ export const config = {
   },
 }
 
+// New way to configure the route in Next.js 14
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: NextRequest) {
   try {
     // n8n workflow form URL
