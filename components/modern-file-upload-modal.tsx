@@ -131,7 +131,7 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       const formData = new FormData()
       formData.append("invoice1", files[0])
 
-      const response = await fetch("https://ocr-sys-u41198.vm.elestio.app/webhook/upload", {
+      const response = await fetch("https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload", {
         method: "POST",
         body: formData,
       })

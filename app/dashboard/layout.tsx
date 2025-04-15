@@ -16,8 +16,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ShoppingCart,
-  Receipt,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -39,7 +37,7 @@ interface NavItem {
   icon: React.ElementType
 }
 
-// Update the navItems array by adding Achats and Ventes items after the Invoices item
+// Update the navItems array
 const navItems: NavItem[] = [
   {
     title: "Dashboard",
@@ -50,16 +48,6 @@ const navItems: NavItem[] = [
     title: "Invoices",
     href: "/dashboard/invoices",
     icon: FileText,
-  },
-  {
-    title: "Achats",
-    href: "/dashboard/achats",
-    icon: ShoppingCart,
-  },
-  {
-    title: "Ventes",
-    href: "/dashboard/ventes",
-    icon: Receipt,
   },
   {
     title: "Reports",
@@ -261,7 +249,7 @@ export default function DashboardLayout({
                 <Link href="/dashboard/profile">Profile</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/settings">Settings</Link>{" "}
+                <Link href="/dashboard/settings">Settings</Link>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowCompanySelector(true)}>
                 <Building2 className="mr-2 h-4 w-4" />

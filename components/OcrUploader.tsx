@@ -54,7 +54,7 @@ export default function OcrUploader() {
       //})
 
       // Option 2: Direct call to webhook (if CORS allows)
-      const response = await fetch("https://ocr-sys-u41198.vm.elestio.app/webhook/upload", {
+      const response = await fetch("https://n8n-0ku3a-u40684.vm.elestio.app/webhook/upload", {
         method: "POST",
         body: formData,
       })
