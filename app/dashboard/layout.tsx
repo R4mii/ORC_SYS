@@ -16,6 +16,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ShoppingCart,
+  Receipt,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -52,12 +54,12 @@ const navItems: NavItem[] = [
   {
     title: "Achats",
     href: "/dashboard/achats",
-    icon: FileText,
+    icon: ShoppingCart,
   },
   {
     title: "Ventes",
     href: "/dashboard/ventes",
-    icon: FileText,
+    icon: Receipt,
   },
   {
     title: "Reports",
@@ -259,7 +261,7 @@ export default function DashboardLayout({
                 <Link href="/dashboard/profile">Profile</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/settings">Settings</Link>
+                <Link href="/dashboard/settings">Settings</Link>{" "}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowCompanySelector(true)}>
                 <Building2 className="mr-2 h-4 w-4" />
