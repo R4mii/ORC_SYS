@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 
 // Route Segment Configuration
-export const runtime = 'nodejs'
-export const dynamic = 'force-dynamic'
-export const preferredRegion = 'auto'
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+export const preferredRegion = "auto"
 
 export async function POST(req: NextRequest) {
   try {

@@ -1,8 +1,10 @@
 "use client"
 
+import { useEffect } from "react"
+
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -45,32 +47,42 @@ export function OcrInvoiceProcessor() {
   const [activeTab, setActiveTab] = useState("upload")
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  const handleDragOver = (e: React.DragEvent) => {
+  // Clean up interval on unmount
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+      }
+    }
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(true)
-  }
+  }, [])
 
-  const handleDragLeave = () => {
+  const handleDragLeave = useCallback(() => {
     setIsDragging(false)
-  }
+  }, [])
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFileSelection(Array.from(e.dataTransfer.files))
+      handleFileSelection(e.dataTransfer.files[0])
     }
-  }
+  }, [])
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      handleFileSelection(Array.from(e.target.files))
+      handleFileSelection(e.target.files[0])
     }
-  }
+  }, [])
 
-  const handleFileSelection = (selectedFile: File) => {
+  const handleFileSelection = useCallback((selectedFile: File) => {
     const maxFileSize = 10 * 1024 * 1024 // 10MB
     const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/jpg"]
 
@@ -86,14 +98,37 @@ export function OcrInvoiceProcessor() {
 
     setFile(selectedFile)
     setError(null)
-  }
+  }, [])
 
-  const handleRemoveFile = () => {
+  const handleRemoveFile = useCallback(() => {
     setFile(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
-  }
+  }, [])
+
+  const simulateProgressUpdate = useCallback(() => {
+    setProgress(0)
+
+    // Clear any existing interval
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current)
+    }
+
+    // Create a new interval that updates progress
+    progressIntervalRef.current = setInterval(() => {
+      setProgress((prev) => {
+        const newProgress = prev + Math.floor(Math.random() * 5) + 1
+        if (newProgress >= 95) {
+          if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current)
+          }
+          return 95
+        }
+        return newProgress
+      })
+    }, 200)
+  }, [])
 
   function extractInvoiceData(data: any): InvoiceData | null {
     console.log("Processing data:", data) // Debug log
@@ -118,25 +153,21 @@ export function OcrInvoiceProcessor() {
     return null
   }
 
-  const processInvoice = async () => {
+  const processInvoice = useCallback(async () => {
     if (!file) return
 
     setIsProcessing(true)
     setProgress(0)
     setError(null)
+    simulateProgressUpdate()
 
     try {
       const formData = new FormData()
-      formData.append("invoice1", file)
+      formData.append("file", file)
 
-      const response = await fetch("https://ocr-sys-u41198.vm.elestio.app/webhook/upload", {
+      // Use the API route instead of direct n8n endpoint
+      const response = await fetch("/api/ocr/process", {
         method: "POST",
-        headers: {
-          accept: "*/*",
-          "sec-fetch-dest": "empty",
-          "sec-fetch-mode": "cors",
-          "sec-fetch-site": "cross-site",
-        },
         body: formData,
       })
 
@@ -146,6 +177,14 @@ export function OcrInvoiceProcessor() {
 
       const data = await response.json()
       console.log("OCR Response:", data)
+
+      // Complete the progress
+      setProgress(100)
+
+      // Clear the interval
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+      }
 
       const extractedData = extractInvoiceData(data)
       if (extractedData) {
@@ -160,9 +199,8 @@ export function OcrInvoiceProcessor() {
       setActiveTab("upload")
     } finally {
       setIsProcessing(false)
-      setProgress(100)
     }
-  }
+  }, [file, simulateProgressUpdate])
 
   return (
     <Card className="w-full max-w-4xl mx-auto">

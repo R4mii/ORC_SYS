@@ -5,4 +5,4 @@
   "installCommand": "pnpm install",
   "framework": "nextjs",
   "outputDirectory": ".next"
-} 
+}

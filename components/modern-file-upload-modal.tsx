@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -35,6 +35,7 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
   const fileInputRef = useRef<HTMLInputElement>(null)
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Clean up interval on unmount
   useEffect(() => {
     return () => {
       if (progressIntervalRef.current) {
@@ -43,31 +44,47 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     }
   }, [])
 
-  const handleDragOver = (e: React.DragEvent) => {
+  // Reset state when modal opens/closes
+  useEffect(() => {
+    if (!open) {
+      // Small delay to allow animation to complete
+      const timeout = setTimeout(() => {
+        setFiles([])
+        setProgress(0)
+        setCurrentStep("upload")
+        setOcrResults(null)
+        setError(null)
+      }, 300)
+
+      return () => clearTimeout(timeout)
+    }
+  }, [open])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(true)
-  }
+  }, [])
 
-  const handleDragLeave = () => {
+  const handleDragLeave = useCallback(() => {
     setIsDragging(false)
-  }
+  }, [])
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       handleFiles(Array.from(e.dataTransfer.files))
     }
-  }
+  }, [])
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       handleFiles(Array.from(e.target.files))
     }
-  }
+  }, [])
 
-  const handleFiles = (newFiles: File[]) => {
+  const handleFiles = useCallback((newFiles: File[]) => {
     const supportedFiles = newFiles.filter((file) => {
       const fileType = file.type.toLowerCase()
       return (
@@ -88,6 +105,18 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       return
     }
 
+    // Check file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (supportedFiles[0].size > maxSize) {
+      setError(`Le fichier est trop volumineux. Taille maximale: 10MB.`)
+      toast({
+        title: "Fichier trop volumineux",
+        description: "La taille maximale autorisée est de 10MB.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setFiles(supportedFiles)
     setError(null)
 
@@ -96,9 +125,9 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       description: `${supportedFiles[0].name} est prêt à être traité`,
       variant: "default",
     })
-  }
+  }, [])
 
-  const simulateProgressUpdate = () => {
+  const simulateProgressUpdate = useCallback(() => {
     setProgress(0)
 
     if (progressIntervalRef.current) {
@@ -111,17 +140,19 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
         const newProgress = prev + increment
 
         if (newProgress >= 95) {
-          clearInterval(progressIntervalRef.current!)
+          if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current)
+          }
           return 95
         }
 
         return newProgress
       })
     }, 200)
-  }
+  }, [])
 
   // Update the handleUpload function to include a fileUrl for document display
-  const handleUpload = async () => {
+  const handleUpload = useCallback(async () => {
     if (files.length === 0) return
 
     setIsUploading(true)
@@ -130,9 +161,10 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
 
     try {
       const formData = new FormData()
-      formData.append("invoice1", files[0])
+      formData.append("file", files[0])
 
-      const response = await fetch("https://ocr-sys-u41198.vm.elestio.app/webhook/upload", {
+      // Use the API route instead of direct n8n endpoint
+      const response = await fetch("/api/ocr/process", {
         method: "POST",
         body: formData,
       })
@@ -154,6 +186,7 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
         fileUrl: fileUrl, // Add the file URL to the results
       })
       setCurrentStep("results")
+      setProgress(100)
 
       toast({
         title: "Traitement OCR terminé",
@@ -177,10 +210,10 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     } finally {
       setIsUploading(false)
     }
-  }
+  }, [files, simulateProgressUpdate])
 
   // Update the processOcrResponse function to handle the new format
-  const processOcrResponse = (data: any) => {
+  const processOcrResponse = useCallback((data: any) => {
     // Check if data is an array with the specific format from the example
     if (Array.isArray(data) && data.length > 0 && data[0].output) {
       const output = data[0].output
@@ -214,9 +247,9 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
           supplier: data.supplier || "",
           invoiceNumber: data.invoiceNumber || "",
           invoiceDate: data.date || "",
-          amount: Number.parseFloat(data.amount || "0"),
-          vatAmount: Number.parseFloat(data.vatAmount || "0"),
-          amountWithTax: Number.parseFloat(data.total || "0"),
+          amount: Number.parseFloat(data.amount?.toString().replace(/\./g, "")?.replace(",", ".") || "0"),
+          vatAmount: Number.parseFloat(data.vatAmount?.toString().replace(/\./g, "")?.replace(",", ".") || "0"),
+          amountWithTax: Number.parseFloat(data.total?.toString().replace(/\./g, "")?.replace(",", ".") || "0"),
           currency: data.currency || "MAD",
           confidence: data.confidence || 0.5,
         },
@@ -239,11 +272,16 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       },
       originalResponse: data,
     }
-  }
+  }, [])
 
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(() => {
     if (ocrResults) {
       console.log("Processing OCR results:", ocrResults) // Debug log
+
+      // Clean up the file URL when confirming to prevent memory leaks
+      if (ocrResults.fileUrl) {
+        URL.revokeObjectURL(ocrResults.fileUrl)
+      }
 
       const result = {
         ...ocrResults,
@@ -259,9 +297,9 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       onUploadComplete(result)
       onClose()
     }
-  }
+  }, [ocrResults, files, documentType, onUploadComplete, onClose])
 
-  const getDocumentTypeLabel = () => {
+  const getDocumentTypeLabel = useCallback(() => {
     switch (documentType) {
       case "purchases":
         return "Achats"
@@ -274,9 +312,9 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       default:
         return "Document"
     }
-  }
+  }, [documentType])
 
-  const getFileTypeIcon = (file: File) => {
+  const getFileTypeIcon = useCallback((file: File) => {
     const fileType = file.type.toLowerCase()
     if (fileType.includes("pdf")) {
       return <FileText className="h-6 w-6 text-red-500" />
@@ -285,7 +323,16 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     } else {
       return <FileUp className="h-6 w-6 text-gray-500" />
     }
-  }
+  }, [])
+
+  // Clean up file URL on unmount
+  useEffect(() => {
+    return () => {
+      if (ocrResults?.fileUrl) {
+        URL.revokeObjectURL(ocrResults.fileUrl)
+      }
+    }
+  }, [ocrResults])
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -38,19 +38,19 @@ export function EnhancedUpload({
     }
   }
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(true)
-  }
+  }, [])
 
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(false)
-  }
+  }, [])
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(false)
@@ -58,112 +58,128 @@ export function EnhancedUpload({
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       addFiles(Array.from(e.dataTransfer.files))
     }
-  }
+  }, [])
 
-  const addFiles = (newFiles: File[]) => {
-    // Validate file count
-    if (files.length + newFiles.length > maxFiles) {
-      setErrors([...errors, `You can only upload a maximum of ${maxFiles} files.`])
-      return
-    }
-
-    const validFiles: File[] = []
-    const newErrors: string[] = []
-    const newPreviews: string[] = []
-    const newProgress: number[] = []
-
-    // Validate each file
-    newFiles.forEach((file) => {
-      // Check file size
-      if (file.size > maxSize) {
-        newErrors.push(`File "${file.name}" exceeds the maximum size of ${maxSize / 1024 / 1024}MB.`)
+  const addFiles = useCallback(
+    (newFiles: File[]) => {
+      // Validate file count
+      if (files.length + newFiles.length > maxFiles) {
+        setErrors((prev) => [...prev, `You can only upload a maximum of ${maxFiles} files.`])
         return
       }
 
-      // Check file type
-      const fileExtension = `.${file.name.split(".").pop()?.toLowerCase()}`
-      if (!acceptedFileTypes.includes(fileExtension) && !acceptedFileTypes.includes(file.type)) {
-        newErrors.push(`File "${file.name}" has an unsupported format.`)
-        return
-      }
+      const validFiles: File[] = []
+      const newErrors: string[] = []
+      const newPreviews: string[] = []
+      const newProgress: number[] = []
 
-      // Create preview URL
-      if (showPreview) {
-        if (file.type.startsWith("image/")) {
-          const previewUrl = URL.createObjectURL(file)
-          newPreviews.push(previewUrl)
-        } else {
-          // For PDFs or other files, use a generic icon
-          newPreviews.push("")
+      // Validate each file
+      newFiles.forEach((file) => {
+        // Check file size
+        if (file.size > maxSize) {
+          newErrors.push(`File "${file.name}" exceeds the maximum size of ${maxSize / 1024 / 1024}MB.`)
+          return
         }
-      }
 
-      validFiles.push(file)
-      newProgress.push(0)
-    })
+        // Check file type
+        const fileExtension = `.${file.name.split(".").pop()?.toLowerCase()}`
+        if (!acceptedFileTypes.includes(fileExtension) && !acceptedFileTypes.includes(file.type)) {
+          newErrors.push(`File "${file.name}" has an unsupported format.`)
+          return
+        }
 
-    if (validFiles.length > 0) {
-      setFiles([...files, ...validFiles])
-      setPreviews([...previews, ...newPreviews])
-      setUploadProgress([...uploadProgress, ...newProgress])
-
-      // Simulate upload progress for demonstration
-      simulateUploadProgress(files.length, validFiles.length)
-    }
-
-    if (newErrors.length > 0) {
-      setErrors([...errors, ...newErrors])
-    }
-  }
-
-  const simulateUploadProgress = (startIndex: number, count: number) => {
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        const updated = [...prev]
-        let allComplete = true
-
-        for (let i = startIndex; i < startIndex + count; i++) {
-          if (updated[i] < 100) {
-            updated[i] += 5
-            allComplete = false
+        // Create preview URL
+        if (showPreview) {
+          if (file.type.startsWith("image/")) {
+            const previewUrl = URL.createObjectURL(file)
+            newPreviews.push(previewUrl)
+          } else {
+            // For PDFs or other files, use a generic icon
+            newPreviews.push("")
           }
         }
 
-        if (allComplete) {
-          clearInterval(interval)
-          // When all files are uploaded, notify parent
-          onFilesAccepted(files)
-        }
-
-        return updated
+        validFiles.push(file)
+        newProgress.push(0)
       })
-    }, 100)
-  }
 
-  const removeFile = (index: number) => {
-    const newFiles = [...files]
-    const newPreviews = [...previews]
-    const newProgress = [...uploadProgress]
+      if (validFiles.length > 0) {
+        setFiles((prev) => [...prev, ...validFiles])
+        setPreviews((prev) => [...prev, ...newPreviews])
+        setUploadProgress((prev) => [...prev, ...newProgress])
 
-    // Release object URL to prevent memory leaks
-    if (newPreviews[index]) {
-      URL.revokeObjectURL(newPreviews[index])
-    }
+        // Simulate upload progress for demonstration
+        simulateUploadProgress(files.length, validFiles.length)
+      }
 
-    newFiles.splice(index, 1)
-    newPreviews.splice(index, 1)
-    newProgress.splice(index, 1)
+      if (newErrors.length > 0) {
+        setErrors((prev) => [...prev, ...newErrors])
+      }
+    },
+    [files, maxFiles, maxSize, acceptedFileTypes, showPreview],
+  )
 
-    setFiles(newFiles)
-    setPreviews(newPreviews)
-    setUploadProgress(newProgress)
-  }
+  const simulateUploadProgress = useCallback(
+    (startIndex: number, count: number) => {
+      const interval = setInterval(() => {
+        setUploadProgress((prev) => {
+          const updated = [...prev]
+          let allComplete = true
 
-  const dismissError = (index: number) => {
-    const newErrors = [...errors]
-    newErrors.splice(index, 1)
-    setErrors(newErrors)
-  }
+          for (let i = startIndex; i < startIndex + count; i++) {
+            if (updated[i] < 100) {
+              updated[i] += 5
+              allComplete = false
+            }
+          }
+
+          if (allComplete) {
+            clearInterval(interval)
+            // When all files are uploaded, notify parent
+            onFilesAccepted(files)
+          }
+
+          return updated
+        })
+      }, 100)
+
+      // Clean up interval on component unmount
+      return () => clearInterval(interval)
+    },
+    [files, onFilesAccepted],
+  )
+
+  const removeFile = useCallback((index: number) => {
+    setFiles((prev) => {
+      const newFiles = [...prev]
+      newFiles.splice(index, 1)
+      return newFiles
+    })
+
+    setPreviews((prev) => {
+      const newPreviews = [...prev]
+      // Release object URL to prevent memory leaks
+      if (newPreviews[index]) {
+        URL.revokeObjectURL(newPreviews[index])
+      }
+      newPreviews.splice(index, 1)
+      return newPreviews
+    })
+
+    setUploadProgress((prev) => {
+      const newProgress = [...prev]
+      newProgress.splice(index, 1)
+      return newProgress
+    })
+  }, [])
+
+  const dismissError = useCallback((index: number) => {
+    setErrors((prev) => {
+      const newErrors = [...prev]
+      newErrors.splice(index, 1)
+      return newErrors
+    })
+  }, [])
 
   return (
     <div className="space-y-4">
@@ -268,6 +284,7 @@ export function EnhancedUpload({
                         alt={file.name}
                         className="max-h-full max-w-full object-contain transition-transform"
                         style={{ transform: `scale(${zoom})` }}
+                        crossOrigin="anonymous"
                       />
                     ) : (
                       <div className="flex flex-col items-center justify-center text-muted-foreground">

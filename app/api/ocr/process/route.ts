@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server"
 export async function POST(req: NextRequest) {
   try {
     // n8n workflow form URL
-    const n8nFormUrl = "https://ocr-sys-u41198.vm.elestio.app/webhook/upload"
+    const n8nFormUrl = process.env.N8N_WEBHOOK_URL || "https://ocr-sys-u41198.vm.elestio.app/webhook/upload"
 
     // Get the form data from the request
     const formData = await req.formData()
@@ -23,6 +23,12 @@ export async function POST(req: NextRequest) {
 
     if (!isValidType) {
       return NextResponse.json({ error: "Invalid file type. Only PDF, JPG, and PNG are supported." }, { status: 400 })
+    }
+
+    // Check file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (file.size > maxSize) {
+      return NextResponse.json({ error: "File too large. Maximum size is 10MB." }, { status: 400 })
     }
 
     // Create a new FormData object to send to n8n
