@@ -80,12 +80,12 @@ export function InvoiceUploadForm({
     setProgress(10)
 
     try {
-      // Create form data
+      // Create form data with the field name 'invoice1' as required by the n8n endpoint
       const formData = new FormData()
-      formData.append("file", file)
+      formData.append("invoice1", file)
 
-      // Use our dedicated API route instead of directly accessing the webhook URL
-      const response = await fetch("/api/ocr-webhook", {
+      // Directly submit to n8n endpoint
+      const response = await fetch("https://ocr-sys-u41198.vm.elestio.app/webhook/upload", {
         method: "POST",
         body: formData,
       })
@@ -93,12 +93,16 @@ export function InvoiceUploadForm({
       setProgress(70)
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || `Error: ${response.status}`)
+        throw new Error(`OCR service returned status: ${response.status}`)
       }
 
       const data = await response.json()
       setProgress(100)
+
+      // Check if the response contains an error
+      if (data.error) {
+        throw new Error(data.error)
+      }
 
       // Process the OCR results
       const ocrResults = {

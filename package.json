@@ -63,6 +63,7 @@
     "express": "latest",
     "jspdf-autotable": "latest",
     "framer-motion": "latest",
+    "dotenv": "latest",
     "mongoose": "latest",
     "jsonwebtoken": "latest",
     "multer": "latest",
@@ -77,8 +78,7 @@
     "@aws-sdk/s3-request-presigner": "latest",
     "crypto": "latest",
     "isomorphic-dompurify": "latest",
-    "cors": "latest",
-    "dotenv": "latest"
+    "cors": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

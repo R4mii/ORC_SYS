@@ -1,88 +1,46 @@
-// Configuration settings for the application
+// Configuration management for the application
+import dotenv from "dotenv"
 
-interface DatabaseConfig {
-  url: string
-  name: string
-}
+// Load environment variables from .env file
+dotenv.config()
 
-interface UploadConfig {
-  maxFileSize: number // in bytes
-  allowedMimeTypes: string[]
-  tempDir: string
-}
+// Export configuration variables with defaults
+export const config = {
+  // Google Cloud Vision API
+  googleCloudCredentials: process.env.GOOGLE_APPLICATION_CREDENTIALS,
 
-interface JwtConfig {
-  secret: string
-  expiresIn: string
-}
+  // File upload settings
+  upload: {
+    maxFileSize: Number.parseInt(process.env.MAX_FILE_SIZE || "10485760"), // 10MB default
+    allowedMimeTypes: (process.env.ALLOWED_MIME_TYPES || "image/jpeg,image/png,application/pdf").split(","),
+    tempDir: process.env.TEMP_UPLOAD_DIR || "./tmp/uploads",
+  },
 
-interface RateLimitConfig {
-  windowMs: number
-  maxRequests: number
-}
+  // API rate limiting
+  rateLimit: {
+    windowMs: Number.parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000"), // 15 minutes default
+    maxRequests: Number.parseInt(process.env.RATE_LIMIT_MAX || "100"), // 100 requests per windowMs
+  },
 
-interface CacheConfig {
-  ttl: number // in seconds
-}
+  // Cache settings
+  cache: {
+    ttl: Number.parseInt(process.env.CACHE_TTL || "3600"), // 1 hour default
+  },
 
-interface OcrConfig {
-  apiEndpoint: string
-  n8nWebhookUrl: string
-}
-
-interface AppConfig {
-  database: DatabaseConfig
-  upload: UploadConfig
-  jwt: JwtConfig
-  rateLimit: RateLimitConfig
-  cache: CacheConfig
-  ocr: OcrConfig
-  environment: string
-}
-
-// Default configuration values
-export const config: AppConfig = {
+  // Database connection
   database: {
     url: process.env.DATABASE_URL || "mongodb://localhost:27017/accounting",
-    name: "accounting",
   },
-  upload: {
-    maxFileSize: 10 * 1024 * 1024, // 10MB
-    allowedMimeTypes: ["application/pdf", "image/jpeg", "image/png", "image/jpg"],
-    tempDir: "./tmp/uploads",
-  },
+
+  // JWT for authentication
   jwt: {
     secret: process.env.JWT_SECRET || "your-secret-key-change-in-production",
-    expiresIn: "1d",
+    expiresIn: process.env.JWT_EXPIRES_IN || "1d",
   },
-  rateLimit: {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    maxRequests: 100,
+
+  // Server settings
+  server: {
+    port: Number.parseInt(process.env.PORT || "3000"),
+    env: process.env.NODE_ENV || "development",
   },
-  cache: {
-    ttl: 3600, // 1 hour
-  },
-  ocr: {
-    apiEndpoint: "/api/ocr/process",
-    n8nWebhookUrl: process.env.N8N_WEBHOOK_URL || "https://ocr-sys-u41198.vm.elestio.app/webhook/upload",
-  },
-  environment: process.env.NODE_ENV || "development",
-}
-
-// Validate configuration
-export function validateConfig(): string[] {
-  const errors: string[] = []
-
-  // Check for required values in production
-  if (config.environment === "production") {
-    if (config.jwt.secret === "your-secret-key-change-in-production") {
-      errors.push("JWT_SECRET must be changed in production")
-    }
-
-    if (!process.env.DATABASE_URL) {
-      errors.push("DATABASE_URL must be provided in production")
-    }
-  }
-
-  return errors
 }

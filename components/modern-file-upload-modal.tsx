@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -31,123 +31,74 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
   const [currentStep, setCurrentStep] = useState<"upload" | "processing" | "results">("upload")
   const [ocrResults, setOcrResults] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
-  const [fileUrl, setFileUrl] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Clean up interval on unmount
   useEffect(() => {
     return () => {
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current)
       }
-      // Clean up any file URLs
-      if (fileUrl) {
-        URL.revokeObjectURL(fileUrl)
-      }
     }
-  }, [fileUrl])
+  }, [])
 
-  // Reset state when modal opens/closes
-  useEffect(() => {
-    if (!open) {
-      // Clean up any file URLs
-      if (fileUrl) {
-        URL.revokeObjectURL(fileUrl)
-        setFileUrl(null)
-      }
-
-      // Small delay to allow animation to complete
-      const timeout = setTimeout(() => {
-        setFiles([])
-        setProgress(0)
-        setCurrentStep("upload")
-        setOcrResults(null)
-        setError(null)
-      }, 300)
-
-      return () => clearTimeout(timeout)
-    }
-  }, [open, fileUrl])
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(true)
-  }, [])
+  }
 
-  const handleDragLeave = useCallback(() => {
+  const handleDragLeave = () => {
     setIsDragging(false)
-  }, [])
+  }
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       handleFiles(Array.from(e.dataTransfer.files))
     }
-  }, [])
+  }
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       handleFiles(Array.from(e.target.files))
     }
-  }, [])
+  }
 
-  const handleFiles = useCallback(
-    (newFiles: File[]) => {
-      const supportedFiles = newFiles.filter((file) => {
-        const fileType = file.type.toLowerCase()
-        return (
-          fileType.includes("pdf") ||
-          fileType.includes("image/jpeg") ||
-          fileType.includes("image/png") ||
-          fileType.includes("image/jpg")
-        )
-      })
+  const handleFiles = (newFiles: File[]) => {
+    const supportedFiles = newFiles.filter((file) => {
+      const fileType = file.type.toLowerCase()
+      return (
+        fileType.includes("pdf") ||
+        fileType.includes("image/jpeg") ||
+        fileType.includes("image/png") ||
+        fileType.includes("image/jpg")
+      )
+    })
 
-      if (supportedFiles.length === 0) {
-        setError("Veuillez sélectionner des fichiers PDF ou images (JPG, PNG)")
-        toast({
-          title: "Format non supporté",
-          description: "Veuillez sélectionner des fichiers PDF ou images (JPG, PNG)",
-          variant: "destructive",
-        })
-        return
-      }
-
-      // Check file size (10MB limit)
-      const maxSize = 10 * 1024 * 1024 // 10MB
-      if (supportedFiles[0].size > maxSize) {
-        setError(`Le fichier est trop volumineux. Taille maximale: 10MB.`)
-        toast({
-          title: "Fichier trop volumineux",
-          description: "La taille maximale autorisée est de 10MB.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      // Clean up any previous file URL
-      if (fileUrl) {
-        URL.revokeObjectURL(fileUrl)
-        setFileUrl(null)
-      }
-
-      setFiles(supportedFiles)
-      setError(null)
-
+    if (supportedFiles.length === 0) {
+      setError("Veuillez sélectionner des fichiers PDF ou images (JPG, PNG)")
       toast({
-        title: "Fichier ajouté",
-        description: `${supportedFiles[0].name} est prêt à être traité`,
-        variant: "default",
+        title: "Format non supporté",
+        description: "Veuillez sélectionner des fichiers PDF ou images (JPG, PNG)",
+        variant: "destructive",
       })
-    },
-    [fileUrl, toast],
-  )
+      return
+    }
 
-  const simulateProgressUpdate = useCallback(() => {
+    setFiles(supportedFiles)
+    setError(null)
+
+    toast({
+      title: "Fichier ajouté",
+      description: `${supportedFiles[0].name} est prêt à être traité`,
+      variant: "default",
+    })
+  }
+
+  const simulateProgressUpdate = () => {
     setProgress(0)
 
     if (progressIntervalRef.current) {
@@ -160,106 +111,17 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
         const newProgress = prev + increment
 
         if (newProgress >= 95) {
-          if (progressIntervalRef.current) {
-            clearInterval(progressIntervalRef.current)
-          }
+          clearInterval(progressIntervalRef.current!)
           return 95
         }
 
         return newProgress
       })
     }, 200)
-  }, [])
+  }
 
-  // Update the processOcrResponse function to handle the new format
-  const processOcrResponse = useCallback((data: any) => {
-    // Check if data is an array with the specific format from the example
-    if (Array.isArray(data) && data.length > 0 && data[0].output) {
-      const output = data[0].output
-
-      return {
-        rawText: JSON.stringify(data, null, 2),
-        ocrOutput: data[0].output, // Store the complete output object
-        invoice: {
-          supplier: output.Fournisseur || "",
-          invoiceNumber: output["Numéro de facture"] || "",
-          invoiceDate: output.date || "",
-          amount: Number.parseFloat(
-            output["Montant HT"]?.replace(/\s+/g, "")?.replace(/\./g, "")?.replace(",", ".") || "0",
-          ),
-          vatAmount: Number.parseFloat(
-            output["Montant TVA"]?.replace(/\s+/g, "")?.replace(/\./g, "")?.replace(",", ".") || "0",
-          ),
-          amountWithTax: Number.parseFloat(
-            output["Montant TTC"]?.replace(/\s+/g, "")?.replace(/\./g, "")?.replace(",", ".") || "0",
-          ),
-          currency: output.Devise || "MAD",
-          confidence: 0.8,
-          details: output[" Détail de facture"] || "",
-          companyName: output["name of the company"] || "",
-          address: output.adresse || "",
-        },
-        originalResponse: data,
-      }
-    } else if (data && typeof data === "object") {
-      // If it's already in the expected format, return it
-      if (data.invoice) return data
-
-      // Handle the legacy simulated OCR format from our fallback endpoint
-      if (data.success === true && data.rawText && data.invoice) {
-        return data
-      }
-
-      // Otherwise, try to extract data from the object
-      return {
-        rawText: data.text || JSON.stringify(data, null, 2),
-        invoice: {
-          supplier: data.supplier || "",
-          invoiceNumber: data.invoiceNumber || "",
-          invoiceDate: data.date || "",
-          amount: Number.parseFloat(
-            String(data.amount || "0")
-              .replace(/\s+/g, "")
-              .replace(/\./g, "")
-              .replace(",", "."),
-          ),
-          vatAmount: Number.parseFloat(
-            String(data.vatAmount || "0")
-              .replace(/\s+/g, "")
-              .replace(/\./g, "")
-              .replace(",", "."),
-          ),
-          amountWithTax: Number.parseFloat(
-            String(data.total || data.amountWithTax || "0")
-              .replace(/\s+/g, "")
-              .replace(/\./g, "")
-              .replace(",", "."),
-          ),
-          currency: data.currency || "MAD",
-          confidence: data.confidence || 0.5,
-        },
-        originalResponse: data,
-      }
-    }
-
-    // Fallback to empty structure
-    return {
-      rawText: JSON.stringify(data, null, 2) || "",
-      invoice: {
-        supplier: "",
-        invoiceNumber: "",
-        invoiceDate: "",
-        amount: 0,
-        vatAmount: 0,
-        amountWithTax: 0,
-        currency: "MAD",
-        confidence: 0,
-      },
-      originalResponse: data,
-    }
-  }, [])
-
-  const handleUpload = useCallback(async () => {
+  // Update the handleUpload function to include a fileUrl for document display
+  const handleUpload = async () => {
     if (files.length === 0) return
 
     setIsUploading(true)
@@ -268,34 +130,30 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
 
     try {
       const formData = new FormData()
-      formData.append("file", files[0])
+      formData.append("invoice1", files[0])
 
-      // Use our dedicated API route instead of directly accessing the environment variable
-      const response = await fetch("/api/ocr-webhook", {
+      const response = await fetch("https://ocr-sys-u41198.vm.elestio.app/webhook/upload", {
         method: "POST",
         body: formData,
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: `Error: ${response.status}` }))
-        throw new Error(errorData.error || errorData.details || `Error: ${response.status}`)
+        throw new Error(`OCR service returned status: ${response.status}`)
       }
 
       const data = await response.json()
       console.log("OCR API response:", data)
 
       // Create a file URL for preview
-      const url = URL.createObjectURL(files[0])
-      setFileUrl(url)
+      const fileUrl = URL.createObjectURL(files[0])
 
       // Process the OCR response
       const processedData = processOcrResponse(data)
       setOcrResults({
         ...processedData,
-        fileUrl: url, // Add the file URL to the results
+        fileUrl: fileUrl, // Add the file URL to the results
       })
       setCurrentStep("results")
-      setProgress(100)
 
       toast({
         title: "Traitement OCR terminé",
@@ -319,9 +177,71 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     } finally {
       setIsUploading(false)
     }
-  }, [files, simulateProgressUpdate, processOcrResponse, toast])
+  }
 
-  const handleConfirm = useCallback(() => {
+  // Update the processOcrResponse function to handle the new format
+  const processOcrResponse = (data: any) => {
+    // Check if data is an array with the specific format from the example
+    if (Array.isArray(data) && data.length > 0 && data[0].output) {
+      const output = data[0].output
+
+      return {
+        rawText: JSON.stringify(data, null, 2),
+        ocrOutput: data[0].output, // Store the complete output object
+        invoice: {
+          supplier: output.Fournisseur || "",
+          invoiceNumber: output["Numéro de facture"] || "",
+          invoiceDate: output.date || "",
+          amount: Number.parseFloat(output["Montant HT"]?.replace(/\./g, "")?.replace(",", ".") || "0"),
+          vatAmount: Number.parseFloat(output["Montant TVA"]?.replace(/\./g, "")?.replace(",", ".") || "0"),
+          amountWithTax: Number.parseFloat(output["Montant TTC"]?.replace(/\./g, "")?.replace(",", ".") || "0"),
+          currency: output.Devise || "MAD",
+          confidence: 0.8,
+          details: output[" Détail de facture"] || "",
+          companyName: output["name of the company"] || "",
+          address: output.adresse || "",
+        },
+        originalResponse: data,
+      }
+    } else if (data && typeof data === "object") {
+      // If it's already in the expected format, return it
+      if (data.invoice) return data
+
+      // Otherwise, try to extract data from the object
+      return {
+        rawText: data.text || "",
+        invoice: {
+          supplier: data.supplier || "",
+          invoiceNumber: data.invoiceNumber || "",
+          invoiceDate: data.date || "",
+          amount: Number.parseFloat(data.amount || "0"),
+          vatAmount: Number.parseFloat(data.vatAmount || "0"),
+          amountWithTax: Number.parseFloat(data.total || "0"),
+          currency: data.currency || "MAD",
+          confidence: data.confidence || 0.5,
+        },
+        originalResponse: data,
+      }
+    }
+
+    // Fallback to empty structure
+    return {
+      rawText: "",
+      invoice: {
+        supplier: "",
+        invoiceNumber: "",
+        invoiceDate: "",
+        amount: 0,
+        vatAmount: 0,
+        amountWithTax: 0,
+        currency: "MAD",
+        confidence: 0,
+      },
+      originalResponse: data,
+    }
+  }
+
+  const handleConfirm = () => {
     if (ocrResults) {
       console.log("Processing OCR results:", ocrResults) // Debug log
 
@@ -339,9 +259,9 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       onUploadComplete(result)
       onClose()
     }
-  }, [ocrResults, files, documentType, onUploadComplete, onClose])
+  }
 
-  const getDocumentTypeLabel = useCallback(() => {
+  const getDocumentTypeLabel = () => {
     switch (documentType) {
       case "purchases":
         return "Achats"
@@ -354,9 +274,9 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       default:
         return "Document"
     }
-  }, [documentType])
+  }
 
-  const getFileTypeIcon = useCallback((file: File) => {
+  const getFileTypeIcon = (file: File) => {
     const fileType = file.type.toLowerCase()
     if (fileType.includes("pdf")) {
       return <FileText className="h-6 w-6 text-red-500" />
@@ -365,7 +285,7 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     } else {
       return <FileUp className="h-6 w-6 text-gray-500" />
     }
-  }, [])
+  }
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

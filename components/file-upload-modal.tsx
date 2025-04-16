@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -45,48 +45,31 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
     }
   }, [])
 
-  // Reset state when modal opens/closes
-  useEffect(() => {
-    if (!open) {
-      // Small delay to allow animation to complete
-      const timeout = setTimeout(() => {
-        setFiles([])
-        setProgress(0)
-        setCurrentStep("upload")
-        setOcrResults(null)
-        setError(null)
-        setActiveTab("preview")
-      }, 300)
-
-      return () => clearTimeout(timeout)
-    }
-  }, [open])
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(true)
-  }, [])
+  }
 
-  const handleDragLeave = useCallback(() => {
+  const handleDragLeave = () => {
     setIsDragging(false)
-  }, [])
+  }
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       handleFiles(Array.from(e.dataTransfer.files))
     }
-  }, [])
+  }
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       handleFiles(Array.from(e.target.files))
     }
-  }, [])
+  }
 
-  const handleFiles = useCallback((newFiles: File[]) => {
+  const handleFiles = (newFiles: File[]) => {
     // Filter for supported file types
     const supportedFiles = newFiles.filter((file) => {
       const fileType = file.type.toLowerCase()
@@ -108,18 +91,6 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
       return
     }
 
-    // Check file size (10MB limit)
-    const maxSize = 10 * 1024 * 1024 // 10MB
-    if (supportedFiles[0].size > maxSize) {
-      setError(`Le fichier est trop volumineux. Taille maximale: 10MB.`)
-      toast({
-        title: "Fichier trop volumineux",
-        description: "La taille maximale autorisée est de 10MB.",
-        variant: "destructive",
-      })
-      return
-    }
-
     setFiles(supportedFiles)
     setError(null)
 
@@ -129,9 +100,9 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
       description: `${supportedFiles[0].name} est prêt à être traité`,
       variant: "default",
     })
-  }, [])
+  }
 
-  const simulateProgressUpdate = useCallback(() => {
+  const simulateProgressUpdate = () => {
     setProgress(0)
 
     // Clear any existing interval
@@ -148,19 +119,70 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
 
         // Stop at 95% - the final jump to 100% happens when data is received
         if (newProgress >= 95) {
-          if (progressIntervalRef.current) {
-            clearInterval(progressIntervalRef.current)
-          }
+          clearInterval(progressIntervalRef.current!)
           return 95
         }
 
         return newProgress
       })
     }, 200)
-  }, [])
+  }
+
+  const handleUpload = async () => {
+    if (files.length === 0) return
+
+    setIsUploading(true)
+    setCurrentStep("processing")
+    simulateProgressUpdate()
+
+    try {
+      const formData = new FormData()
+      formData.append("invoice1", files[0])
+
+      const response = await fetch("https://ocr-sys-u41198.vm.elestio.app/webhook/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error(`OCR service returned status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log("OCR response:", data) // Debug log
+
+      // Process the OCR response
+      const processedData = processOcrResponse(data)
+      setOcrResults(processedData)
+      setCurrentStep("results")
+
+      toast({
+        title: "Traitement OCR terminé",
+        description: "Les données ont été extraites avec succès",
+      })
+    } catch (err) {
+      console.error("OCR Error:", err)
+      setError(err instanceof Error ? err.message : "Une erreur s'est produite lors du traitement OCR")
+      setCurrentStep("upload")
+
+      // Show error toast
+      toast({
+        title: "Erreur de traitement",
+        description: err instanceof Error ? err.message : "Une erreur s'est produite lors du traitement OCR",
+        variant: "destructive",
+      })
+
+      // Clear the interval
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+      }
+    } finally {
+      setIsUploading(false)
+    }
+  }
 
   // Process the OCR response to handle different formats
-  const processOcrResponse = useCallback((data: any) => {
+  const processOcrResponse = (data: any) => {
     // Check if data is an array
     if (Array.isArray(data) && data.length > 0) {
       const firstItem = data[0]
@@ -175,9 +197,9 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
           supplier: output.Fournisseur || "",
           invoiceNumber: output["Numéro de facture"] || "",
           invoiceDate: output.date || "",
-          amount: Number.parseFloat(output["Montant HT"]?.replace(/\./g, "")?.replace(",", ".") || "0"),
-          vatAmount: Number.parseFloat(output["Montant TVA"]?.replace(/\./g, "")?.replace(",", ".") || "0"),
-          amountWithTax: Number.parseFloat(output["Montant TTC"]?.replace(/\./g, "")?.replace(",", ".") || "0"),
+          amount: Number.parseFloat(output["Montant HT"] || "0"),
+          vatAmount: Number.parseFloat(output["Montant TVA"] || "0"),
+          amountWithTax: Number.parseFloat(output["Montant TTC"] || "0"),
           currency: "MAD",
           confidence: 0.8, // Default confidence
         },
@@ -194,9 +216,9 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
           supplier: data.supplier || "",
           invoiceNumber: data.invoiceNumber || "",
           invoiceDate: data.date || "",
-          amount: Number.parseFloat(data.amount?.toString().replace(/\./g, "")?.replace(",", ".") || "0"),
-          vatAmount: Number.parseFloat(data.vatAmount?.toString().replace(/\./g, "")?.replace(",", ".") || "0"),
-          amountWithTax: Number.parseFloat(data.total?.toString().replace(/\./g, "")?.replace(",", ".") || "0"),
+          amount: Number.parseFloat(data.amount || "0"),
+          vatAmount: Number.parseFloat(data.vatAmount || "0"),
+          amountWithTax: Number.parseFloat(data.total || "0"),
           currency: data.currency || "MAD",
           confidence: data.confidence || 0.5,
         },
@@ -219,67 +241,9 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
       },
       originalResponse: data,
     }
-  }, [])
+  }
 
-  // Update the handleUpload function to use the environment variable directly
-  const handleUpload = useCallback(async () => {
-    if (files.length === 0) return
-
-    setIsUploading(true)
-    setCurrentStep("processing")
-    simulateProgressUpdate()
-
-    try {
-      const formData = new FormData()
-      formData.append("file", files[0])
-
-      // Use our dedicated API route instead of directly accessing the environment variable
-      const response = await fetch("/api/ocr-webhook", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || `Error: ${response.status}`)
-      }
-
-      const data = await response.json()
-      console.log("OCR API response:", data)
-
-      // Create a file URL for preview
-      const fileUrl = URL.createObjectURL(files[0])
-
-      // Process the OCR response
-      const processedData = processOcrResponse(data)
-      setOcrResults({
-        ...processedData,
-        fileUrl: fileUrl, // Add the file URL to the results
-      })
-      setCurrentStep("results")
-      setProgress(100)
-
-      toast({
-        title: "Traitement OCR terminé",
-        description: "Les données ont été extraites avec succès",
-        variant: "default",
-      })
-    } catch (err) {
-      console.error("OCR Error:", err)
-      setError(err instanceof Error ? err.message : "Une erreur s'est produite lors du traitement OCR")
-      setCurrentStep("upload")
-
-      toast({
-        title: "Erreur de traitement",
-        description: err instanceof Error ? err.message : "Une erreur s'est produite lors du traitement OCR",
-        variant: "destructive",
-      })
-    } finally {
-      setIsUploading(false)
-    }
-  }, [files, simulateProgressUpdate, processOcrResponse, toast])
-
-  const handleConfirm = useCallback(() => {
+  const handleConfirm = () => {
     if (ocrResults) {
       // Add file information to the results
       const result = {
@@ -296,9 +260,9 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
       onUploadComplete(result)
       onClose()
     }
-  }, [ocrResults, files, documentType, onUploadComplete, onClose])
+  }
 
-  const getDocumentTypeLabel = useCallback(() => {
+  const getDocumentTypeLabel = () => {
     switch (documentType) {
       case "purchases":
         return "Achats"
@@ -311,9 +275,9 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
       default:
         return "Document"
     }
-  }, [documentType])
+  }
 
-  const getFileTypeIcon = useCallback((file: File) => {
+  const getFileTypeIcon = (file: File) => {
     const fileType = file.type.toLowerCase()
     if (fileType.includes("pdf")) {
       return <FileText className="h-6 w-6 text-red-500" />
@@ -322,7 +286,7 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
     } else {
       return <FileUp className="h-6 w-6 text-gray-500" />
     }
-  }, [])
+  }
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -351,8 +315,21 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
             >
+              <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <Upload className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-lg font-medium">Glissez-déposez votre fichier ici</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                ou{" "}
+                <button
+                  className="text-primary hover:text-primary/80 font-medium underline-offset-4 hover:underline transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  parcourez vos fichiers
+                </button>
+              </p>
+              <p className="mt-3 text-xs text-muted-foreground">Formats supportés: PDF, JPG, PNG</p>
               <input
                 type="file"
                 ref={fileInputRef}
@@ -361,20 +338,6 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
                 accept=".pdf,.jpg,.jpeg,.png"
                 aria-label="Sélectionner un fichier"
               />
-              <div className="flex flex-col items-center justify-center text-center">
-                <Upload className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-lg font-medium mb-2">Glissez-déposez votre fichier ici</p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  ou{" "}
-                  <button
-                    className="text-primary hover:text-primary/80 font-medium underline-offset-4 hover:underline transition-colors"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    parcourez vos fichiers
-                  </button>
-                </p>
-                <p className="mt-3 text-xs text-muted-foreground">Formats supportés: PDF, JPG, PNG</p>
-              </div>
             </div>
 
             {files.length > 0 && (
