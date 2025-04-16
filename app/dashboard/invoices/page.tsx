@@ -26,12 +26,6 @@ interface Invoice {
   hasWarning: boolean
   description?: string
   documentType: string
-  fileUrl?: string
-  companyName?: string
-  address?: string
-  currency?: string
-  details?: string
-  ocrOutput?: any
 }
 
 export default function InvoicesPage() {
@@ -79,7 +73,6 @@ export default function InvoicesPage() {
     router.push(`/dashboard/invoices/${id}`)
   }
 
-  // Update the handleUploadComplete function to include the fileUrl and OCR data
   const handleUploadComplete = (result: any) => {
     if (!currentCompanyId) return
 
@@ -110,14 +103,6 @@ export default function InvoicesPage() {
       documentType: "purchases",
       ocrConfidence: result.invoice.confidence,
       rawText: result.rawText,
-      fileUrl: result.fileUrl, // Add the file URL
-      // Add additional OCR data
-      companyName: result.invoice.companyName || "",
-      address: result.invoice.address || "",
-      currency: result.invoice.currency || "MAD",
-      details: result.invoice.details || "",
-      // Store the complete OCR output if available
-      ocrOutput: result.ocrOutput || null,
     }
 
     // Get existing documents
