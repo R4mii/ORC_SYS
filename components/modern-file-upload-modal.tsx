@@ -31,6 +31,7 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
   const [currentStep, setCurrentStep] = useState<"upload" | "processing" | "results">("upload")
   const [ocrResults, setOcrResults] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+  const [fileUrl, setFileUrl] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -41,12 +42,22 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current)
       }
+      // Clean up any file URLs
+      if (fileUrl) {
+        URL.revokeObjectURL(fileUrl)
+      }
     }
-  }, [])
+  }, [fileUrl])
 
   // Reset state when modal opens/closes
   useEffect(() => {
     if (!open) {
+      // Clean up any file URLs
+      if (fileUrl) {
+        URL.revokeObjectURL(fileUrl)
+        setFileUrl(null)
+      }
+
       // Small delay to allow animation to complete
       const timeout = setTimeout(() => {
         setFiles([])
@@ -58,7 +69,7 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
 
       return () => clearTimeout(timeout)
     }
-  }, [open])
+  }, [open, fileUrl])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -84,48 +95,57 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     }
   }, [])
 
-  const handleFiles = useCallback((newFiles: File[]) => {
-    const supportedFiles = newFiles.filter((file) => {
-      const fileType = file.type.toLowerCase()
-      return (
-        fileType.includes("pdf") ||
-        fileType.includes("image/jpeg") ||
-        fileType.includes("image/png") ||
-        fileType.includes("image/jpg")
-      )
-    })
-
-    if (supportedFiles.length === 0) {
-      setError("Veuillez sélectionner des fichiers PDF ou images (JPG, PNG)")
-      toast({
-        title: "Format non supporté",
-        description: "Veuillez sélectionner des fichiers PDF ou images (JPG, PNG)",
-        variant: "destructive",
+  const handleFiles = useCallback(
+    (newFiles: File[]) => {
+      const supportedFiles = newFiles.filter((file) => {
+        const fileType = file.type.toLowerCase()
+        return (
+          fileType.includes("pdf") ||
+          fileType.includes("image/jpeg") ||
+          fileType.includes("image/png") ||
+          fileType.includes("image/jpg")
+        )
       })
-      return
-    }
 
-    // Check file size (10MB limit)
-    const maxSize = 10 * 1024 * 1024 // 10MB
-    if (supportedFiles[0].size > maxSize) {
-      setError(`Le fichier est trop volumineux. Taille maximale: 10MB.`)
+      if (supportedFiles.length === 0) {
+        setError("Veuillez sélectionner des fichiers PDF ou images (JPG, PNG)")
+        toast({
+          title: "Format non supporté",
+          description: "Veuillez sélectionner des fichiers PDF ou images (JPG, PNG)",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Check file size (10MB limit)
+      const maxSize = 10 * 1024 * 1024 // 10MB
+      if (supportedFiles[0].size > maxSize) {
+        setError(`Le fichier est trop volumineux. Taille maximale: 10MB.`)
+        toast({
+          title: "Fichier trop volumineux",
+          description: "La taille maximale autorisée est de 10MB.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Clean up any previous file URL
+      if (fileUrl) {
+        URL.revokeObjectURL(fileUrl)
+        setFileUrl(null)
+      }
+
+      setFiles(supportedFiles)
+      setError(null)
+
       toast({
-        title: "Fichier trop volumineux",
-        description: "La taille maximale autorisée est de 10MB.",
-        variant: "destructive",
+        title: "Fichier ajouté",
+        description: `${supportedFiles[0].name} est prêt à être traité`,
+        variant: "default",
       })
-      return
-    }
-
-    setFiles(supportedFiles)
-    setError(null)
-
-    toast({
-      title: "Fichier ajouté",
-      description: `${supportedFiles[0].name} est prêt à être traité`,
-      variant: "default",
-    })
-  }, [])
+    },
+    [fileUrl, toast],
+  )
 
   const simulateProgressUpdate = useCallback(() => {
     setProgress(0)
@@ -151,9 +171,6 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     }, 200)
   }, [])
 
-  // Update the handleUpload function to use the fallback URL if needed
-  // Find the handleUpload function and replace it with this improved version
-
   // Update the processOcrResponse function to handle the new format
   const processOcrResponse = useCallback((data: any) => {
     // Check if data is an array with the specific format from the example
@@ -167,9 +184,15 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
           supplier: output.Fournisseur || "",
           invoiceNumber: output["Numéro de facture"] || "",
           invoiceDate: output.date || "",
-          amount: Number.parseFloat(output["Montant HT"]?.replace(/\./g, "")?.replace(",", ".") || "0"),
-          vatAmount: Number.parseFloat(output["Montant TVA"]?.replace(/\./g, "")?.replace(",", ".") || "0"),
-          amountWithTax: Number.parseFloat(output["Montant TTC"]?.replace(/\./g, "")?.replace(",", ".") || "0"),
+          amount: Number.parseFloat(
+            output["Montant HT"]?.replace(/\s+/g, "")?.replace(/\./g, "")?.replace(",", ".") || "0",
+          ),
+          vatAmount: Number.parseFloat(
+            output["Montant TVA"]?.replace(/\s+/g, "")?.replace(/\./g, "")?.replace(",", ".") || "0",
+          ),
+          amountWithTax: Number.parseFloat(
+            output["Montant TTC"]?.replace(/\s+/g, "")?.replace(/\./g, "")?.replace(",", ".") || "0",
+          ),
           currency: output.Devise || "MAD",
           confidence: 0.8,
           details: output[" Détail de facture"] || "",
@@ -182,16 +205,36 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       // If it's already in the expected format, return it
       if (data.invoice) return data
 
+      // Handle the legacy simulated OCR format from our fallback endpoint
+      if (data.success === true && data.rawText && data.invoice) {
+        return data
+      }
+
       // Otherwise, try to extract data from the object
       return {
-        rawText: data.text || "",
+        rawText: data.text || JSON.stringify(data, null, 2),
         invoice: {
           supplier: data.supplier || "",
           invoiceNumber: data.invoiceNumber || "",
           invoiceDate: data.date || "",
-          amount: Number.parseFloat(data.amount?.toString().replace(/\./g, "")?.replace(",", ".") || "0"),
-          vatAmount: Number.parseFloat(data.vatAmount?.toString().replace(/\./g, "")?.replace(",", ".") || "0"),
-          amountWithTax: Number.parseFloat(data.total?.toString().replace(/\./g, "")?.replace(",", ".") || "0"),
+          amount: Number.parseFloat(
+            String(data.amount || "0")
+              .replace(/\s+/g, "")
+              .replace(/\./g, "")
+              .replace(",", "."),
+          ),
+          vatAmount: Number.parseFloat(
+            String(data.vatAmount || "0")
+              .replace(/\s+/g, "")
+              .replace(/\./g, "")
+              .replace(",", "."),
+          ),
+          amountWithTax: Number.parseFloat(
+            String(data.total || data.amountWithTax || "0")
+              .replace(/\s+/g, "")
+              .replace(/\./g, "")
+              .replace(",", "."),
+          ),
           currency: data.currency || "MAD",
           confidence: data.confidence || 0.5,
         },
@@ -201,7 +244,7 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
 
     // Fallback to empty structure
     return {
-      rawText: "",
+      rawText: JSON.stringify(data, null, 2) || "",
       invoice: {
         supplier: "",
         invoiceNumber: "",
@@ -234,21 +277,22 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || `Error: ${response.status}`)
+        const errorData = await response.json().catch(() => ({ error: `Error: ${response.status}` }))
+        throw new Error(errorData.error || errorData.details || `Error: ${response.status}`)
       }
 
       const data = await response.json()
       console.log("OCR API response:", data)
 
       // Create a file URL for preview
-      const fileUrl = URL.createObjectURL(files[0])
+      const url = URL.createObjectURL(files[0])
+      setFileUrl(url)
 
       // Process the OCR response
       const processedData = processOcrResponse(data)
       setOcrResults({
         ...processedData,
-        fileUrl: fileUrl, // Add the file URL to the results
+        fileUrl: url, // Add the file URL to the results
       })
       setCurrentStep("results")
       setProgress(100)
@@ -280,11 +324,6 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
   const handleConfirm = useCallback(() => {
     if (ocrResults) {
       console.log("Processing OCR results:", ocrResults) // Debug log
-
-      // Clean up the file URL when confirming to prevent memory leaks
-      if (ocrResults.fileUrl) {
-        URL.revokeObjectURL(ocrResults.fileUrl)
-      }
 
       const result = {
         ...ocrResults,
@@ -327,15 +366,6 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       return <FileUp className="h-6 w-6 text-gray-500" />
     }
   }, [])
-
-  // Clean up file URL on unmount
-  useEffect(() => {
-    return () => {
-      if (ocrResults?.fileUrl) {
-        URL.revokeObjectURL(ocrResults.fileUrl)
-      }
-    }
-  }, [ocrResults])
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

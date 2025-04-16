@@ -122,14 +122,20 @@ function processData(data: any) {
 
     // Create a standardized structure
     return {
-      rawText: firstItem.text || "",
+      rawText: firstItem.text || JSON.stringify(data, null, 2),
       invoice: {
         supplier: output.Fournisseur || "",
         invoiceNumber: output["Numéro de facture"] || "",
         invoiceDate: output.date || "",
-        amount: Number.parseFloat(output["Montant HT"] || "0"),
-        vatAmount: Number.parseFloat(output["Montant TVA"] || "0"),
-        amountWithTax: Number.parseFloat(output["Montant TTC"] || "0"),
+        amount: Number.parseFloat(
+          output["Montant HT"]?.replace(/\s+/g, "")?.replace(/\./g, "")?.replace(",", ".") || "0",
+        ),
+        vatAmount: Number.parseFloat(
+          output["Montant TVA"]?.replace(/\s+/g, "")?.replace(/\./g, "")?.replace(",", ".") || "0",
+        ),
+        amountWithTax: Number.parseFloat(
+          output["Montant TTC"]?.replace(/\s+/g, "")?.replace(/\./g, "")?.replace(",", ".") || "0",
+        ),
         currency: "MAD",
         confidence: 0.8, // Default confidence
       },
@@ -138,14 +144,29 @@ function processData(data: any) {
   } else if (data && typeof data === "object") {
     // Try to extract data from the object
     return {
-      rawText: data.text || "",
+      rawText: data.text || JSON.stringify(data, null, 2),
       invoice: {
         supplier: data.supplier || "",
         invoiceNumber: data.invoiceNumber || "",
         invoiceDate: data.date || "",
-        amount: Number.parseFloat(data.amount || "0"),
-        vatAmount: Number.parseFloat(data.vatAmount || "0"),
-        amountWithTax: Number.parseFloat(data.total || "0"),
+        amount: Number.parseFloat(
+          String(data.amount || "0")
+            .replace(/\s+/g, "")
+            .replace(/\./g, "")
+            .replace(",", "."),
+        ),
+        vatAmount: Number.parseFloat(
+          String(data.vatAmount || "0")
+            .replace(/\s+/g, "")
+            .replace(/\./g, "")
+            .replace(",", "."),
+        ),
+        amountWithTax: Number.parseFloat(
+          String(data.total || data.amountWithTax || "0")
+            .replace(/\s+/g, "")
+            .replace(/\./g, "")
+            .replace(",", "."),
+        ),
         currency: data.currency || "MAD",
         confidence: data.confidence || 0.5,
       },
@@ -155,7 +176,7 @@ function processData(data: any) {
 
   // Fallback to empty structure
   return {
-    rawText: "",
+    rawText: typeof data === "string" ? data : JSON.stringify(data, null, 2) || "",
     invoice: {
       supplier: "",
       invoiceNumber: "",

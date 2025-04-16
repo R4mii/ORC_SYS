@@ -44,6 +44,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    console.log(`Forwarding request to OCR service at: ${n8nWebhookUrl.substring(0, 20)}...`)
+
     // Create a new FormData object to send to n8n
     const n8nFormData = new FormData()
     n8nFormData.append("invoice1", file)
@@ -53,8 +55,6 @@ export async function POST(req: NextRequest) {
     const timeoutId = setTimeout(() => controller.abort(), 55000) // 55 second timeout
 
     try {
-      console.log(`Sending request to n8n webhook: ${n8nWebhookUrl}`)
-
       // Forward the file to the n8n webhook
       const response = await fetch(n8nWebhookUrl, {
         method: "POST",
@@ -65,32 +65,101 @@ export async function POST(req: NextRequest) {
       clearTimeout(timeoutId)
 
       if (!response.ok) {
-        const errorMessage = `n8n OCR service returned status: ${response.status}`
-        console.error(errorMessage)
-        return NextResponse.json({ error: errorMessage }, { status: response.status })
-      }
+        const errorText = await response.text().catch(() => "No error text available")
+        console.error(`n8n OCR service returned status: ${response.status}, body: ${errorText}`)
 
-      // Parse the JSON response
-      const data = await response.json()
-      return NextResponse.json(data)
-    } catch (fetchError) {
-      clearTimeout(timeoutId)
+        // For debugging purposes, log the response headers
+        console.log("Response headers:", Object.fromEntries([...response.headers.entries()]))
 
-      if (fetchError.name === "AbortError") {
-        console.error("Fetch request timed out")
         return NextResponse.json(
           {
-            error: "OCR processing timed out",
-            details: "The OCR service took too long to respond. Please try again with a smaller file.",
+            error: `OCR service error: ${response.status}`,
+            details: errorText.substring(0, 200), // Limit error text length
           },
-          { status: 504 },
+          { status: response.status },
         )
       }
 
+      // Parse the JSON response
+      try {
+        const data = await response.json()
+        console.log("OCR service response received successfully")
+
+        // Return the response data
+        return NextResponse.json(data)
+      } catch (jsonError) {
+        console.error("Failed to parse OCR service response:", jsonError)
+        return NextResponse.json(
+          {
+            error: "Invalid response from OCR service",
+            details: "The service returned an invalid JSON response",
+          },
+          { status: 500 },
+        )
+      }
+    } catch (fetchError) {
+      clearTimeout(timeoutId)
+
       console.error("Fetch error:", fetchError)
+
+      let errorMessage = "Failed to forward request to OCR service"
+      if (fetchError instanceof Error) {
+        errorMessage += `: ${fetchError.message}`
+      }
+
+      if (fetchError.name === "AbortError") {
+        console.error("Fetch request timed out")
+
+        // Use our fallback URL as an alternative
+        try {
+          console.log("Attempting to use fallback OCR service...")
+          const formData = new FormData()
+          formData.append("file", file)
+
+          const fallbackResponse = await fetch("/api/ocr/process", {
+            method: "POST",
+            body: formData,
+          })
+
+          if (fallbackResponse.ok) {
+            const fallbackData = await fallbackResponse.json()
+            console.log("Fallback OCR service response received successfully")
+            return NextResponse.json(fallbackData)
+          } else {
+            throw new Error(`Fallback service returned status: ${fallbackResponse.status}`)
+          }
+        } catch (fallbackError) {
+          console.error("Fallback OCR service also failed:", fallbackError)
+          return NextResponse.json(
+            {
+              error: "OCR processing timed out",
+              details:
+                "The OCR service took too long to respond and fallback also failed. Please try again with a smaller file.",
+            },
+            { status: 504 },
+          )
+        }
+      } else if (fetchError.message?.includes("ECONNREFUSED")) {
+        return NextResponse.json(
+          {
+            error: "Connection refused by OCR service",
+            details: "The OCR service is not reachable. Please check the service status and try again.",
+          },
+          { status: 500 },
+        )
+      } else if (fetchError.message?.includes("ENOTFOUND")) {
+        return NextResponse.json(
+          {
+            error: "OCR service host not found",
+            details: "The OCR service host could not be resolved. Please check the service URL and try again.",
+          },
+          { status: 500 },
+        )
+      }
+
       return NextResponse.json(
         {
-          error: "Failed to forward request to OCR service",
+          error: errorMessage,
           details: fetchError instanceof Error ? fetchError.message : "Unknown error",
         },
         { status: 500 },
