@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { AlertTriangle } from "lucide-react"
 import { EnhancedDataTable } from "@/components/enhanced-data-table"
 import { StatusTag } from "@/components/status-tag"
 import { Button } from "@/components/ui/button"
 import { FileUploadModal } from "@/components/file-upload-modal"
-import { toast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/use-toast"
+import { formatDate } from "@/lib/utils"
 
-// Interface for bank statement data
 interface BankStatement {
   id: string
   account_holder_name: string
@@ -21,22 +20,19 @@ interface BankStatement {
   currency: string
   status: string
   declaration_status: string
-  ocr_confidence: number
   created_at: string
-  hasWarning?: boolean
 }
 
 export default function BankStatementsPage() {
   const router = useRouter()
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedStatements, setSelectedStatements] = useState<string[]>([])
+  const { toast } = useToast()
+  const [statements, setStatements] = useState<BankStatement[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
-  const [bankStatements, setBankStatements] = useState<BankStatement[]>([])
   const [currentCompanyId, setCurrentCompanyId] = useState<string | null>(null)
   const [currentCompanyName, setCurrentCompanyName] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
 
-  // Load bank statements for the current company
+  // Load bank statements
   useEffect(() => {
     // Only run this code in the browser
     if (typeof window === "undefined") return
@@ -57,54 +53,35 @@ export default function BankStatementsPage() {
       setCurrentCompanyName(company.name)
     }
 
-    // Fetch bank statements from the database
     fetchBankStatements(companyId)
   }, [router])
 
   const fetchBankStatements = async (companyId: string) => {
     setIsLoading(true)
     try {
+      // Fetch from API
       const response = await fetch(`/api/bank-statements?companyId=${companyId}`)
 
       if (!response.ok) {
-        throw new Error("Failed to fetch bank statements")
+        throw new Error(`API error: ${response.status}`)
       }
 
       const data = await response.json()
-
-      // Transform data to match the interface
-      const formattedData = data.map((item: any) => ({
-        id: item.id.toString(),
-        account_holder_name: item.account_holder_name || "Unknown",
-        bank_name: item.bank_name || "Unknown",
-        account_number: item.account_number || "Unknown",
-        statement_date: new Date(item.statement_date).toLocaleDateString() || "Unknown",
-        previous_balance: Number.parseFloat(item.previous_balance) || 0,
-        new_balance: Number.parseFloat(item.new_balance) || 0,
-        currency: item.currency || "MAD",
-        status: item.status || "draft",
-        declaration_status: item.declaration_status || "undeclared",
-        ocr_confidence: Number.parseFloat(item.ocr_confidence) || 0,
-        created_at: new Date(item.created_at).toLocaleDateString(),
-        hasWarning: Number.parseFloat(item.ocr_confidence) < 0.7,
-      }))
-
-      setBankStatements(formattedData)
+      setStatements(data.data || [])
     } catch (error) {
       console.error("Error fetching bank statements:", error)
       toast({
-        title: "Erreur",
-        description: "Impossible de récupérer les relevés bancaires",
+        title: "Error",
+        description: "Failed to load bank statements from database. Falling back to local data.",
         variant: "destructive",
       })
 
-      // Fallback to localStorage if API fails
-      const storageKey = `bankStatements_${companyId}`
-      const statementsJson = localStorage.getItem(storageKey)
+      // Fallback to localStorage
+      const statementsJson = localStorage.getItem(`bankStatements_${companyId}`)
       if (statementsJson) {
-        setBankStatements(JSON.parse(statementsJson))
+        setStatements(JSON.parse(statementsJson))
       } else {
-        setBankStatements([])
+        setStatements([])
       }
     } finally {
       setIsLoading(false)
@@ -120,11 +97,10 @@ export default function BankStatementsPage() {
 
     try {
       // Create a new bank statement from OCR results
-      const bankStatementData = {
-        user_id: 1, // Default user ID, should be replaced with actual user ID
+      const newStatement = {
         company_id: Number.parseInt(currentCompanyId),
-        account_holder_name: result.bankStatement.accountHolderName || "",
-        bank_name: result.bankStatement.bankName || "",
+        account_holder_name: result.bankStatement.accountHolderName || "Unknown",
+        bank_name: result.bankStatement.bankName || "Unknown Bank",
         account_number: result.bankStatement.accountNumber || "",
         statement_date: result.bankStatement.statementDate || new Date().toISOString().split("T")[0],
         previous_balance: result.bankStatement.previousBalance || 0,
@@ -134,113 +110,100 @@ export default function BankStatementsPage() {
         declaration_status: "undeclared",
         ocr_confidence: result.bankStatement.confidence || 0,
         original_filename: result.originalFile.name,
-        original_filepath: "", // Would be set by file upload service
         original_mimetype: result.originalFile.type,
         raw_text: result.rawText || "",
-        notes: "",
       }
 
-      // Save to database
+      // Save to database via API
       const response = await fetch("/api/bank-statements", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(bankStatementData),
+        body: JSON.stringify(newStatement),
       })
 
       if (!response.ok) {
-        throw new Error("Failed to save bank statement to database")
+        throw new Error(`API error: ${response.status}`)
       }
 
-      const savedBankStatement = await response.json()
+      const savedStatement = await response.json()
+
+      // Update the local state
+      setStatements((prev) => [savedStatement, ...prev])
 
       toast({
-        title: "Relevé bancaire enregistré",
-        description: "Le relevé bancaire a été enregistré avec succès",
+        title: "Success",
+        description: "Bank statement uploaded and saved to database",
       })
-
-      // Refresh the list
-      fetchBankStatements(currentCompanyId)
     } catch (error) {
       console.error("Error saving bank statement:", error)
       toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de l'enregistrement du relevé bancaire",
+        title: "Error",
+        description: "Failed to save to database. Saving locally instead.",
         variant: "destructive",
       })
-    } finally {
-      // Close the modal
-      setUploadModalOpen(false)
-    }
-  }
 
-  const handleDeleteStatement = async (id: string) => {
-    if (confirm("Êtes-vous sûr de vouloir supprimer ce relevé bancaire?")) {
-      try {
-        const response = await fetch(`/api/bank-statements/${id}`, {
-          method: "DELETE",
-        })
-
-        if (!response.ok) {
-          throw new Error("Failed to delete bank statement")
-        }
-
-        toast({
-          title: "Relevé supprimé",
-          description: "Le relevé bancaire a été supprimé avec succès",
-        })
-
-        // Refresh the list
-        fetchBankStatements(currentCompanyId!)
-      } catch (error) {
-        console.error("Error deleting bank statement:", error)
-        toast({
-          title: "Erreur",
-          description: "Une erreur est survenue lors de la suppression du relevé bancaire",
-          variant: "destructive",
-        })
+      // Fallback to localStorage
+      const newStatement = {
+        id: Math.random().toString(36).substring(2, 9),
+        account_holder_name: result.bankStatement.accountHolderName || "Unknown",
+        bank_name: result.bankStatement.bankName || "Unknown Bank",
+        account_number: result.bankStatement.accountNumber || "",
+        statement_date: result.bankStatement.statementDate || new Date().toISOString().split("T")[0],
+        previous_balance: result.bankStatement.previousBalance || 0,
+        new_balance: result.bankStatement.newBalance || 0,
+        currency: result.bankStatement.currency || "MAD",
+        status: "draft",
+        declaration_status: "undeclared",
+        created_at: new Date().toISOString(),
       }
-    }
-  }
 
-  // Calculate total balance
-  const totalBalance = bankStatements.reduce((sum, statement) => sum + statement.new_balance, 0)
+      // Get existing statements
+      const statementsJson = localStorage.getItem(`bankStatements_${currentCompanyId}`)
+      const existingStatements = statementsJson ? JSON.parse(statementsJson) : []
+
+      // Save to localStorage
+      const updatedStatements = [newStatement, ...existingStatements]
+      localStorage.setItem(`bankStatements_${currentCompanyId}`, JSON.stringify(updatedStatements))
+
+      // Update state
+      setStatements(updatedStatements)
+    }
+
+    // Close the modal
+    setUploadModalOpen(false)
+  }
 
   // Define table columns
   const columns = [
     {
       key: "bank_name",
-      header: "Banque",
-      cell: (statement: BankStatement) => (
-        <div className="font-medium flex items-center gap-2">
-          {statement.hasWarning && <AlertTriangle className="h-4 w-4 text-amber-500" />}
-          {statement.bank_name}
-        </div>
-      ),
+      header: "Bank",
+      cell: (statement: BankStatement) => <div className="font-medium">{statement.bank_name}</div>,
       sortable: true,
     },
     {
       key: "account_holder_name",
-      header: "Titulaire",
+      header: "Account Holder",
       cell: (statement: BankStatement) => statement.account_holder_name,
       sortable: true,
     },
     {
       key: "account_number",
-      header: "Numéro de compte",
+      header: "Account Number",
       cell: (statement: BankStatement) => statement.account_number,
       sortable: true,
     },
     {
       key: "statement_date",
-      header: "Date de relevé",
-      cell: (statement: BankStatement) => statement.statement_date,
+      header: "Date",
+      cell: (statement: BankStatement) => formatDate(statement.statement_date),
       sortable: true,
     },
     {
       key: "previous_balance",
-      header: "Ancien solde",
+      header: "Previous Balance",
       cell: (statement: BankStatement) => (
         <div className="text-right">
           {statement.previous_balance.toFixed(2)} {statement.currency}
@@ -251,7 +214,7 @@ export default function BankStatementsPage() {
     },
     {
       key: "new_balance",
-      header: "Nouveau solde",
+      header: "New Balance",
       cell: (statement: BankStatement) => (
         <div className="text-right">
           {statement.new_balance.toFixed(2)} {statement.currency}
@@ -262,20 +225,18 @@ export default function BankStatementsPage() {
     },
     {
       key: "status",
-      header: "Statut",
-      cell: (statement: BankStatement) => {
-        const statusMap: Record<string, any> = {
-          draft: "draft",
-          pending: "pending",
-          validated: "validated",
-        }
-        return <StatusTag status={statusMap[statement.status] || "draft"} size="sm" />
-      },
+      header: "Status",
+      cell: (statement: BankStatement) => (
+        <StatusTag
+          status={statement.status === "draft" ? "draft" : statement.status === "validated" ? "validated" : "pending"}
+          size="sm"
+        />
+      ),
       sortable: true,
     },
     {
       key: "declaration_status",
-      header: "État de Déclaration",
+      header: "Declaration",
       cell: (statement: BankStatement) => (
         <StatusTag status={statement.declaration_status === "declared" ? "declared" : "undeclared"} size="sm" />
       ),
@@ -286,16 +247,44 @@ export default function BankStatementsPage() {
   // Define actions
   const actions = [
     {
-      label: "Voir",
+      label: "View",
       onClick: (statement: BankStatement) => handleViewStatement(statement.id),
     },
     {
-      label: "Modifier",
+      label: "Edit",
       onClick: (statement: BankStatement) => router.push(`/dashboard/bank-statements/${statement.id}?edit=true`),
     },
     {
-      label: "Supprimer",
-      onClick: (statement: BankStatement) => handleDeleteStatement(statement.id),
+      label: "Delete",
+      onClick: async (statement: BankStatement) => {
+        if (confirm("Are you sure you want to delete this bank statement?")) {
+          try {
+            // Delete from API
+            const response = await fetch(`/api/bank-statements/${statement.id}`, {
+              method: "DELETE",
+            })
+
+            if (!response.ok) {
+              throw new Error(`API error: ${response.status}`)
+            }
+
+            // Update state
+            setStatements((prev) => prev.filter((s) => s.id !== statement.id))
+
+            toast({
+              title: "Success",
+              description: "Bank statement deleted successfully",
+            })
+          } catch (error) {
+            console.error("Error deleting bank statement:", error)
+            toast({
+              title: "Error",
+              description: "Failed to delete bank statement",
+              variant: "destructive",
+            })
+          }
+        }
+      },
     },
   ]
 
@@ -303,29 +292,23 @@ export default function BankStatementsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">
-          Relevés bancaires {currentCompanyName && `- ${currentCompanyName}`}
+          Bank Statements {currentCompanyName && `- ${currentCompanyName}`}
         </h1>
-        <Button onClick={() => setUploadModalOpen(true)}>Charger un relevé</Button>
+        <Button onClick={() => setUploadModalOpen(true)}>Upload Bank Statement</Button>
       </div>
 
       <EnhancedDataTable
-        data={bankStatements}
+        data={statements}
         columns={columns}
         keyField="id"
         searchable={true}
-        searchPlaceholder="Rechercher un relevé..."
+        searchPlaceholder="Search bank statements..."
         pagination={true}
         pageSize={10}
         actions={actions}
         onRowClick={(statement) => handleViewStatement(statement.id)}
         isLoading={isLoading}
       />
-
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          Total des soldes: <strong>{totalBalance.toFixed(2)} MAD</strong>
-        </div>
-      </div>
 
       {/* File Upload Modal */}
       <FileUploadModal

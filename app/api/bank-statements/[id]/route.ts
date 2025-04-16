@@ -1,66 +1,54 @@
 import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
 import { neon } from "@neondatabase/serverless"
 
+// Initialize the SQL client
 const sql = neon(process.env.DATABASE_URL!)
 
-// GET a specific bank statement
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const id = params.id
 
-    const bankStatement = await sql`
-      SELECT * FROM bank_statements WHERE id = ${id}
-    `
+    // Get the bank statement by ID
+    const result = await sql(`SELECT * FROM bank_statements WHERE id = $1`, [id])
 
-    if (!bankStatement || bankStatement.length === 0) {
+    if (result.length === 0) {
       return NextResponse.json({ error: "Bank statement not found" }, { status: 404 })
     }
 
-    return NextResponse.json(bankStatement[0])
+    return NextResponse.json(result[0])
   } catch (error) {
     console.error("Error fetching bank statement:", error)
     return NextResponse.json({ error: "Failed to fetch bank statement" }, { status: 500 })
   }
 }
 
-// UPDATE a bank statement
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const id = params.id
     const data = await request.json()
 
-    const {
-      account_holder_name,
-      bank_name,
-      account_number,
-      statement_date,
-      previous_balance,
-      new_balance,
-      currency,
-      status,
-      declaration_status,
-      notes,
-    } = data
+    // Prepare the update query
+    const fields = Object.keys(data).filter((key) => key !== "id" && data[key] !== undefined && data[key] !== null)
 
-    const result = await sql`
+    if (fields.length === 0) {
+      return NextResponse.json({ error: "No fields to update" }, { status: 400 })
+    }
+
+    const setClause = fields.map((field, i) => `${field} = $${i + 2}`).join(", ")
+    const values = fields.map((field) => data[field])
+
+    // Add updated_at timestamp
+    const query = `
       UPDATE bank_statements
-      SET
-        account_holder_name = ${account_holder_name || null},
-        bank_name = ${bank_name || null},
-        account_number = ${account_number || null},
-        statement_date = ${statement_date ? new Date(statement_date) : null},
-        previous_balance = ${previous_balance || 0},
-        new_balance = ${new_balance || 0},
-        currency = ${currency || "MAD"},
-        status = ${status || "draft"},
-        declaration_status = ${declaration_status || "undeclared"},
-        notes = ${notes || ""},
-        updated_at = NOW()
-      WHERE id = ${id}
+      SET ${setClause}, updated_at = NOW()
+      WHERE id = $1
       RETURNING *
     `
 
-    if (!result || result.length === 0) {
+    const result = await sql(query, [id, ...values])
+
+    if (result.length === 0) {
       return NextResponse.json({ error: "Bank statement not found" }, { status: 404 })
     }
 
@@ -71,22 +59,18 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-// DELETE a bank statement
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const id = params.id
 
-    const result = await sql`
-      DELETE FROM bank_statements
-      WHERE id = ${id}
-      RETURNING id
-    `
+    // Delete the bank statement
+    const result = await sql(`DELETE FROM bank_statements WHERE id = $1 RETURNING id`, [id])
 
-    if (!result || result.length === 0) {
+    if (result.length === 0) {
       return NextResponse.json({ error: "Bank statement not found" }, { status: 404 })
     }
 
-    return NextResponse.json({ message: "Bank statement deleted successfully" })
+    return NextResponse.json({ success: true, id: result[0].id })
   } catch (error) {
     console.error("Error deleting bank statement:", error)
     return NextResponse.json({ error: "Failed to delete bank statement" }, { status: 500 })
