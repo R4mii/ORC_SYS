@@ -139,7 +139,13 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
       const formData = new FormData()
       formData.append("invoice1", files[0])
 
-      const response = await fetch("https://ocr-sys-u41198.vm.elestio.app/webhook/upload", {
+      // Use different webhook URL based on document type
+      const webhookUrl =
+        documentType === "bankStatements"
+          ? "https://ocr-sys-u41198.vm.elestio.app/webhook-test/uprelev"
+          : "https://ocr-sys-u41198.vm.elestio.app/webhook/upload"
+
+      const response = await fetch(webhookUrl, {
         method: "POST",
         body: formData,
       })
@@ -151,8 +157,10 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
       const data = await response.json()
       console.log("OCR response:", data) // Debug log
 
-      // Process the OCR response
-      const processedData = processOcrResponse(data)
+      // Process the OCR response based on document type
+      const processedData =
+        documentType === "bankStatements" ? processBankStatementResponse(data) : processOcrResponse(data)
+
       setOcrResults(processedData)
       setCurrentStep("results")
 
@@ -178,6 +186,70 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
       }
     } finally {
       setIsUploading(false)
+    }
+  }
+
+  // Add a new function to process bank statement responses
+  const processBankStatementResponse = (data: any) => {
+    // Check if data is an array
+    if (Array.isArray(data) && data.length > 0) {
+      const firstItem = data[0]
+
+      // Extract output if it exists
+      const output = firstItem.output || {}
+
+      // Create a standardized structure for bank statements
+      return {
+        bankStatement: {
+          accountHolderName: output["Nom du titulaire"] || "",
+          bankName: output["Banque"] || "",
+          accountNumber: output["Numéro de compte"] || "",
+          statementDate: output["Date de relevé"] || "",
+          previousBalance: Number.parseFloat(output["Ancien solde"]?.replace(",", ".") || "0"),
+          newBalance: Number.parseFloat(output["Nouveau solde"]?.replace(",", ".") || "0"),
+          currency: "MAD",
+          confidence: 0.8, // Default confidence
+        },
+        rawText: firstItem.text || "",
+        originalResponse: data,
+      }
+    } else if (data && typeof data === "object") {
+      // If it's already in the expected format, return it
+      if (data.bankStatement) return data
+
+      // Otherwise, try to extract data from the object
+      return {
+        bankStatement: {
+          accountHolderName: data["Nom du titulaire"] || data.accountHolderName || "",
+          bankName: data["Banque"] || data.bankName || "",
+          accountNumber: data["Numéro de compte"] || data.accountNumber || "",
+          statementDate: data["Date de relevé"] || data.statementDate || "",
+          previousBalance: Number.parseFloat(
+            String(data["Ancien solde"] || data.previousBalance || "0").replace(",", "."),
+          ),
+          newBalance: Number.parseFloat(String(data["Nouveau solde"] || data.newBalance || "0").replace(",", ".")),
+          currency: data.currency || "MAD",
+          confidence: data.confidence || 0.5,
+        },
+        rawText: data.text || "",
+        originalResponse: data,
+      }
+    }
+
+    // Fallback to empty structure
+    return {
+      bankStatement: {
+        accountHolderName: "",
+        bankName: "",
+        accountNumber: "",
+        statementDate: "",
+        previousBalance: 0,
+        newBalance: 0,
+        currency: "MAD",
+        confidence: 0,
+      },
+      rawText: "",
+      originalResponse: data,
     }
   }
 
@@ -438,65 +510,122 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
                 <div className="border rounded-lg p-5">
                   <h3 className="font-medium mb-4 text-sm flex items-center">
                     <FileText className="h-4 w-4 mr-2 text-primary" />
-                    Données de la facture
+                    {documentType === "bankStatements" ? "Données du relevé bancaire" : "Données de la facture"}
                   </h3>
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                      <p className="text-xs text-muted-foreground">Fournisseur</p>
-                      <p className="font-medium">{ocrResults.invoice.supplier || "Non détecté"}</p>
-                    </div>
-                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                      <p className="text-xs text-muted-foreground">Numéro de facture</p>
-                      <p className="font-medium">{ocrResults.invoice.invoiceNumber || "Non détecté"}</p>
-                    </div>
-                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                      <p className="text-xs text-muted-foreground">Date de facture</p>
-                      <p className="font-medium">{ocrResults.invoice.invoiceDate || "Non détecté"}</p>
-                    </div>
-                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                      <p className="text-xs text-muted-foreground">Montant HT</p>
-                      <p className="font-medium">
-                        {ocrResults.invoice.amount
-                          ? `${ocrResults.invoice.amount.toFixed(2)} ${ocrResults.invoice.currency || "MAD"}`
-                          : "Non détecté"}
-                      </p>
-                    </div>
-                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                      <p className="text-xs text-muted-foreground">TVA</p>
-                      <p className="font-medium">
-                        {ocrResults.invoice.vatAmount
-                          ? `${ocrResults.invoice.vatAmount.toFixed(2)} ${ocrResults.invoice.currency || "MAD"}`
-                          : "Non détecté"}
-                      </p>
-                    </div>
-                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                      <p className="text-xs text-muted-foreground">Montant TTC</p>
-                      <p className="font-medium">
-                        {ocrResults.invoice.amountWithTax
-                          ? `${ocrResults.invoice.amountWithTax.toFixed(2)} ${ocrResults.invoice.currency || "MAD"}`
-                          : "Non détecté"}
-                      </p>
-                    </div>
+                    {documentType === "bankStatements" ? (
+                      // Bank statement data display
+                      <>
+                        <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Nom du titulaire</p>
+                          <p className="font-medium">{ocrResults.bankStatement?.accountHolderName || "Non détecté"}</p>
+                        </div>
+                        <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Banque</p>
+                          <p className="font-medium">{ocrResults.bankStatement?.bankName || "Non détecté"}</p>
+                        </div>
+                        <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Numéro de compte</p>
+                          <p className="font-medium">{ocrResults.bankStatement?.accountNumber || "Non détecté"}</p>
+                        </div>
+                        <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Date de relevé</p>
+                          <p className="font-medium">{ocrResults.bankStatement?.statementDate || "Non détecté"}</p>
+                        </div>
+                        <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Ancien solde</p>
+                          <p className="font-medium">
+                            {ocrResults.bankStatement?.previousBalance
+                              ? `${ocrResults.bankStatement.previousBalance.toFixed(2)} ${ocrResults.bankStatement.currency || "MAD"}`
+                              : "Non détecté"}
+                          </p>
+                        </div>
+                        <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Nouveau solde</p>
+                          <p className="font-medium">
+                            {ocrResults.bankStatement?.newBalance
+                              ? `${ocrResults.bankStatement.newBalance.toFixed(2)} ${ocrResults.bankStatement.currency || "MAD"}`
+                              : "Non détecté"}
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      // Invoice data display (existing code)
+                      <>
+                        <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Fournisseur</p>
+                          <p className="font-medium">{ocrResults.invoice.supplier || "Non détecté"}</p>
+                        </div>
+                        <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Numéro de facture</p>
+                          <p className="font-medium">{ocrResults.invoice.invoiceNumber || "Non détecté"}</p>
+                        </div>
+                        <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Date de facture</p>
+                          <p className="font-medium">{ocrResults.invoice.invoiceDate || "Non détecté"}</p>
+                        </div>
+                        <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Montant HT</p>
+                          <p className="font-medium">
+                            {ocrResults.invoice.amount
+                              ? `${ocrResults.invoice.amount.toFixed(2)} ${ocrResults.invoice.currency || "MAD"}`
+                              : "Non détecté"}
+                          </p>
+                        </div>
+                        <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">TVA</p>
+                          <p className="font-medium">
+                            {ocrResults.invoice.vatAmount
+                              ? `${ocrResults.invoice.vatAmount.toFixed(2)} ${ocrResults.invoice.currency || "MAD"}`
+                              : "Non détecté"}
+                          </p>
+                        </div>
+                        <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Montant TTC</p>
+                          <p className="font-medium">
+                            {ocrResults.invoice.amountWithTax
+                              ? `${ocrResults.invoice.amountWithTax.toFixed(2)} ${ocrResults.invoice.currency || "MAD"}`
+                              : "Non détecté"}
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-2 text-sm p-3 border rounded-lg bg-muted/30">
                   <div
                     className={`w-2 h-2 rounded-full ${
-                      ocrResults.invoice.confidence > 0.7
+                      (
+                        documentType === "bankStatements"
+                          ? ocrResults.bankStatement?.confidence
+                          : ocrResults.invoice.confidence
+                      ) > 0.7
                         ? "bg-green-500"
-                        : ocrResults.invoice.confidence > 0.4
+                        : (documentType === "bankStatements"
+                              ? ocrResults.bankStatement?.confidence
+                              : ocrResults.invoice.confidence) > 0.4
                           ? "bg-amber-500"
                           : "bg-red-500"
                     }`}
                   ></div>
                   <span>
-                    Confiance: {Math.round((ocrResults.invoice.confidence || 0) * 100)}%
+                    Confiance:{" "}
+                    {Math.round(
+                      ((documentType === "bankStatements"
+                        ? ocrResults.bankStatement?.confidence
+                        : ocrResults.invoice.confidence) || 0) * 100,
+                    )}
+                    %
                     <span className="ml-1 transition-opacity duration-200">
                       (
-                      {ocrResults.invoice.confidence > 0.7
+                      {(documentType === "bankStatements"
+                        ? ocrResults.bankStatement?.confidence
+                        : ocrResults.invoice.confidence) > 0.7
                         ? "Élevée"
-                        : ocrResults.invoice.confidence > 0.4
+                        : (documentType === "bankStatements"
+                              ? ocrResults.bankStatement?.confidence
+                              : ocrResults.invoice.confidence) > 0.4
                           ? "Moyenne"
                           : "Faible"}
                       )

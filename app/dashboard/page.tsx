@@ -136,32 +136,61 @@ export default function DashboardPage() {
     if (!currentCompany) return
 
     // Create a new document from OCR results
-    const newDocument = {
-      id: Math.random().toString(36).substring(2, 9),
-      name: result.invoice.supplier
-        ? `Facture ${result.invoice.supplier}`
-        : `Document ${new Date().toLocaleDateString()}`,
-      description: result.originalFile.name,
-      invoiceNumber:
-        result.invoice.invoiceNumber ||
-        `INV-${Math.floor(Math.random() * 10000)
-          .toString()
-          .padStart(4, "0")}`,
-      partner: result.invoice.supplier || "Fournisseur inconnu",
-      invoiceDate: result.invoice.invoiceDate || new Date().toLocaleDateString(),
-      dueDate: result.invoice.invoiceDate || new Date().toLocaleDateString(),
-      createdAt: new Date().toLocaleDateString(),
-      amount: result.invoice.amount || 0,
-      amountWithTax: result.invoice.amountWithTax || 0,
-      vatAmount: result.invoice.vatAmount || 0,
-      type: "facture",
-      paymentStatus: "non-paye",
-      declarationStatus: "non-declare",
-      status: "en-cours",
-      hasWarning: result.invoice.confidence < 0.7,
-      documentType: currentUploadType,
-      ocrConfidence: result.invoice.confidence,
-      rawText: result.rawText,
+    let newDocument
+
+    if (currentUploadType === "bankStatements" && result.bankStatement) {
+      // For bank statements
+      newDocument = {
+        id: Math.random().toString(36).substring(2, 9),
+        name: result.bankStatement.bankName
+          ? `Relevé ${result.bankStatement.bankName}`
+          : `Relevé bancaire ${new Date().toLocaleDateString()}`,
+        description: result.originalFile.name,
+        accountHolderName: result.bankStatement.accountHolderName || "Titulaire inconnu",
+        bankName: result.bankStatement.bankName || "Banque inconnue",
+        accountNumber: result.bankStatement.accountNumber || "Numéro inconnu",
+        statementDate: result.bankStatement.statementDate || new Date().toLocaleDateString(),
+        previousBalance: result.bankStatement.previousBalance || 0,
+        newBalance: result.bankStatement.newBalance || 0,
+        createdAt: new Date().toLocaleDateString(),
+        currency: result.bankStatement.currency || "MAD",
+        type: "releve",
+        status: "en-cours",
+        declarationStatus: "non-declare",
+        hasWarning: (result.bankStatement.confidence || 0) < 0.7,
+        documentType: currentUploadType,
+        ocrConfidence: result.bankStatement.confidence || 0,
+        rawText: result.rawText,
+      }
+    } else {
+      // For other document types (existing invoice processing)
+      newDocument = {
+        id: Math.random().toString(36).substring(2, 9),
+        name: result.invoice.supplier
+          ? `Facture ${result.invoice.supplier}`
+          : `Document ${new Date().toLocaleDateString()}`,
+        description: result.originalFile.name,
+        invoiceNumber:
+          result.invoice.invoiceNumber ||
+          `INV-${Math.floor(Math.random() * 10000)
+            .toString()
+            .padStart(4, "0")}`,
+        partner: result.invoice.supplier || "Fournisseur inconnu",
+        invoiceDate: result.invoice.invoiceDate || new Date().toLocaleDateString(),
+        dueDate: result.invoice.invoiceDate || new Date().toLocaleDateString(),
+        createdAt: new Date().toLocaleDateString(),
+        amount: result.invoice.amount || 0,
+        amountWithTax: result.invoice.amountWithTax || 0,
+        vatAmount: result.invoice.vatAmount || 0,
+        type: "facture",
+        paymentStatus: "non-paye",
+        declarationStatus: "non-declare",
+        status: "en-cours",
+        hasWarning: result.invoice.confidence < 0.7,
+        documentType: currentUploadType,
+        ocrConfidence: result.invoice.confidence,
+        rawText: result.rawText,
+      }
     }
 
     // Get existing documents for this type
