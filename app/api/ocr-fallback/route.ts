@@ -1,6 +1,6 @@
+// Create a new route that directly forwards to the n8n webhook
 import { type NextRequest, NextResponse } from "next/server"
 
-// Set a longer timeout for this API route
 export const maxDuration = 60 // 60 seconds timeout
 
 export async function POST(req: NextRequest) {
@@ -13,51 +13,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "OCR service configuration error" }, { status: 500 })
     }
 
-    console.log("Using N8N webhook URL:", n8nWebhookUrl)
+    console.log("Using N8N webhook URL (fallback route):", n8nWebhookUrl)
 
-    // Get the form data from the request
+    // Forward the request directly to n8n
     const formData = await req.formData()
-    const file = formData.get("file") as File
 
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 })
-    }
-
-    // Log file details for debugging
-    console.log("Processing file:", file.name, "Size:", file.size, "Type:", file.type)
-
-    // Check file type
-    const fileType = file.type.toLowerCase()
-    const isValidType =
-      fileType.includes("pdf") ||
-      fileType.includes("image/jpeg") ||
-      fileType.includes("image/png") ||
-      fileType.includes("image/jpg")
-
-    if (!isValidType) {
-      return NextResponse.json({ error: "Invalid file type. Only PDF, JPG, and PNG are supported." }, { status: 400 })
-    }
-
-    // Check file size (10MB limit)
-    const maxSize = 10 * 1024 * 1024 // 10MB
-    if (file.size > maxSize) {
-      return NextResponse.json({ error: "File too large. Maximum size is 10MB." }, { status: 400 })
-    }
-
-    // Create a new FormData object to send to n8n
-    const n8nFormData = new FormData()
-    n8nFormData.append("invoice1", file) // Using the field name 'invoice1' as required by n8n
-
-    console.log("Sending request to n8n webhook...")
-
-    // Send file data to the n8n workflow with a longer timeout
+    // Add a timeout to the fetch request
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 55000) // 55 second timeout
 
     try {
       const response = await fetch(n8nWebhookUrl, {
         method: "POST",
-        body: n8nFormData,
+        body: formData,
         signal: controller.signal,
       })
 
@@ -69,7 +37,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: errorMessage }, { status: response.status })
       }
 
-      console.log("Received successful response from n8n")
+      console.log("Received successful response from n8n (fallback route)")
 
       // Parse the JSON response
       const data = await response.json()
@@ -85,7 +53,7 @@ export async function POST(req: NextRequest) {
       throw fetchError
     }
   } catch (error) {
-    console.error("OCR processing error:", error)
+    console.error("OCR processing error (fallback route):", error)
     return NextResponse.json(
       {
         error: "Failed to process document",

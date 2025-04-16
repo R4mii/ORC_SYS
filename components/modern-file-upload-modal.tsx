@@ -151,66 +151,8 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     }, 200)
   }, [])
 
-  // Update the handleUpload function to include a fileUrl for document display
-  const handleUpload = useCallback(async () => {
-    if (files.length === 0) return
-
-    setIsUploading(true)
-    setCurrentStep("processing")
-    simulateProgressUpdate()
-
-    try {
-      const formData = new FormData()
-      formData.append("file", files[0])
-
-      // Use the API route instead of direct n8n endpoint
-      const response = await fetch("/api/ocr/process", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (!response.ok) {
-        throw new Error(`OCR service returned status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      console.log("OCR API response:", data)
-
-      // Create a file URL for preview
-      const fileUrl = URL.createObjectURL(files[0])
-
-      // Process the OCR response
-      const processedData = processOcrResponse(data)
-      setOcrResults({
-        ...processedData,
-        fileUrl: fileUrl, // Add the file URL to the results
-      })
-      setCurrentStep("results")
-      setProgress(100)
-
-      toast({
-        title: "Traitement OCR terminé",
-        description: "Les données ont été extraites avec succès",
-        variant: "default",
-      })
-    } catch (err) {
-      console.error("OCR Error:", err)
-      setError(err instanceof Error ? err.message : "Une erreur s'est produite lors du traitement OCR")
-      setCurrentStep("upload")
-
-      toast({
-        title: "Erreur de traitement",
-        description: err instanceof Error ? err.message : "Une erreur s'est produite lors du traitement OCR",
-        variant: "destructive",
-      })
-
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current)
-      }
-    } finally {
-      setIsUploading(false)
-    }
-  }, [files, simulateProgressUpdate])
+  // Update the handleUpload function to use the fallback URL if needed
+  // Find the handleUpload function and replace it with this improved version
 
   // Update the processOcrResponse function to handle the new format
   const processOcrResponse = useCallback((data: any) => {
@@ -273,6 +215,92 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       originalResponse: data,
     }
   }, [])
+
+  const handleUpload = useCallback(async () => {
+    if (files.length === 0) return
+
+    setIsUploading(true)
+    setCurrentStep("processing")
+    simulateProgressUpdate()
+
+    try {
+      const formData = new FormData()
+      formData.append("file", files[0])
+
+      // Add a timeout to the fetch request
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 50000) // 50 second timeout
+
+      let response
+      try {
+        // First try the API route
+        response = await fetch("/api/ocr/process", {
+          method: "POST",
+          body: formData,
+          signal: controller.signal,
+        })
+      } catch (fetchError) {
+        clearTimeout(timeoutId)
+
+        if (fetchError.name === "AbortError") {
+          console.log("API route timed out, trying fallback...")
+          // If it times out, try the fallback route
+          const fallbackFormData = new FormData()
+          fallbackFormData.append("invoice1", files[0])
+
+          response = await fetch("/api/ocr-fallback", {
+            method: "POST",
+            body: fallbackFormData,
+          })
+        } else {
+          throw fetchError
+        }
+      }
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        throw new Error(`OCR service returned status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log("OCR API response:", data)
+
+      // Create a file URL for preview
+      const fileUrl = URL.createObjectURL(files[0])
+
+      // Process the OCR response
+      const processedData = processOcrResponse(data)
+      setOcrResults({
+        ...processedData,
+        fileUrl: fileUrl, // Add the file URL to the results
+      })
+      setCurrentStep("results")
+      setProgress(100)
+
+      toast({
+        title: "Traitement OCR terminé",
+        description: "Les données ont été extraites avec succès",
+        variant: "default",
+      })
+    } catch (err) {
+      console.error("OCR Error:", err)
+      setError(err instanceof Error ? err.message : "Une erreur s'est produite lors du traitement OCR")
+      setCurrentStep("upload")
+
+      toast({
+        title: "Erreur de traitement",
+        description: err instanceof Error ? err.message : "Une erreur s'est produite lors du traitement OCR",
+        variant: "destructive",
+      })
+
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+      }
+    } finally {
+      setIsUploading(false)
+    }
+  }, [files, simulateProgressUpdate, processOcrResponse, toast])
 
   const handleConfirm = useCallback(() => {
     if (ocrResults) {
