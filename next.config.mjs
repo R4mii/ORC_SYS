@@ -29,7 +29,6 @@ const nextConfig = {
   },
 }
 
-
 if (userConfig) {
   // ESM imports will have a "default" property
   const config = userConfig.default || userConfig
