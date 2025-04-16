@@ -227,14 +227,15 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       const formData = new FormData()
       formData.append("file", files[0])
 
-      // Try the fallback route directly
-      const response = await fetch("/api/ocr-fallback", {
+      // Use our dedicated API route instead of directly accessing the environment variable
+      const response = await fetch("/api/ocr-webhook", {
         method: "POST",
         body: formData,
       })
 
       if (!response.ok) {
-        throw new Error(`OCR service returned status: ${response.status}`)
+        const errorData = await response.json()
+        throw new Error(errorData.error || `Error: ${response.status}`)
       }
 
       const data = await response.json()

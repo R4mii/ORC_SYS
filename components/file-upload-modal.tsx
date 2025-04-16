@@ -230,71 +230,40 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
     simulateProgressUpdate()
 
     try {
-      // Get the n8n webhook URL directly
-      const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL
-
-      console.log("N8N_WEBHOOK_URL from env:", n8nWebhookUrl)
-
-      if (!n8nWebhookUrl) {
-        console.error("N8N_WEBHOOK_URL environment variable is not set")
-        setError("OCR service configuration error")
-        toast({
-          title: "Erreur de traitement",
-          description: "OCR service configuration error",
-          variant: "destructive",
-        })
-        setCurrentStep("upload")
-        return
-      }
-
       const formData = new FormData()
-      formData.append("invoice1", files[0])
+      formData.append("file", files[0])
 
-      // Add a timeout to the fetch request
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 55000) // 55 second timeout
+      // Use our dedicated API route instead of directly accessing the environment variable
+      const response = await fetch("/api/ocr-webhook", {
+        method: "POST",
+        body: formData,
+      })
 
-      try {
-        // Send directly to n8n webhook
-        const response = await fetch(n8nWebhookUrl, {
-          method: "POST",
-          body: formData,
-          signal: controller.signal,
-        })
-
-        clearTimeout(timeoutId)
-
-        if (!response.ok) {
-          throw new Error(`OCR service returned status: ${response.status}`)
-        }
-
-        const data = await response.json()
-        console.log("OCR API response:", data)
-
-        // Create a file URL for preview
-        const fileUrl = URL.createObjectURL(files[0])
-
-        // Process the OCR response
-        const processedData = processOcrResponse(data)
-        setOcrResults({
-          ...processedData,
-          fileUrl: fileUrl, // Add the file URL to the results
-        })
-        setCurrentStep("results")
-        setProgress(100)
-
-        toast({
-          title: "Traitement OCR terminé",
-          description: "Les données ont été extraites avec succès",
-          variant: "default",
-        })
-      } catch (fetchError) {
-        clearTimeout(timeoutId)
-        if (fetchError.name === "AbortError") {
-          throw new Error("OCR processing timed out. Please try with a smaller file or try again later.")
-        }
-        throw fetchError
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `Error: ${response.status}`)
       }
+
+      const data = await response.json()
+      console.log("OCR API response:", data)
+
+      // Create a file URL for preview
+      const fileUrl = URL.createObjectURL(files[0])
+
+      // Process the OCR response
+      const processedData = processOcrResponse(data)
+      setOcrResults({
+        ...processedData,
+        fileUrl: fileUrl, // Add the file URL to the results
+      })
+      setCurrentStep("results")
+      setProgress(100)
+
+      toast({
+        title: "Traitement OCR terminé",
+        description: "Les données ont été extraites avec succès",
+        variant: "default",
+      })
     } catch (err) {
       console.error("OCR Error:", err)
       setError(err instanceof Error ? err.message : "Une erreur s'est produite lors du traitement OCR")
