@@ -1,11 +1,53 @@
-/**
- * Environment variables configuration with type safety
- *
- * This file centralizes all environment variables used in the application
- * and provides type safety and validation.
- */
+// Environment variables configuration with type safety
 
-export const env = {
+// Define the shape of our environment variables
+interface Env {
+  // Database configuration (Neon)
+  database: {
+    url: string
+    postgresUrl: string
+    postgresUser: string
+    postgresPassword: string
+    postgresDatabase: string
+  }
+
+  // OCR service configuration
+  ocr: {
+    webhookUrl: string
+    apiKey: string
+    timeout: number
+  }
+
+  // File upload configuration
+  upload: {
+    maxSize: number
+    allowedTypes: string[]
+  }
+
+  // Authentication (for future use)
+  auth: {
+    jwtSecret: string
+    jwtExpiresIn: string
+  }
+
+  // API rate limiting
+  rateLimit: {
+    windowMs: number
+    maxRequests: number
+  }
+
+  // Server configuration
+  server: {
+    nodeEnv: "development" | "production" | "test"
+    port: number
+  }
+
+  // Google Cloud Vision API
+  GOOGLE_APPLICATION_CREDENTIALS: string
+}
+
+// Parse environment variables with defaults and type conversion
+export const env: Env = {
   // Database configuration (Neon)
   database: {
     url: process.env.DATABASE_URL || "",
