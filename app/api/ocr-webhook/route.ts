@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { rateLimiter } from "../middleware/rate-limiter"
-import { validateFile } from "@/lib/utils/file-validation"
+import { validateFileContent } from "@/lib/utils/file-validation" // Use validateFileContent
 import { logger } from "@/lib/services/logger"
 import { env } from "@/lib/env.config"
 
@@ -26,8 +26,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
-    // Validate the file
-    const validationResult = validateFile(file, {
+    // Validate the file content
+    const validationResult = await validateFileContent(file, {
       maxSize: env.upload.maxSize,
       allowedTypes: env.upload.allowedTypes,
     })
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
 
     // Create a new FormData object to send to n8n
     const n8nFormData = new FormData()
-    n8nFormData.append("invoice1", file)
+    n8nFormData.append("invoice1", file) // Using the field name 'invoice1' as requested
 
     // Add a timeout to the fetch request
     const controller = new AbortController()

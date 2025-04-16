@@ -1,5 +1,5 @@
 /**
- * Environment variables configuration
+ * Environment variables configuration with type safety
  *
  * This file centralizes all environment variables used in the application
  * and provides type safety and validation.
@@ -42,9 +42,12 @@ export const env = {
 
   // Server configuration
   server: {
-    nodeEnv: process.env.NODE_ENV || "development",
+    nodeEnv: (process.env.NODE_ENV as "development" | "production" | "test") || "development",
     port: process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 3000,
   },
+
+  // Google Cloud Vision API
+  GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS || "",
 }
 
 /**
@@ -59,6 +62,9 @@ export function validateEnv(): string[] {
     // Additional requirements for production
     if (!process.env.N8N_WEBHOOK_URL) {
       missingVars.push("N8N_WEBHOOK_URL")
+    }
+    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      missingVars.push("GOOGLE_APPLICATION_CREDENTIALS")
     }
   }
 

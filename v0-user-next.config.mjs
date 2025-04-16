@@ -18,7 +18,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   // Increase serverless function timeout (only works on Vercel Pro plans)
-  serverExternalPackages: ['sharp'], // Move serverComponentsExternalPackages to serverExternalPackages
+  serverExternalPackages: ['sharp'], // Use serverExternalPackages instead of experimental.serverComponentsExternalPackages
 }
 
 export default nextConfig
