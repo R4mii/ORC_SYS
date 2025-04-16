@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import { CalendarIcon } from "lucide-react"
 import { FileUploadModal } from "@/components/file-upload-modal"
+import { toast } from "@/hooks/use-toast"
 
 // Define document types for categorization
 type DocumentType = "purchases" | "sales" | "cashReceipts" | "bankStatements"
@@ -46,10 +47,12 @@ export default function DashboardPage() {
     bankStatements: {
       inProgress: 0,
       toValidate: 0,
+      toExport: 0,
     },
     totalAmount: 0,
     vatAmount: 0,
   })
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     // Only run this code in the browser
@@ -70,17 +73,56 @@ export default function DashboardPage() {
         id: company.id,
         name: company.name,
       })
+
+      // Fetch data from database
+      fetchDatabaseStats(company.id)
     } else {
       router.push("/auth/login")
       return
     }
 
-    // Calculate stats for each document type
-    calculateStats(companyId)
+    // Calculate stats for each document type from localStorage as fallback
+    calculateLocalStats(companyId)
   }, [router])
 
+  // Fetch stats from database
+  const fetchDatabaseStats = async (companyId: string) => {
+    setIsLoading(true)
+    try {
+      // Fetch bank statements from database
+      const bankStatementsResponse = await fetch(`/api/bank-statements?companyId=${companyId}`)
+
+      if (bankStatementsResponse.ok) {
+        const bankStatements = await bankStatementsResponse.json()
+
+        // Update stats with database data
+        setStats((prevStats) => ({
+          ...prevStats,
+          bankStatements: {
+            inProgress: bankStatements.filter((doc: any) => doc.status === "draft").length,
+            toValidate: bankStatements.filter((doc: any) => doc.status === "pending").length,
+            toExport: bankStatements.filter(
+              (doc: any) => doc.status === "validated" && doc.declaration_status === "undeclared",
+            ).length,
+          },
+        }))
+      }
+
+      // You can add similar fetches for other document types here
+    } catch (error) {
+      console.error("Error fetching database stats:", error)
+      toast({
+        title: "Erreur",
+        description: "Impossible de récupérer les données depuis la base de données",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Update the calculateStats function to properly calculate the total amount from sales
-  const calculateStats = (companyId: string) => {
+  const calculateLocalStats = (companyId: string) => {
     // Initialize stats
     const newStats = {
       purchases: { inProgress: 0, toValidate: 0, toExport: 0 },
@@ -124,7 +166,14 @@ export default function DashboardPage() {
     })
 
     // Set the calculated stats
-    setStats(newStats)
+    setStats((prevStats) => ({
+      ...prevStats,
+      purchases: newStats.purchases,
+      sales: newStats.sales,
+      cashReceipts: newStats.cashReceipts,
+      totalAmount: newStats.totalAmount,
+      vatAmount: newStats.vatAmount,
+    }))
   }
 
   const handleUploadClick = (type: DocumentType) => {
@@ -132,80 +181,106 @@ export default function DashboardPage() {
     setUploadModalOpen(true)
   }
 
-  const handleUploadComplete = (result: any) => {
+  const handleUploadComplete = async (result: any) => {
     if (!currentCompany) return
 
-    // Create a new document from OCR results
-    let newDocument
+    try {
+      if (currentUploadType === "bankStatements" && result.bankStatement) {
+        // For bank statements, save to database
+        const bankStatementData = {
+          user_id: 1, // Default user ID, should be replaced with actual user ID
+          company_id: Number.parseInt(currentCompany.id),
+          account_holder_name: result.bankStatement.accountHolderName || "",
+          bank_name: result.bankStatement.bankName || "",
+          account_number: result.bankStatement.accountNumber || "",
+          statement_date: result.bankStatement.statementDate || new Date().toISOString().split("T")[0],
+          previous_balance: result.bankStatement.previousBalance || 0,
+          new_balance: result.bankStatement.newBalance || 0,
+          currency: result.bankStatement.currency || "MAD",
+          status: "draft",
+          declaration_status: "undeclared",
+          ocr_confidence: result.bankStatement.confidence || 0,
+          original_filename: result.originalFile.name,
+          original_filepath: "", // Would be set by file upload service
+          original_mimetype: result.originalFile.type,
+          raw_text: result.rawText || "",
+          notes: "",
+        }
 
-    if (currentUploadType === "bankStatements" && result.bankStatement) {
-      // For bank statements
-      newDocument = {
-        id: Math.random().toString(36).substring(2, 9),
-        name: result.bankStatement.bankName
-          ? `Relevé ${result.bankStatement.bankName}`
-          : `Relevé bancaire ${new Date().toLocaleDateString()}`,
-        description: result.originalFile.name,
-        accountHolderName: result.bankStatement.accountHolderName || "Titulaire inconnu",
-        bankName: result.bankStatement.bankName || "Banque inconnue",
-        accountNumber: result.bankStatement.accountNumber || "Numéro inconnu",
-        statementDate: result.bankStatement.statementDate || new Date().toLocaleDateString(),
-        previousBalance: result.bankStatement.previousBalance || 0,
-        newBalance: result.bankStatement.newBalance || 0,
-        createdAt: new Date().toLocaleDateString(),
-        currency: result.bankStatement.currency || "MAD",
-        type: "releve",
-        status: "en-cours",
-        declarationStatus: "non-declare",
-        hasWarning: (result.bankStatement.confidence || 0) < 0.7,
-        documentType: currentUploadType,
-        ocrConfidence: result.bankStatement.confidence || 0,
-        rawText: result.rawText,
+        // Save to database
+        const response = await fetch("/api/bank-statements", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(bankStatementData),
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to save bank statement to database")
+        }
+
+        const savedBankStatement = await response.json()
+
+        toast({
+          title: "Relevé bancaire enregistré",
+          description: "Le relevé bancaire a été enregistré avec succès",
+        })
+
+        // Refresh stats
+        fetchDatabaseStats(currentCompany.id)
+      } else {
+        // For other document types (existing invoice processing)
+        const newDocument = {
+          id: Math.random().toString(36).substring(2, 9),
+          name: result.invoice.supplier
+            ? `Facture ${result.invoice.supplier}`
+            : `Document ${new Date().toLocaleDateString()}`,
+          description: result.originalFile.name,
+          invoiceNumber:
+            result.invoice.invoiceNumber ||
+            `INV-${Math.floor(Math.random() * 10000)
+              .toString()
+              .padStart(4, "0")}`,
+          partner: result.invoice.supplier || "Fournisseur inconnu",
+          invoiceDate: result.invoice.invoiceDate || new Date().toLocaleDateString(),
+          dueDate: result.invoice.invoiceDate || new Date().toLocaleDateString(),
+          createdAt: new Date().toLocaleDateString(),
+          amount: result.invoice.amount || 0,
+          amountWithTax: result.invoice.amountWithTax || 0,
+          vatAmount: result.invoice.vatAmount || 0,
+          type: "facture",
+          paymentStatus: "non-paye",
+          declarationStatus: "non-declare",
+          status: "en-cours",
+          hasWarning: result.invoice.confidence < 0.7,
+          documentType: currentUploadType,
+          ocrConfidence: result.invoice.confidence,
+          rawText: result.rawText,
+        }
+
+        // Get existing documents for this type
+        const storageKey = `${currentUploadType}_${currentCompany.id}`
+        const existingDocumentsJson = localStorage.getItem(storageKey)
+        const existingDocuments = existingDocumentsJson ? JSON.parse(existingDocumentsJson) : []
+
+        // Save to localStorage for this company and document type
+        localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]))
+
+        // Update stats
+        calculateLocalStats(currentCompany.id)
       }
-    } else {
-      // For other document types (existing invoice processing)
-      newDocument = {
-        id: Math.random().toString(36).substring(2, 9),
-        name: result.invoice.supplier
-          ? `Facture ${result.invoice.supplier}`
-          : `Document ${new Date().toLocaleDateString()}`,
-        description: result.originalFile.name,
-        invoiceNumber:
-          result.invoice.invoiceNumber ||
-          `INV-${Math.floor(Math.random() * 10000)
-            .toString()
-            .padStart(4, "0")}`,
-        partner: result.invoice.supplier || "Fournisseur inconnu",
-        invoiceDate: result.invoice.invoiceDate || new Date().toLocaleDateString(),
-        dueDate: result.invoice.invoiceDate || new Date().toLocaleDateString(),
-        createdAt: new Date().toLocaleDateString(),
-        amount: result.invoice.amount || 0,
-        amountWithTax: result.invoice.amountWithTax || 0,
-        vatAmount: result.invoice.vatAmount || 0,
-        type: "facture",
-        paymentStatus: "non-paye",
-        declarationStatus: "non-declare",
-        status: "en-cours",
-        hasWarning: result.invoice.confidence < 0.7,
-        documentType: currentUploadType,
-        ocrConfidence: result.invoice.confidence,
-        rawText: result.rawText,
-      }
+    } catch (error) {
+      console.error("Error saving document:", error)
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'enregistrement du document",
+        variant: "destructive",
+      })
+    } finally {
+      // Close the modal
+      setUploadModalOpen(false)
     }
-
-    // Get existing documents for this type
-    const storageKey = `${currentUploadType}_${currentCompany.id}`
-    const existingDocumentsJson = localStorage.getItem(storageKey)
-    const existingDocuments = existingDocumentsJson ? JSON.parse(existingDocumentsJson) : []
-
-    // Save to localStorage for this company and document type
-    localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]))
-
-    // Update stats
-    calculateStats(currentCompany.id)
-
-    // Close the modal
-    setUploadModalOpen(false)
   }
 
   return (
@@ -390,9 +465,6 @@ export default function DashboardPage() {
           onAction={() => handleUploadClick("bankStatements")}
         >
           <div className="space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span>{stats.bankStatements.inProgress} Relevée en cours</span>
-            </div>
             <div className="flex justify-between">
               <span>{stats.bankStatements.inProgress} Relevée en cours</span>
             </div>
