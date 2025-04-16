@@ -229,16 +229,30 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
     simulateProgressUpdate()
 
     try {
+      // Get the n8n webhook URL from environment variables
+      const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL
+
+      if (!n8nWebhookUrl) {
+        console.error("N8N_WEBHOOK_URL environment variable is not set")
+        setError("OCR service configuration error")
+        toast({
+          title: "Erreur de traitement",
+          description: "OCR service configuration error",
+          variant: "destructive",
+        })
+        setCurrentStep("upload")
+        return
+      }
+
       const formData = new FormData()
       formData.append("file", files[0])
 
       // Add a timeout to the fetch request
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 50000) // 50 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 55000) // 55 second timeout
 
       try {
-        // Use the API route with the signal for timeout
-        const response = await fetch("/api/ocr/process", {
+        const response = await fetch(n8nWebhookUrl, {
           method: "POST",
           body: formData,
           signal: controller.signal,
@@ -251,17 +265,24 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
         }
 
         const data = await response.json()
-        console.log("OCR response:", data) // Debug log
+        console.log("OCR API response:", data)
+
+        // Create a file URL for preview
+        const fileUrl = URL.createObjectURL(files[0])
 
         // Process the OCR response
         const processedData = processOcrResponse(data)
-        setOcrResults(processedData)
+        setOcrResults({
+          ...processedData,
+          fileUrl: fileUrl, // Add the file URL to the results
+        })
         setCurrentStep("results")
         setProgress(100)
 
         toast({
           title: "Traitement OCR terminé",
           description: "Les données ont été extraites avec succès",
+          variant: "default",
         })
       } catch (fetchError) {
         clearTimeout(timeoutId)
@@ -275,17 +296,11 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
       setError(err instanceof Error ? err.message : "Une erreur s'est produite lors du traitement OCR")
       setCurrentStep("upload")
 
-      // Show error toast
       toast({
         title: "Erreur de traitement",
         description: err instanceof Error ? err.message : "Une erreur s'est produite lors du traitement OCR",
         variant: "destructive",
       })
-
-      // Clear the interval
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current)
-      }
     } finally {
       setIsUploading(false)
     }

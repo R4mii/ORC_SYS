@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
 
     // Create a new FormData object to send to n8n
     const n8nFormData = new FormData()
-    n8nFormData.append("invoice1", file) // Using the field name 'invoice1' as required by n8n
+    n8nFormData.append("invoice1", file) // Using the field name 'invoice1' as requested
 
     console.log("Sending request to n8n webhook...")
 
