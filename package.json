@@ -78,7 +78,8 @@
     "crypto": "latest",
     "isomorphic-dompurify": "latest",
     "cors": "latest",
-    "dotenv": "latest"
+    "dotenv": "latest",
+    "@jest/globals": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",
