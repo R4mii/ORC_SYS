@@ -27,7 +27,21 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/bank-statements',
+        destination: '/app/api/bank-statements/route.ts',
+      },
+      {
+        source: '/api/bank-statements/:id',
+        destination: '/app/api/bank-statements/[id]/route.ts',
+      },
+    ]
+  },
 }
+
+export default nextConfig
 
 if (userConfig) {
   // ESM imports will have a "default" property
