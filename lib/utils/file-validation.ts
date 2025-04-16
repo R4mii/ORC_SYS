@@ -22,6 +22,7 @@ export function validateFile(file: File, options: FileValidationOptions = {}): V
   // Check file size
   if (file.size > maxSize) {
     const maxSizeMB = Math.round(maxSize / (1024 * 1024))
+    logger.warn(`File size exceeds limit: ${file.name} (${file.size} bytes)`, "FileValidation", { maxSize })
     return {
       valid: false,
       error: `File size exceeds the limit of ${maxSizeMB}MB`,
@@ -30,6 +31,7 @@ export function validateFile(file: File, options: FileValidationOptions = {}): V
 
   // Check MIME type
   if (allowedTypes.length > 0 && !allowedTypes.includes(file.type)) {
+    logger.warn(`Invalid file type: ${file.name} (${file.type})`, "FileValidation", { allowedTypes })
     return {
       valid: false,
       error: `File type '${file.type}' is not allowed. Accepted types: ${allowedTypes.join(", ")}`,
@@ -40,6 +42,7 @@ export function validateFile(file: File, options: FileValidationOptions = {}): V
   if (allowedExtensions.length > 0) {
     const fileExt = `.${file.name.split(".").pop()?.toLowerCase()}`
     if (!allowedExtensions.includes(fileExt)) {
+      logger.warn(`Invalid file extension: ${file.name} (${fileExt})`, "FileValidation", { allowedExtensions })
       return {
         valid: false,
         error: `File extension '${fileExt}' is not allowed. Accepted extensions: ${allowedExtensions.join(", ")}`,
@@ -47,6 +50,10 @@ export function validateFile(file: File, options: FileValidationOptions = {}): V
     }
   }
 
+  logger.info(`File validation successful: ${file.name}`, "FileValidation", {
+    size: file.size,
+    type: file.type,
+  })
   return { valid: true }
 }
 
