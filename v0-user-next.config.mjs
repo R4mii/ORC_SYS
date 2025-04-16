@@ -21,11 +21,18 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+    domains: ['ocr-sys-u41198.vm.elestio.app'],
   },
   experimental: {
     webpackBuildWorker: true,
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
+  },
+  // Ensure output is configured properly
+  output: 'standalone',
+  // Add proper webpack configuration
+  webpack: (config) => {
+    return config;
   },
 }
 

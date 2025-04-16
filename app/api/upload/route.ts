@@ -14,12 +14,17 @@ export async function POST(request: NextRequest) {
     const forwardFormData = new FormData()
     forwardFormData.append("file", file)
 
+    // Add document type to the form data
+    forwardFormData.append("documentType", documentType)
+
     // Determine the webhook URL based on document type
     let webhookUrl = "https://ocr-sys-u41198.vm.elestio.app/webhook/upload"
 
     if (documentType === "bankStatements") {
       webhookUrl = "https://ocr-sys-u41198.vm.elestio.app/webhook-test/uprelev"
     }
+
+    console.log(`Sending file to webhook: ${webhookUrl} for document type: ${documentType}`)
 
     // Forward the file to the appropriate n8n webhook
     const response = await fetch(webhookUrl, {
