@@ -129,9 +129,17 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
 
     try {
       const formData = new FormData()
-      formData.append("invoice1", files[0])
+      formData.append("file", files[0])
+      formData.append("documentType", documentType)
 
-      const response = await fetch("https://ocr-sys-u41198.vm.elestio.app/webhook/upload", {
+      // Choose the appropriate webhook URL based on document type
+      let webhookUrl = "https://ocr-sys-u41198.vm.elestio.app/webhook/upload"
+
+      if (documentType === "bankStatements") {
+        webhookUrl = "https://ocr-sys-u41198.vm.elestio.app/webhook-test/uprelev"
+      }
+
+      const response = await fetch(webhookUrl, {
         method: "POST",
         body: formData,
       })
@@ -143,8 +151,10 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       const data = await response.json()
       console.log("OCR API response:", data)
 
-      // Process the OCR response
-      const processedData = processOcrResponse(data)
+      // Process the OCR response based on document type
+      const processedData =
+        documentType === "bankStatements" ? processBankStatementResponse(data) : processOcrResponse(data)
+
       setOcrResults(processedData)
       setCurrentStep("results")
 
@@ -172,7 +182,7 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     }
   }
 
-  // Process the OCR response to handle different formats
+  // Process the OCR response for invoices
   const processOcrResponse = (data: any) => {
     // Check if data is an array
     if (Array.isArray(data) && data.length > 0) {
@@ -234,6 +244,33 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
     }
   }
 
+  // Process the OCR response for bank statements
+  const processBankStatementResponse = (data: any) => {
+    // For testing, we'll use mock data
+    // In production, you would parse the actual response from the OCR service
+
+    // Check if data is already in the expected format
+    if (data && data.bankStatement) return data
+
+    // Try to extract data from the response
+    const extractedData = {
+      rawText: data.text || "",
+      bankStatement: {
+        accountHolder: data.accountHolder || data.titulaire || "",
+        bank: data.bank || data.banque || "",
+        accountNumber: data.accountNumber || data.compte || "",
+        statementDate: data.statementDate || data.date || "",
+        previousBalance: data.previousBalance || data.ancienSolde || "",
+        newBalance: data.newBalance || data.nouveauSolde || "",
+        currency: data.currency || "MAD",
+        confidence: data.confidence || 0.5,
+      },
+      originalResponse: data,
+    }
+
+    return extractedData
+  }
+
   const handleConfirm = () => {
     if (ocrResults) {
       console.log("Processing OCR results:", ocrResults) // Debug log
@@ -277,6 +314,51 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       return <ImageIcon className="h-6 w-6 text-blue-500" />
     } else {
       return <FileUp className="h-6 w-6 text-gray-500" />
+    }
+  }
+
+  // Render the appropriate result viewer based on document type
+  const renderResultViewer = () => {
+    if (documentType === "bankStatements" && ocrResults) {
+      return (
+        <div className="space-y-6">
+          <div className="rounded-md border p-4 bg-muted/30">
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Nom du titulaire du compte</h3>
+                <p className="font-medium">{ocrResults.bankStatement.accountHolder || "Non détecté"}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Banque</h3>
+                <p className="font-medium">{ocrResults.bankStatement.bank || "Non détecté"}</p>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <h3 className="text-sm font-medium text-muted-foreground mb-1">Numéro de compte</h3>
+              <p className="font-medium">{ocrResults.bankStatement.accountNumber || "Non détecté"}</p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Date de relevé</h3>
+                <p className="font-medium">{ocrResults.bankStatement.statementDate || "Non détecté"}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Ancien solde</h3>
+                <p className="font-medium">{ocrResults.bankStatement.previousBalance || "Non détecté"}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Nouveau solde</h3>
+                <p className="font-medium">{ocrResults.bankStatement.newBalance || "Non détecté"}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    } else {
+      // For other document types, use the existing OcrResultViewer
+      return <OcrResultViewer data={ocrResults} />
     }
   }
 
@@ -410,7 +492,12 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
 
         {currentStep === "results" && ocrResults && (
           <div className="p-6 space-y-6">
-            <OcrResultViewer data={ocrResults} />
+            <div className="mb-4">
+              <h3 className="text-lg font-medium mb-2">Données extraites</h3>
+              <p className="text-sm text-muted-foreground">Veuillez vérifier les informations extraites du document</p>
+            </div>
+
+            {renderResultViewer()}
 
             <div className="flex justify-end space-x-3 pt-2">
               <Button variant="outline" onClick={() => setCurrentStep("upload")} className="px-4">
