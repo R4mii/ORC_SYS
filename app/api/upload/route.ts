@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     let webhookUrl = "https://ocr-sys-u41198.vm.elestio.app/webhook/upload"
 
     if (documentType === "bankStatements") {
-      webhookUrl = "https://ocr-sys-u41198.vm.elestio.app/webhook-test/uprelev"
+      webhookUrl = "https://ocr-sys-u41198.vm.elestio.app/webhook/uprelev"
     }
 
     // Forward the file to the appropriate n8n webhook

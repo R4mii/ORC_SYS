@@ -145,7 +145,7 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
 
       const endpoint =
         documentType === "bankStatements"
-          ? "https://ocr-sys-u41198.vm.elestio.app/webhook-test/uprelev"
+          ? "https://ocr-sys-u41198.vm.elestio.app/webhook/uprelev"
           : "https://ocr-sys-u41198.vm.elestio.app/webhook/upload"
 
       const response = await fetch(endpoint, {

@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     webhookFormData.append("documentType", "bankStatement")
 
     // Send to n8n webhook
-    const webhookUrl = "https://ocr-sys-u41198.vm.elestio.app/webhook-test/uprelev"
+    const webhookUrl = "https://ocr-sys-u41198.vm.elestio.app/webhook/uprelev"
 
     // For testing purposes, we'll simulate a successful response
     // In production, uncomment the fetch call below
