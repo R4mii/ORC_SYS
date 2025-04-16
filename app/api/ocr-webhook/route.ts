@@ -31,10 +31,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Get the webhook URL from environment variable
-    const webhookUrl = process.env.N8N_WEBHOOK_URL
+    const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL
 
-    // Check if webhook URL is available
-    if (!webhookUrl) {
+    if (!n8nWebhookUrl) {
       console.error("N8N_WEBHOOK_URL environment variable is not set")
       return NextResponse.json(
         {
@@ -54,10 +53,10 @@ export async function POST(req: NextRequest) {
     const timeoutId = setTimeout(() => controller.abort(), 55000) // 55 second timeout
 
     try {
-      console.log(`Sending request to webhook: ${webhookUrl}`)
+      console.log(`Sending request to n8n webhook: ${n8nWebhookUrl}`)
 
       // Forward the file to the n8n webhook
-      const response = await fetch(webhookUrl, {
+      const response = await fetch(n8nWebhookUrl, {
         method: "POST",
         body: n8nFormData,
         signal: controller.signal,
@@ -66,17 +65,12 @@ export async function POST(req: NextRequest) {
       clearTimeout(timeoutId)
 
       if (!response.ok) {
-        console.error(`Error from webhook: ${response.status}`)
-        return NextResponse.json(
-          {
-            error: `OCR service error: ${response.status}`,
-            details: "The OCR service returned an error. Please try again later.",
-          },
-          { status: response.status },
-        )
+        const errorMessage = `n8n OCR service returned status: ${response.status}`
+        console.error(errorMessage)
+        return NextResponse.json({ error: errorMessage }, { status: response.status })
       }
 
-      // Return the response from the webhook
+      // Parse the JSON response
       const data = await response.json()
       return NextResponse.json(data)
     } catch (fetchError) {
@@ -94,7 +88,13 @@ export async function POST(req: NextRequest) {
       }
 
       console.error("Fetch error:", fetchError)
-      throw fetchError
+      return NextResponse.json(
+        {
+          error: "Failed to forward request to OCR service",
+          details: fetchError instanceof Error ? fetchError.message : "Unknown error",
+        },
+        { status: 500 },
+      )
     }
   } catch (error) {
     console.error("Error processing file:", error)
