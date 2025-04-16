@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "OCR service configuration error" }, { status: 500 })
     }
 
+    console.log("N8N_WEBHOOK_URL:", n8nWebhookUrl)
     console.log("Using N8N webhook URL:", n8nWebhookUrl)
 
     // Get the form data from the request
