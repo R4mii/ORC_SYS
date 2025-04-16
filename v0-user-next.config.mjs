@@ -19,6 +19,7 @@ const nextConfig = {
   },
   // Increase serverless function timeout (only works on Vercel Pro plans)
   serverExternalPackages: ['sharp'], // Use serverExternalPackages instead of experimental.serverComponentsExternalPackages
+  transpilePackages: ['@/lib/env.config.ts'], // Add transpilePackages to include lib/env.config.ts
 }
 
 export default nextConfig
