@@ -18,7 +18,7 @@ eslint: {
   ignoreDuringBuilds: true,
 },
 // Increase serverless function timeout (only works on Vercel Pro plans)
-transpilePackages: ['@/lib/env.config.ts', 'lib/env.config'], // Add transpilePackages to include lib/env.config.ts
+transpilePackages: ['@/lib/env.config.mjs', 'lib/env.config'], // Add transpilePackages to include lib/env.config.ts
 }
 
 export default nextConfig
