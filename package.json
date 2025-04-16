@@ -78,8 +78,7 @@
     "@aws-sdk/s3-request-presigner": "latest",
     "crypto": "latest",
     "isomorphic-dompurify": "latest",
-    "cors": "latest",
-    "@neondatabase/serverless": "latest"
+    "cors": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

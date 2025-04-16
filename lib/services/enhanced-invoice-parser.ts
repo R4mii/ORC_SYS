@@ -298,3 +298,159 @@ export function extractInvoiceData(text: string): InvoiceData {
     return invoiceData
   }
 }
+
+// Define the structure for bank statement data
+export interface BankStatementData {
+  accountHolder: string
+  bank: string
+  accountNumber: string
+  statementDate: string
+  previousBalance: number
+  newBalance: number
+  confidence: number
+  metadata?: Record<string, any>
+}
+
+// Extract structured bank statement data from OCR text
+export function extractBankStatementData(text: string): BankStatementData {
+  // Initialize with default values
+  const bankStatementData: BankStatementData = {
+    accountHolder: "",
+    bank: "",
+    accountNumber: "",
+    statementDate: "",
+    previousBalance: 0,
+    newBalance: 0,
+    confidence: 0,
+  }
+
+  try {
+    // Normalize text: remove extra spaces, normalize line breaks
+    const normalizedText = text.replace(/\r\n/g, "\n").replace(/\s+/g, " ").replace(/\n+/g, "\n").trim()
+
+    // Extract account holder name
+    const accountHolderPatterns = [
+      /(?:titulaire|account holder|nom)[^:]*(?::|)\s*([^\n]+)/i,
+      /(?:client|customer|nom du client)[^:]*(?::|)\s*([^\n]+)/i,
+    ]
+
+    for (const pattern of accountHolderPatterns) {
+      const match = normalizedText.match(pattern)
+      if (match && match[1]) {
+        bankStatementData.accountHolder = match[1].trim()
+        break
+      }
+    }
+
+    // Extract bank name
+    const bankPatterns = [
+      /(?:banque|bank)[^:]*(?::|)\s*([^\n]+)/i,
+      /(?:établissement|institution)[^:]*(?::|)\s*([^\n]+)/i,
+    ]
+
+    for (const pattern of bankPatterns) {
+      const match = normalizedText.match(pattern)
+      if (match && match[1]) {
+        bankStatementData.bank = match[1].trim()
+        break
+      }
+    }
+
+    // If no bank found, try to extract from the top of the document
+    if (!bankStatementData.bank) {
+      // Often the bank name is at the top of the statement
+      const lines = normalizedText.split("\n").slice(0, 5) // Check first 5 lines
+      for (const line of lines) {
+        // Look for common Moroccan bank names
+        if (
+          /\b(?:BMCE|Attijariwafa|CIH|Crédit Agricole|Crédit du Maroc|SGMB|Société Générale|BMCI|BCP|Al Barid Bank)\b/i.test(
+            line,
+          )
+        ) {
+          bankStatementData.bank = line.trim()
+          break
+        }
+      }
+    }
+
+    // Extract account number
+    const accountNumberPatterns = [
+      /(?:compte|account|numéro de compte|account number|n°)[^:]*(?::|)\s*([A-Z0-9\s]{10,30})/i,
+      /(?:rib|relevé d'identité bancaire)[^:]*(?::|)\s*([A-Z0-9\s]{10,30})/i,
+      /(?:iban)[^:]*(?::|)\s*([A-Z0-9\s]{10,34})/i,
+    ]
+
+    for (const pattern of accountNumberPatterns) {
+      const match = normalizedText.match(pattern)
+      if (match && match[1]) {
+        bankStatementData.accountNumber = match[1].trim().replace(/\s+/g, "")
+        break
+      }
+    }
+
+    // Extract statement date
+    const datePatterns = [
+      /(?:date du relevé|statement date|date)[^\d]*(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/i,
+      /(?:période|period|du)[^\d]*(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/i,
+      /(?:au|to)[^\d]*(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/i,
+    ]
+
+    for (const pattern of datePatterns) {
+      const match = normalizedText.match(pattern)
+      if (match && match[1]) {
+        bankStatementData.statementDate = match[1].trim()
+        break
+      }
+    }
+
+    // Extract previous balance
+    const previousBalancePatterns = [
+      /(?:solde précédent|ancien solde|previous balance|opening balance|solde d'ouverture)[^0-9-]*([0-9\s,.]+)/i,
+      /(?:solde au|balance as of)[^0-9-]*([0-9\s,.]+)/i,
+    ]
+
+    for (const pattern of previousBalancePatterns) {
+      const match = normalizedText.match(pattern)
+      if (match && match[1]) {
+        // Clean up the number: remove spaces, replace comma with dot
+        const cleanNumber = match[1].replace(/\s/g, "").replace(",", ".")
+        bankStatementData.previousBalance = Number.parseFloat(cleanNumber)
+        break
+      }
+    }
+
+    // Extract new balance
+    const newBalancePatterns = [
+      /(?:nouveau solde|solde actuel|new balance|closing balance|solde de clôture)[^0-9-]*([0-9\s,.]+)/i,
+      /(?:solde final|final balance)[^0-9-]*([0-9\s,.]+)/i,
+    ]
+
+    for (const pattern of newBalancePatterns) {
+      const match = normalizedText.match(pattern)
+      if (match && match[1]) {
+        // Clean up the number: remove spaces, replace comma with dot
+        const cleanNumber = match[1].replace(/\s/g, "").replace(",", ".")
+        bankStatementData.newBalance = Number.parseFloat(cleanNumber)
+        break
+      }
+    }
+
+    // Calculate confidence score based on how many fields were successfully extracted
+    const extractedFields = [
+      bankStatementData.accountHolder,
+      bankStatementData.bank,
+      bankStatementData.accountNumber,
+      bankStatementData.statementDate,
+      bankStatementData.previousBalance > 0,
+      bankStatementData.newBalance > 0,
+    ].filter(Boolean).length
+
+    bankStatementData.confidence = Math.min(1, extractedFields / 6)
+
+    return bankStatementData
+  } catch (error) {
+    console.error("Error parsing bank statement data:", error)
+    // Return the basic structure even if parsing fails
+    return bankStatementData
+  }
+}
