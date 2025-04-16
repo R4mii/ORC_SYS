@@ -221,6 +221,7 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
     }
   }, [])
 
+  // Update the handleUpload function to use the environment variable directly
   const handleUpload = useCallback(async () => {
     if (files.length === 0) return
 
@@ -229,8 +230,10 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
     simulateProgressUpdate()
 
     try {
-      // Get the n8n webhook URL from environment variables
+      // Get the n8n webhook URL directly
       const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL
+
+      console.log("N8N_WEBHOOK_URL from env:", n8nWebhookUrl)
 
       if (!n8nWebhookUrl) {
         console.error("N8N_WEBHOOK_URL environment variable is not set")
@@ -245,13 +248,14 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
       }
 
       const formData = new FormData()
-      formData.append("file", files[0])
+      formData.append("invoice1", files[0])
 
       // Add a timeout to the fetch request
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 55000) // 55 second timeout
 
       try {
+        // Send directly to n8n webhook
         const response = await fetch(n8nWebhookUrl, {
           method: "POST",
           body: formData,

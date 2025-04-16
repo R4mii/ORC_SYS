@@ -227,37 +227,11 @@ export function ModernFileUploadModal({ open, onClose, documentType, onUploadCom
       const formData = new FormData()
       formData.append("file", files[0])
 
-      // Add a timeout to the fetch request
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 50000) // 50 second timeout
-
-      let response
-      try {
-        // First try the API route
-        response = await fetch("/api/ocr/process", {
-          method: "POST",
-          body: formData,
-          signal: controller.signal,
-        })
-      } catch (fetchError) {
-        clearTimeout(timeoutId)
-
-        if (fetchError.name === "AbortError") {
-          console.log("API route timed out, trying fallback...")
-          // If it times out, try the fallback route
-          const fallbackFormData = new FormData()
-          fallbackFormData.append("invoice1", files[0])
-
-          response = await fetch("/api/ocr-fallback", {
-            method: "POST",
-            body: fallbackFormData,
-          })
-        } else {
-          throw fetchError
-        }
-      }
-
-      clearTimeout(timeoutId)
+      // Try the fallback route directly
+      const response = await fetch("/api/ocr-fallback", {
+        method: "POST",
+        body: formData,
+      })
 
       if (!response.ok) {
         throw new Error(`OCR service returned status: ${response.status}`)
