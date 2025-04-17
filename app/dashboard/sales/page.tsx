@@ -7,6 +7,7 @@ import { EnhancedDataTable } from "@/components/enhanced-data-table"
 import { StatusTag } from "@/components/status-tag"
 import { Button } from "@/components/ui/button"
 import { FileUploadModal } from "@/components/file-upload-modal"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 
 // Interface for invoice data
 interface Invoice {
@@ -214,54 +215,40 @@ export default function SalesPage() {
     },
   ]
 
-  // Define actions
   const actions = [
     {
-      label: "Voir",
-      onClick: (invoice: Invoice) => handleViewInvoice(invoice.id),
-    },
-    {
-      label: "Modifier",
-      onClick: (invoice: Invoice) => router.push(`/dashboard/invoices/${invoice.id}?edit=true`),
-    },
-    {
-      label: "Supprimer",
-      onClick: (invoice: Invoice) => {
-        if (confirm("Êtes-vous sûr de vouloir supprimer cette facture?")) {
-          const updatedInvoices = invoices.filter((inv) => inv.id !== invoice.id)
-          setInvoices(updatedInvoices)
-          localStorage.setItem(`sales_${currentCompanyId}`, JSON.stringify(updatedInvoices))
-        }
+      label: "View",
+      onClick: (id: string) => {
+        router.push(`/dashboard/invoices/${id}`)
       },
     },
   ]
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Ventes {currentCompanyName && `- ${currentCompanyName}`}</h1>
-        <Button onClick={() => setUploadModalOpen(true)}>Charger une facture</Button>
-      </div>
+    <div className="container mx-auto py-6">
+      <Card className="shadow-md">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-2 space-y-2 sm:space-y-0">
+          <div className="space-y-1">
+            <CardTitle className="text-2xl font-bold tracking-tight">Ventes</CardTitle>
+            <CardDescription>Gérez vos factures de vente</CardDescription>
+          </div>
+          <Button onClick={() => setUploadModalOpen(true)}>Charger une facture</Button>
+        </CardHeader>
+        <CardContent>
+          <EnhancedDataTable
+            data={invoices}
+            columns={columns}
+            keyField="id"
+            searchable={true}
+            searchPlaceholder="Rechercher une facture..."
+            pagination={true}
+            pageSize={10}
+            actions={actions}
+            onRowClick={(invoice) => handleViewInvoice(invoice.id)}
+          />
+        </CardContent>
+      </Card>
 
-      <EnhancedDataTable
-        data={invoices}
-        columns={columns}
-        keyField="id"
-        searchable={true}
-        searchPlaceholder="Rechercher une facture..."
-        pagination={true}
-        pageSize={10}
-        actions={actions}
-        onRowClick={(invoice) => handleViewInvoice(invoice.id)}
-      />
-
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          Total: <strong>{totalAmount.toFixed(2)} DH</strong>
-        </div>
-      </div>
-
-      {/* File Upload Modal */}
       <FileUploadModal
         open={uploadModalOpen}
         onClose={() => setUploadModalOpen(false)}

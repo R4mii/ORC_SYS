@@ -6,6 +6,7 @@ import { AlertTriangle } from "lucide-react"
 import { EnhancedDataTable } from "@/components/enhanced-data-table"
 import { StatusTag } from "@/components/status-tag"
 import { Button } from "@/components/ui/button"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 
 // Interface for bank statement data
 interface BankStatement {
@@ -159,28 +160,32 @@ export default function BankStatementsPage() {
   ]
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">
-          Relevés bancaires {currentCompanyName && `- ${currentCompanyName}`}
-        </h1>
-        <Button onClick={() => alert("Implement upload functionality")}>
-          {/*  Replace alert() with the correct function to show the upload modal */}
-          Charger un relevé
-        </Button>
-      </div>
-
-      <EnhancedDataTable
-        data={bankStatements}
-        columns={columns}
-        keyField="id"
-        searchable={true}
-        searchPlaceholder="Rechercher un relevé..."
-        pagination={true}
-        pageSize={10}
-        actions={actions}
-        onRowClick={(bankStatement) => handleViewBankStatement(bankStatement.id)}
-      />
+    <div className="container mx-auto py-6">
+      <Card className="shadow-md">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-2 space-y-2 sm:space-y-0">
+          <div className="space-y-1">
+            <CardTitle className="text-2xl font-bold tracking-tight">Relevés bancaires</CardTitle>
+            <CardDescription>Gérez vos relevés bancaires</CardDescription>
+          </div>
+          <Button onClick={() => alert("Implement upload functionality")}>
+            {/*  Replace alert() with the correct function to show the upload modal */}
+            Charger un relevé
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <EnhancedDataTable
+            data={bankStatements}
+            columns={columns}
+            keyField="id"
+            searchable={true}
+            searchPlaceholder="Rechercher un relevé..."
+            pagination={true}
+            pageSize={10}
+            actions={actions}
+            onRowClick={(bankStatement) => handleViewBankStatement(bankStatement.id)}
+          />
+        </CardContent>
+      </Card>
     </div>
   )
 }
