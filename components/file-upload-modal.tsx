@@ -3,15 +3,15 @@
 import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { FileUp, X, Check, AlertTriangle, FileText, ImageIcon, Upload, ArrowRight } from "lucide-react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { FileUp, X, FileText, ImageIcon, Upload, ArrowRight, AlertTriangle, Check } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { FadeIn, ScaleIn } from "@/components/ui/motion"
 import { toast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+import OcrResultViewer from "@/components/ocr-result-viewer"
 
 type DocumentType = "purchases" | "sales" | "cashReceipts" | "bankStatements"
 
@@ -23,7 +23,6 @@ interface FileUploadModalProps {
 }
 
 export function FileUploadModal({ open, onClose, documentType, onUploadComplete }: FileUploadModalProps) {
-  const router = useRouter()
   const [files, setFiles] = useState<File[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -31,12 +30,10 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
   const [currentStep, setCurrentStep] = useState<"upload" | "processing" | "results">("upload")
   const [ocrResults, setOcrResults] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState("preview")
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Clean up interval on unmount
   useEffect(() => {
     return () => {
       if (progressIntervalRef.current) {
@@ -70,7 +67,6 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
   }
 
   const handleFiles = (newFiles: File[]) => {
-    // Filter for supported file types
     const supportedFiles = newFiles.filter((file) => {
       const fileType = file.type.toLowerCase()
       return (
@@ -94,7 +90,6 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
     setFiles(supportedFiles)
     setError(null)
 
-    // Show success toast
     toast({
       title: "Fichier ajouté",
       description: `${supportedFiles[0].name} est prêt à être traité`,
@@ -105,19 +100,15 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
   const simulateProgressUpdate = () => {
     setProgress(0)
 
-    // Clear any existing interval
     if (progressIntervalRef.current) {
       clearInterval(progressIntervalRef.current)
     }
 
-    // Create a new interval that updates progress
     progressIntervalRef.current = setInterval(() => {
       setProgress((prev) => {
-        // Slow down progress as it gets higher
         const increment = prev < 30 ? 5 : prev < 70 ? 2 : 1
         const newProgress = prev + increment
 
-        // Stop at 95% - the final jump to 100% happens when data is received
         if (newProgress >= 95) {
           clearInterval(progressIntervalRef.current!)
           return 95
@@ -149,7 +140,7 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
       }
 
       const data = await response.json()
-      console.log("OCR response:", data) // Debug log
+      console.log("OCR API response:", data)
 
       // Process the OCR response
       const processedData = processOcrResponse(data)
@@ -159,20 +150,19 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
       toast({
         title: "Traitement OCR terminé",
         description: "Les données ont été extraites avec succès",
+        variant: "default",
       })
     } catch (err) {
       console.error("OCR Error:", err)
       setError(err instanceof Error ? err.message : "Une erreur s'est produite lors du traitement OCR")
       setCurrentStep("upload")
 
-      // Show error toast
       toast({
         title: "Erreur de traitement",
         description: err instanceof Error ? err.message : "Une erreur s'est produite lors du traitement OCR",
         variant: "destructive",
       })
 
-      // Clear the interval
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current)
       }
@@ -245,7 +235,8 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
 
   const handleConfirm = () => {
     if (ocrResults) {
-      // Add file information to the results
+      console.log("Processing OCR results:", ocrResults) // Debug log
+
       const result = {
         ...ocrResults,
         originalFile: {
@@ -304,7 +295,7 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
         </DialogHeader>
 
         {currentStep === "upload" && (
-          <div className="p-6 space-y-6">
+          <FadeIn className="p-6 space-y-6">
             <div
               className={cn(
                 "border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200",
@@ -316,20 +307,22 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
             >
-              <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <Upload className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-lg font-medium">Glissez-déposez votre fichier ici</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                ou{" "}
-                <button
-                  className="text-primary hover:text-primary/80 font-medium underline-offset-4 hover:underline transition-colors"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  parcourez vos fichiers
-                </button>
-              </p>
-              <p className="mt-3 text-xs text-muted-foreground">Formats supportés: PDF, JPG, PNG</p>
+              <ScaleIn>
+                <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Upload className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-lg font-medium">Glissez-déposez votre fichier ici</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  ou{" "}
+                  <button
+                    className="text-primary hover:text-primary/80 font-medium underline-offset-4 hover:underline transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    parcourez vos fichiers
+                  </button>
+                </p>
+                <p className="mt-3 text-xs text-muted-foreground">Formats supportés: PDF, JPG, PNG</p>
+              </ScaleIn>
               <input
                 type="file"
                 ref={fileInputRef}
@@ -341,35 +334,39 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
             </div>
 
             {files.length > 0 && (
-              <div className="border rounded-lg p-4 bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="flex-shrink-0 w-12 h-12 bg-background rounded-md flex items-center justify-center border">
-                      {getFileTypeIcon(files[0])}
+              <ScaleIn>
+                <div className="border rounded-lg p-4 bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex-shrink-0 w-12 h-12 bg-background rounded-md flex items-center justify-center border">
+                        {getFileTypeIcon(files[0])}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{files[0].name}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {(files[0].size / 1024 / 1024).toFixed(2)} MB • Ajouté {new Date().toLocaleTimeString()}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{files[0].name}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {(files[0].size / 1024 / 1024).toFixed(2)} MB • Ajouté {new Date().toLocaleTimeString()}
-                      </p>
-                    </div>
+                    <button
+                      onClick={() => setFiles([])}
+                      className="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
+                      aria-label="Supprimer le fichier"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => setFiles([])}
-                    className="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
-                    aria-label="Supprimer le fichier"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
                 </div>
-              </div>
+              </ScaleIn>
             )}
 
             {error && (
-              <div className="bg-destructive/10 text-destructive rounded-lg p-4 text-sm flex items-center">
-                <AlertTriangle className="h-5 w-5 mr-3 flex-shrink-0" />
-                <p>{error}</p>
-              </div>
+              <FadeIn>
+                <div className="bg-destructive/10 text-destructive rounded-lg p-4 text-sm flex items-center">
+                  <AlertTriangle className="h-5 w-5 mr-3 flex-shrink-0" />
+                  <p>{error}</p>
+                </div>
+              </FadeIn>
             )}
 
             <div className="flex justify-end space-x-3 pt-2">
@@ -381,7 +378,7 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
-          </div>
+          </FadeIn>
         )}
 
         {currentStep === "processing" && (
@@ -412,99 +409,7 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
 
         {currentStep === "results" && ocrResults && (
           <div className="p-6 space-y-6">
-            <Tabs defaultValue="preview" onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="preview" className="text-sm">
-                  Aperçu
-                </TabsTrigger>
-                <TabsTrigger value="data" className="text-sm">
-                  Données extraites
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="preview" className="space-y-4 mt-2">
-                <div className="border rounded-lg p-5 bg-muted/30">
-                  <h3 className="font-medium mb-3 text-sm flex items-center">
-                    <FileText className="h-4 w-4 mr-2 text-primary" />
-                    Texte extrait
-                  </h3>
-                  <div className="max-h-[300px] overflow-y-auto text-sm whitespace-pre-wrap bg-background p-4 rounded-md border">
-                    {ocrResults.rawText || "Aucun texte extrait"}
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="data" className="space-y-4 mt-2">
-                <div className="border rounded-lg p-5">
-                  <h3 className="font-medium mb-4 text-sm flex items-center">
-                    <FileText className="h-4 w-4 mr-2 text-primary" />
-                    Données de la facture
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                      <p className="text-xs text-muted-foreground">Fournisseur</p>
-                      <p className="font-medium">{ocrResults.invoice.supplier || "Non détecté"}</p>
-                    </div>
-                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                      <p className="text-xs text-muted-foreground">Numéro de facture</p>
-                      <p className="font-medium">{ocrResults.invoice.invoiceNumber || "Non détecté"}</p>
-                    </div>
-                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                      <p className="text-xs text-muted-foreground">Date de facture</p>
-                      <p className="font-medium">{ocrResults.invoice.invoiceDate || "Non détecté"}</p>
-                    </div>
-                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                      <p className="text-xs text-muted-foreground">Montant HT</p>
-                      <p className="font-medium">
-                        {ocrResults.invoice.amount
-                          ? `${ocrResults.invoice.amount.toFixed(2)} ${ocrResults.invoice.currency || "MAD"}`
-                          : "Non détecté"}
-                      </p>
-                    </div>
-                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                      <p className="text-xs text-muted-foreground">TVA</p>
-                      <p className="font-medium">
-                        {ocrResults.invoice.vatAmount
-                          ? `${ocrResults.invoice.vatAmount.toFixed(2)} ${ocrResults.invoice.currency || "MAD"}`
-                          : "Non détecté"}
-                      </p>
-                    </div>
-                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                      <p className="text-xs text-muted-foreground">Montant TTC</p>
-                      <p className="font-medium">
-                        {ocrResults.invoice.amountWithTax
-                          ? `${ocrResults.invoice.amountWithTax.toFixed(2)} ${ocrResults.invoice.currency || "MAD"}`
-                          : "Non détecté"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2 text-sm p-3 border rounded-lg bg-muted/30">
-                  <div
-                    className={`w-2 h-2 rounded-full ${
-                      ocrResults.invoice.confidence > 0.7
-                        ? "bg-green-500"
-                        : ocrResults.invoice.confidence > 0.4
-                          ? "bg-amber-500"
-                          : "bg-red-500"
-                    }`}
-                  ></div>
-                  <span>
-                    Confiance: {Math.round((ocrResults.invoice.confidence || 0) * 100)}%
-                    <span className="ml-1 transition-opacity duration-200">
-                      (
-                      {ocrResults.invoice.confidence > 0.7
-                        ? "Élevée"
-                        : ocrResults.invoice.confidence > 0.4
-                          ? "Moyenne"
-                          : "Faible"}
-                      )
-                    </span>
-                  </span>
-                </div>
-              </TabsContent>
-            </Tabs>
+            <OcrResultViewer data={ocrResults} />
 
             <div className="flex justify-end space-x-3 pt-2">
               <Button variant="outline" onClick={() => setCurrentStep("upload")} className="px-4">

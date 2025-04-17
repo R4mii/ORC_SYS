@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  FileUp,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -50,6 +51,11 @@ const navItems: NavItem[] = [
     icon: FileText,
   },
   {
+    title: "Document Processing",
+    href: "/dashboard/document-processing",
+    icon: FileUp,
+  },
+  {
     title: "Reports",
     href: "/dashboard/reports",
     icon: BarChart3,
@@ -58,11 +64,6 @@ const navItems: NavItem[] = [
     title: "Settings",
     href: "/dashboard/settings",
     icon: Settings,
-  },
-  {
-    title: "Traitement relevés",
-    href: "/dashboard/bank-statements",
-    icon: Building2,
   },
 ]
 
@@ -104,13 +105,6 @@ export default function DashboardLayout({
       if (savedSidebarState !== null) {
         setSidebarCollapsed(savedSidebarState === "true")
       }
-
-      // Get the selected company from localStorage
-      // const companyId = localStorage.getItem("selectedCompanyId")
-      // if (!companyId) {
-      //   router.push("/auth/login")
-      //   return
-      // }
 
       // Get company details
       const companies = JSON.parse(localStorage.getItem("companies") || "[]")
