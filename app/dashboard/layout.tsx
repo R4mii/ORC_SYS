@@ -59,6 +59,11 @@ const navItems: NavItem[] = [
     href: "/dashboard/settings",
     icon: Settings,
   },
+  {
+    title: "Traitement relevés",
+    href: "/dashboard/bank-statements",
+    icon: Building2,
+  },
 ]
 
 export default function DashboardLayout({
