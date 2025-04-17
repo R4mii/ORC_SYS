@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
-import { DashboardCard } from "@/components/dashboard-card"
 import {
   BarChart3,
   FileText,
@@ -14,10 +13,21 @@ import {
   TrendingUp,
   TrendingDown,
   DollarSign,
+  Calendar,
+  Filter,
+  Download,
+  Upload,
+  Plus,
+  ChevronRight,
+  AlertCircle,
+  CheckCircle,
+  Clock,
 } from "lucide-react"
 import { CalendarIcon } from "lucide-react"
 import { FileUploadModal } from "@/components/file-upload-modal"
 import { BankStatementUploadModal } from "@/components/bank-statement-upload-modal"
+import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
 
 // Define document types for categorization
 type DocumentType = "purchases" | "sales" | "cashReceipts" | "bankStatements"
@@ -227,223 +237,434 @@ export default function DashboardPage() {
     setBankStatementModalOpen(false)
   }
 
+  // Calculate total documents
+  const totalDocuments =
+    stats.purchases.inProgress +
+    stats.purchases.toValidate +
+    stats.purchases.toExport +
+    stats.sales.inProgress +
+    stats.sales.toValidate +
+    stats.sales.toExport +
+    stats.cashReceipts.inProgress +
+    stats.cashReceipts.toValidate +
+    stats.cashReceipts.toExport +
+    stats.bankStatements.inProgress +
+    stats.bankStatements.toValidate +
+    stats.bankStatements.toExport
+
+  // Calculate documents to process
+  const documentsToProcess =
+    stats.purchases.toValidate +
+    stats.sales.toValidate +
+    stats.cashReceipts.toValidate +
+    stats.bankStatements.toValidate
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Tableau de bord</h1>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">Tableau de bord</h1>
+          <p className="text-muted-foreground">Vue d'ensemble de votre activité financière</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
           {currentCompany && (
-            <Badge variant="outline" className="px-3 py-1 text-sm bg-blue-50 mr-2">
-              <Building2 className="h-4 w-4 mr-2" />
+            <Badge variant="outline" className="px-3 py-1 text-sm bg-primary/5 border-primary/20">
+              <Building2 className="h-4 w-4 mr-2 text-primary" />
               {currentCompany.name}
             </Badge>
           )}
-          <Badge variant="outline" className="px-3 py-1 text-sm bg-blue-50">
-            <CalendarIcon className="h-4 w-4 mr-2" />
+          <Badge variant="outline" className="px-3 py-1 text-sm bg-primary/5 border-primary/20">
+            <CalendarIcon className="h-4 w-4 mr-2 text-primary" />
             Exercice : {fiscalYear}
           </Badge>
         </div>
       </div>
 
+      {/* Action buttons */}
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" className="gap-2">
+          <Calendar className="h-4 w-4" />
+          <span>Période</span>
+        </Button>
+        <Button size="sm" variant="outline" className="gap-2">
+          <Filter className="h-4 w-4" />
+          <span>Filtres</span>
+        </Button>
+        <Button size="sm" variant="outline" className="gap-2">
+          <Download className="h-4 w-4" />
+          <span>Exporter</span>
+        </Button>
+        <Button size="sm" className="gap-2 ml-auto">
+          <Upload className="h-4 w-4" />
+          <span>Importer</span>
+        </Button>
+        <Button size="sm" className="gap-2">
+          <Plus className="h-4 w-4" />
+          <span>Nouveau</span>
+        </Button>
+      </div>
+
       {/* Key metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Total des factures</p>
-                <h3 className="text-2xl font-bold">
-                  {stats.purchases.inProgress +
-                    stats.purchases.toValidate +
-                    stats.purchases.toExport +
-                    stats.sales.inProgress +
-                    stats.sales.toValidate +
-                    stats.sales.toExport}
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  <span className="text-green-600 font-medium flex items-center">
-                    <ArrowUpRight className="h-3 w-3 mr-1" />
-                    +12% ce mois
-                  </span>
-                </p>
-              </div>
-              <div className="bg-blue-100 dark:bg-blue-800/30 p-3 rounded-full">
-                <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              </div>
+        <Card className="dashboard-stat-card overflow-hidden border-t-4 border-t-primary/70">
+          <div className="icon-container bg-primary/10">
+            <FileText className="h-5 w-5 text-primary" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">Total des factures</p>
+            <div className="flex items-end gap-2">
+              <h3 className="text-2xl font-bold">{totalDocuments}</h3>
+              <p className="text-xs text-green-600 font-medium flex items-center pb-1">
+                <ArrowUpRight className="h-3 w-3 mr-1" />
+                +12%
+              </p>
             </div>
-          </CardContent>
+            <Progress value={75} className="h-1 bg-primary/20" />
+            <p className="text-xs text-muted-foreground">75% de l'objectif mensuel</p>
+          </div>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Montant total</p>
-                <h3 className="text-2xl font-bold">{stats.totalAmount.toFixed(2)} DH</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  <span className="text-green-600 font-medium flex items-center">
-                    <TrendingUp className="h-3 w-3 mr-1" />
-                    +8.2% ce mois
-                  </span>
-                </p>
-              </div>
-              <div className="bg-green-100 dark:bg-green-800/30 p-3 rounded-full">
-                <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
-              </div>
+        <Card className="dashboard-stat-card overflow-hidden border-t-4 border-t-green-500/70">
+          <div className="icon-container bg-green-500/10">
+            <DollarSign className="h-5 w-5 text-green-500" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">Montant total</p>
+            <div className="flex items-end gap-2">
+              <h3 className="text-2xl font-bold">{stats.totalAmount.toFixed(2)} DH</h3>
+              <p className="text-xs text-green-600 font-medium flex items-center pb-1">
+                <TrendingUp className="h-3 w-3 mr-1" />
+                +8.2%
+              </p>
             </div>
-          </CardContent>
+            <Progress value={62} className="h-1 bg-green-500/20" indicatorClassName="bg-green-500" />
+            <p className="text-xs text-muted-foreground">62% de l'objectif mensuel</p>
+          </div>
         </Card>
 
-        <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">TVA récupérable</p>
-                <h3 className="text-2xl font-bold">0,00 DH</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  <span className="text-amber-600 font-medium flex items-center">
-                    <TrendingUp className="h-3 w-3 mr-1" />
-                    +0.0% ce mois
-                  </span>
-                </p>
-              </div>
-              <div className="bg-amber-100 dark:bg-amber-800/30 p-3 rounded-full">
-                <CreditCard className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-              </div>
+        <Card className="dashboard-stat-card overflow-hidden border-t-4 border-t-amber-500/70">
+          <div className="icon-container bg-amber-500/10">
+            <CreditCard className="h-5 w-5 text-amber-500" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">TVA récupérable</p>
+            <div className="flex items-end gap-2">
+              <h3 className="text-2xl font-bold">0,00 DH</h3>
+              <p className="text-xs text-amber-600 font-medium flex items-center pb-1">
+                <TrendingUp className="h-3 w-3 mr-1" />
+                +0.0%
+              </p>
             </div>
-          </CardContent>
+            <Progress value={30} className="h-1 bg-amber-500/20" indicatorClassName="bg-amber-500" />
+            <p className="text-xs text-muted-foreground">30% de l'objectif mensuel</p>
+          </div>
         </Card>
 
-        <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">À déclarer</p>
-                <h3 className="text-2xl font-bold">{stats.purchases.toExport + stats.sales.toExport}</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  <span className="text-red-600 font-medium flex items-center">
-                    <TrendingDown className="h-3 w-3 mr-1" />
-                    -2.1% ce mois
-                  </span>
-                </p>
-              </div>
-              <div className="bg-red-100 dark:bg-red-800/30 p-3 rounded-full">
-                <FileText className="h-6 w-6 text-red-600 dark:text-red-400" />
-              </div>
+        <Card className="dashboard-stat-card overflow-hidden border-t-4 border-t-red-500/70">
+          <div className="icon-container bg-red-500/10">
+            <AlertCircle className="h-5 w-5 text-red-500" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">À traiter</p>
+            <div className="flex items-end gap-2">
+              <h3 className="text-2xl font-bold">{documentsToProcess}</h3>
+              <p className="text-xs text-red-600 font-medium flex items-center pb-1">
+                <TrendingDown className="h-3 w-3 mr-1" />
+                -2.1%
+              </p>
             </div>
-          </CardContent>
+            <Progress value={45} className="h-1 bg-red-500/20" indicatorClassName="bg-red-500" />
+            <p className="text-xs text-muted-foreground">
+              {documentsToProcess} document{documentsToProcess !== 1 ? "s" : ""} en attente
+            </p>
+          </div>
         </Card>
       </div>
 
       {/* Main document categories */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Purchases */}
-        <DashboardCard
-          title="Achats"
-          icon={FileText}
-          color="blue"
-          actionLabel="Charger"
-          onAction={() => handleUploadClick("purchases")}
-        >
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span>{stats.purchases.inProgress} Facture en cours</span>
-            </div>
-            <div className="flex justify-between">
-              <span>{stats.purchases.toValidate} Factures à valider</span>
-            </div>
-            <div className="flex justify-between">
-              <span>{stats.purchases.toExport} Facture à exporter</span>
+        <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 text-white">
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold flex items-center">
+                <FileText className="h-5 w-5 mr-2" />
+                Achats
+              </h3>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="bg-white/20 hover:bg-white/30 text-white border-0"
+                onClick={() => handleUploadClick("purchases")}
+              >
+                Charger
+              </Button>
             </div>
           </div>
-        </DashboardCard>
+          <CardContent className="p-4">
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="flex items-center">
+                  <Clock className="h-4 w-4 mr-2 text-amber-500" />
+                  Factures en cours
+                </span>
+                <Badge variant="outline" className="bg-amber-50 text-amber-700">
+                  {stats.purchases.inProgress}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
+                  Factures à valider
+                </span>
+                <Badge variant="outline" className="bg-red-50 text-red-700">
+                  {stats.purchases.toValidate}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center">
+                  <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                  Factures à exporter
+                </span>
+                <Badge variant="outline" className="bg-green-50 text-green-700">
+                  {stats.purchases.toExport}
+                </Badge>
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t flex justify-end">
+              <Button variant="ghost" size="sm" className="text-primary gap-1">
+                Voir tout <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Sales */}
-        <DashboardCard
-          title="Ventes"
-          icon={BarChart3}
-          color="green"
-          actionLabel="Charger"
-          onAction={() => handleUploadClick("sales")}
-        >
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span>{stats.sales.inProgress} Facture en cours</span>
-            </div>
-            <div className="flex justify-between">
-              <span>{stats.sales.toValidate} Facture à valider</span>
-            </div>
-            <div className="flex justify-between">
-              <span>{stats.sales.toExport} Facture à exporter</span>
+        <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="bg-gradient-to-r from-green-500 to-green-600 p-4 text-white">
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold flex items-center">
+                <BarChart3 className="h-5 w-5 mr-2" />
+                Ventes
+              </h3>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="bg-white/20 hover:bg-white/30 text-white border-0"
+                onClick={() => handleUploadClick("sales")}
+              >
+                Charger
+              </Button>
             </div>
           </div>
-        </DashboardCard>
+          <CardContent className="p-4">
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="flex items-center">
+                  <Clock className="h-4 w-4 mr-2 text-amber-500" />
+                  Factures en cours
+                </span>
+                <Badge variant="outline" className="bg-amber-50 text-amber-700">
+                  {stats.sales.inProgress}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
+                  Factures à valider
+                </span>
+                <Badge variant="outline" className="bg-red-50 text-red-700">
+                  {stats.sales.toValidate}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center">
+                  <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                  Factures à exporter
+                </span>
+                <Badge variant="outline" className="bg-green-50 text-green-700">
+                  {stats.sales.toExport}
+                </Badge>
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t flex justify-end">
+              <Button variant="ghost" size="sm" className="text-green-600 gap-1">
+                Voir tout <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Cash Receipts */}
-        <DashboardCard
-          title="Bons de caisse"
-          icon={CreditCard}
-          color="amber"
-          actionLabel="Charger"
-          onAction={() => handleUploadClick("cashReceipts")}
-        >
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span>{stats.cashReceipts.inProgress} Bon en cours</span>
-            </div>
-            <div className="flex justify-between">
-              <span>{stats.cashReceipts.toValidate} Bon à valider</span>
-            </div>
-            <div className="flex justify-between">
-              <span>{stats.cashReceipts.toExport} Bon à exporter</span>
+        <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="bg-gradient-to-r from-amber-500 to-amber-600 p-4 text-white">
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold flex items-center">
+                <CreditCard className="h-5 w-5 mr-2" />
+                Bons de caisse
+              </h3>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="bg-white/20 hover:bg-white/30 text-white border-0"
+                onClick={() => handleUploadClick("cashReceipts")}
+              >
+                Charger
+              </Button>
             </div>
           </div>
-        </DashboardCard>
+          <CardContent className="p-4">
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="flex items-center">
+                  <Clock className="h-4 w-4 mr-2 text-amber-500" />
+                  Bons en cours
+                </span>
+                <Badge variant="outline" className="bg-amber-50 text-amber-700">
+                  {stats.cashReceipts.inProgress}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
+                  Bons à valider
+                </span>
+                <Badge variant="outline" className="bg-red-50 text-red-700">
+                  {stats.cashReceipts.toValidate}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center">
+                  <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                  Bons à exporter
+                </span>
+                <Badge variant="outline" className="bg-green-50 text-green-700">
+                  {stats.cashReceipts.toExport}
+                </Badge>
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t flex justify-end">
+              <Button variant="ghost" size="sm" className="text-amber-600 gap-1">
+                Voir tout <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Bank Statements */}
-        <DashboardCard
-          title="Rel. bancaires"
-          icon={Building2}
-          color="red"
-          actionLabel="Charger"
-          onAction={() => handleUploadClick("bankStatements")}
-        >
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span>{stats.bankStatements.inProgress} Relevée en cours</span>
-            </div>
-            <div className="flex justify-between">
-              <span>{stats.bankStatements.inProgress} Relevée en cours</span>
-            </div>
-            <div className="flex justify-between">
-              <span>{stats.bankStatements.toValidate} Relevée à valider</span>
-            </div>
-            <div className="flex justify-between">
-              <span>{stats.bankStatements.toExport} Relevée à exporter</span>
+        <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-4 text-white">
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold flex items-center">
+                <Building2 className="h-5 w-5 mr-2" />
+                Rel. bancaires
+              </h3>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="bg-white/20 hover:bg-white/30 text-white border-0"
+                onClick={() => handleUploadClick("bankStatements")}
+              >
+                Charger
+              </Button>
             </div>
           </div>
-        </DashboardCard>
+          <CardContent className="p-4">
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="flex items-center">
+                  <Clock className="h-4 w-4 mr-2 text-amber-500" />
+                  Relevés en cours
+                </span>
+                <Badge variant="outline" className="bg-amber-50 text-amber-700">
+                  {stats.bankStatements.inProgress}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
+                  Relevés à valider
+                </span>
+                <Badge variant="outline" className="bg-red-50 text-red-700">
+                  {stats.bankStatements.toValidate}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center">
+                  <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                  Relevés à exporter
+                </span>
+                <Badge variant="outline" className="bg-green-50 text-green-700">
+                  {stats.bankStatements.toExport}
+                </Badge>
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t flex justify-end">
+              <Button variant="ghost" size="sm" className="text-purple-600 gap-1">
+                Voir tout <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Bank account charts - replaced with simple cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {["ATW (Démo)", "BCP (Démo)", "Citibank (Démo)", "ULNIA BANK (Démo)", "CFG (Démo)", "Espèces (Démo)"].map(
-          (account, index) => (
-            <Card key={index} className="overflow-hidden">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-base font-medium">{account}</h3>
-                  <Badge variant="outline" className="bg-green-50 text-green-700">
-                    +2.4%
-                  </Badge>
+      <div className="mt-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Comptes bancaires</h2>
+          <Button variant="outline" size="sm" className="gap-2">
+            <Plus className="h-4 w-4" />
+            Ajouter un compte
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[
+            { name: "ATW (Démo)", balance: "45,230.00", currency: "DH", change: "+2.4%", color: "blue" },
+            { name: "BCP (Démo)", balance: "32,150.75", currency: "DH", change: "+1.8%", color: "green" },
+            { name: "Citibank (Démo)", balance: "12,430.50", currency: "DH", change: "-0.5%", color: "red" },
+            { name: "ULNIA BANK (Démo)", balance: "8,750.25", currency: "DH", change: "+3.2%", color: "blue" },
+            { name: "CFG (Démo)", balance: "5,320.00", currency: "DH", change: "+0.7%", color: "green" },
+            { name: "Espèces (Démo)", balance: "2,150.00", currency: "DH", change: "+0.0%", color: "amber" },
+          ].map((account, index) => (
+            <Card key={index} className="overflow-hidden hover:shadow-md transition-all duration-200">
+              <CardContent className="p-0">
+                <div className={`p-4 border-b bg-${account.color}-50`}>
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-medium">{account.name}</h3>
+                    <Badge
+                      variant="outline"
+                      className={`${
+                        account.change.startsWith("+")
+                          ? "bg-green-50 text-green-700"
+                          : account.change.startsWith("-")
+                            ? "bg-red-50 text-red-700"
+                            : "bg-amber-50 text-amber-700"
+                      }`}
+                    >
+                      {account.change}
+                    </Badge>
+                  </div>
                 </div>
-                <div className="h-[180px] bg-muted/20 flex items-center justify-center rounded-md overflow-hidden">
-                  <p className="text-muted-foreground">Chart placeholder: {account}</p>
+                <div className="p-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-sm text-muted-foreground">Solde actuel</span>
+                    <span className="text-lg font-semibold">
+                      {account.balance} {account.currency}
+                    </span>
+                  </div>
+                  <div className="h-[80px] bg-muted/20 rounded-md overflow-hidden flex items-center justify-center">
+                    <span className="text-xs text-muted-foreground">Graphique d'évolution</span>
+                  </div>
+                  <div className="mt-4 flex justify-end">
+                    <Button variant="ghost" size="sm" className="text-muted-foreground gap-1">
+                      Détails <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          ),
-        )}
+          ))}
+        </div>
       </div>
 
       {/* File Upload Modal */}

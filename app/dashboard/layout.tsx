@@ -16,6 +16,9 @@ import {
   ChevronLeft,
   ChevronRight,
   CreditCard,
+  Bell,
+  Search,
+  User,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -30,6 +33,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { CompanySelector } from "@/components/company-selector"
 import { ModeToggle } from "@/components/mode-toggle"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Suspense } from "react"
 
 interface NavItem {
   title: string
@@ -88,7 +94,7 @@ export default function DashboardLayout({
   const [mounted, setMounted] = useState(false)
   const [showCompanySelector, setShowCompanySelector] = useState(false)
   const [currentCompany, setCurrentCompany] = useState<{ name: string; id: string } | null>(null)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true) // Start with collapsed sidebar
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false) // Start with expanded sidebar
 
   // Prevent hydration errors by only rendering client-specific content after mount
   useEffect(() => {
@@ -169,9 +175,14 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-        <Button variant="ghost" size="icon" onClick={toggleSidebar} className="mr-2">
+    <div className="flex min-h-screen flex-col bg-background">
+      <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 shadow-sm">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleSidebar}
+          className="mr-2 text-muted-foreground hover:text-foreground"
+        >
           {sidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
           <span className="sr-only">Toggle sidebar</span>
         </Button>
@@ -187,8 +198,8 @@ export default function DashboardLayout({
             <div className="flex h-full flex-col">
               <div className="flex h-14 items-center border-b px-4">
                 <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-                  <FileText className="h-6 w-6" />
-                  <span className="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+                  <FileText className="h-6 w-6 text-primary" />
+                  <span className="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent font-bold">
                     Besoin.Compta
                   </span>
                 </Link>
@@ -200,7 +211,7 @@ export default function DashboardLayout({
                   onClick={() => setShowCompanySelector(true)}
                 >
                   <div className="flex items-center">
-                    <Building2 className="mr-2 h-4 w-4" />
+                    <Building2 className="mr-2 h-4 w-4 text-primary" />
                     <span className="truncate">{currentCompany?.name || "Select Company"}</span>
                   </div>
                   <ChevronDown className="h-4 w-4 opacity-50" />
@@ -212,7 +223,7 @@ export default function DashboardLayout({
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 ${
                         pathname === item.href
                           ? "bg-primary text-primary-foreground font-medium"
                           : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -232,7 +243,7 @@ export default function DashboardLayout({
                           <Link
                             key={subItem.href}
                             href={subItem.href}
-                            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 ${
                               pathname === subItem.href
                                 ? "bg-primary text-primary-foreground font-medium"
                                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -251,39 +262,93 @@ export default function DashboardLayout({
           </SheetContent>
         </Sheet>
         <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-          <FileText className="h-6 w-6" />
-          <span className="hidden md:inline-block bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+          <FileText className="h-6 w-6 text-primary" />
+          <span className="hidden md:inline-block bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent font-bold">
             Besoin.Compta
           </span>
         </Link>
 
+        {/* Search bar */}
+        <div className="hidden md:flex flex-1 mx-4 max-w-md">
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder="Search..." className="pl-10 bg-muted/40 border-muted focus-visible:bg-background" />
+          </div>
+        </div>
+
         {/* Company Selector Button (Desktop) */}
-        <div className="hidden md:flex ml-4">
-          <Button variant="outline" className="gap-2" onClick={() => setShowCompanySelector(true)}>
-            <Building2 className="h-4 w-4" />
+        <div className="hidden md:flex">
+          <Button
+            variant="outline"
+            className="gap-2 border-muted bg-muted/40 hover:bg-muted"
+            onClick={() => setShowCompanySelector(true)}
+          >
+            <Building2 className="h-4 w-4 text-primary" />
             <span className="max-w-[150px] truncate">{currentCompany?.name || "Select Company"}</span>
             <ChevronDown className="h-4 w-4 opacity-50" />
           </Button>
         </div>
 
         <div className="ml-auto flex items-center gap-4">
+          {/* Notifications */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                  3
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80">
+              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <div className="max-h-80 overflow-auto">
+                {[1, 2, 3].map((i) => (
+                  <DropdownMenuItem key={i} className="flex flex-col items-start p-3 cursor-pointer">
+                    <div className="flex items-center gap-2 mb-1 w-full">
+                      <span className="font-medium">New invoice uploaded</span>
+                      <Badge variant="outline" className="ml-auto text-xs">
+                        New
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">Invoice #INV-{1000 + i} has been processed</span>
+                    <span className="text-xs text-muted-foreground mt-1">2 hour{i > 1 ? "s" : ""} ago</span>
+                  </DropdownMenuItem>
+                ))}
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="justify-center text-primary">View all notifications</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <ModeToggle />
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">
-                <Avatar className="h-8 w-8">
+                <Avatar className="h-8 w-8 ring-2 ring-primary/10">
                   <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                  <AvatarFallback>JD</AvatarFallback>
+                  <AvatarFallback className="bg-primary/10 text-primary">JD</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                <span>My Account</span>
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/settings">Settings</Link>
+                <Link href="/dashboard/settings" className="cursor-pointer">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout}>
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="cursor-pointer text-destructive focus:text-destructive"
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
@@ -292,55 +357,64 @@ export default function DashboardLayout({
         </div>
       </header>
       <div className="flex flex-1">
-        {/* Collapsible sidebar */}
+        {/* Collapsible sidebar with enhanced styling */}
         <aside
-          className={`border-r bg-muted/40 transition-all duration-300 ease-in-out ${
+          className={`border-r bg-background transition-all duration-300 ease-in-out ${
             sidebarCollapsed ? "w-0 overflow-hidden" : "w-64"
           }`}
         >
-          <nav className="grid gap-2 p-4">
-            {navItems.map((item) =>
-              item.href ? (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                    pathname === item.href
-                      ? "bg-primary text-primary-foreground font-medium"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.title}
-                </Link>
-              ) : item.items ? (
-                <div key={item.title}>
-                  <div className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground">
+          <div className="sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto py-6 px-4">
+            <nav className="grid gap-2">
+              {navItems.map((item) =>
+                item.href ? (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`nav-item ${pathname === item.href ? "active" : ""}`}
+                  >
                     <item.icon className="h-4 w-4" />
                     {item.title}
+                  </Link>
+                ) : item.items ? (
+                  <div key={item.title} className="space-y-2 pt-2">
+                    <div className="flex items-center gap-3 px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <item.icon className="h-4 w-4" />
+                      {item.title}
+                    </div>
+                    <div className="grid gap-1 pl-2">
+                      {item.items.map((subItem) => (
+                        <Link
+                          key={subItem.href}
+                          href={subItem.href}
+                          className={`nav-item ${pathname === subItem.href ? "active" : ""}`}
+                        >
+                          <subItem.icon className="h-4 w-4" />
+                          {subItem.title}
+                        </Link>
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid gap-2 pl-6">
-                    {item.items.map((subItem) => (
-                      <Link
-                        key={subItem.href}
-                        href={subItem.href}
-                        className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                          pathname === subItem.href
-                            ? "bg-primary text-primary-foreground font-medium"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                        }`}
-                      >
-                        <subItem.icon className="h-4 w-4" />
-                        {subItem.title}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ) : null,
-            )}
-          </nav>
+                ) : null,
+              )}
+            </nav>
+
+            {/* Bottom section with help and support */}
+            <div className="mt-auto pt-6 border-t mt-6">
+              <div className="rounded-lg bg-muted/50 p-4">
+                <h4 className="text-sm font-medium mb-2">Need help?</h4>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Contact our support team for assistance with your account.
+                </p>
+                <Button variant="outline" size="sm" className="w-full">
+                  Contact Support
+                </Button>
+              </div>
+            </div>
+          </div>
         </aside>
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6 overflow-auto">
+          <Suspense fallback={<>Loading...</>}>{children}</Suspense>
+        </main>
       </div>
 
       {/* Company Selector Modal */}

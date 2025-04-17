@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import type { LucideIcon } from "lucide-react"
 
 interface DashboardCardProps {
@@ -18,53 +18,43 @@ export function DashboardCard({ title, icon: Icon, color, actionLabel, onAction,
   // Color mapping
   const colorClasses = {
     blue: {
-      border: "border-t-blue-500",
-      header: "bg-blue-500",
-      button: "bg-white text-blue-500 hover:bg-blue-50",
+      gradient: "from-blue-500 to-blue-600",
+      button: "bg-white/20 hover:bg-white/30 text-white border-0",
     },
     green: {
-      border: "border-t-green-500",
-      header: "bg-green-500",
-      button: "bg-white text-green-500 hover:bg-green-50",
+      gradient: "from-green-500 to-green-600",
+      button: "bg-white/20 hover:bg-white/30 text-white border-0",
     },
     amber: {
-      border: "border-t-amber-500",
-      header: "bg-amber-500",
-      button: "bg-white text-amber-500 hover:bg-amber-50",
+      gradient: "from-amber-500 to-amber-600",
+      button: "bg-white/20 hover:bg-white/30 text-white border-0",
     },
     red: {
-      border: "border-t-red-500",
-      header: "bg-red-500",
-      button: "bg-white text-red-500 hover:bg-red-50",
+      gradient: "from-red-500 to-red-600",
+      button: "bg-white/20 hover:bg-white/30 text-white border-0",
     },
     purple: {
-      border: "border-t-purple-500",
-      header: "bg-purple-500",
-      button: "bg-white text-purple-500 hover:bg-purple-50",
+      gradient: "from-purple-500 to-purple-600",
+      button: "bg-white/20 hover:bg-white/30 text-white border-0",
     },
   }
 
   return (
-    <Card className={`overflow-hidden border-t-4 ${colorClasses[color].border} animate-fade-in`}>
-      <CardHeader className={`${colorClasses[color].header} text-white p-4 pb-2`}>
-        <CardTitle className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Icon className="h-5 w-5" />
-            <span>{title}</span>
-          </div>
+    <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-all duration-200">
+      <div className={`bg-gradient-to-r ${colorClasses[color].gradient} p-4 text-white`}>
+        <div className="flex justify-between items-center">
+          <h3 className="font-semibold flex items-center">
+            <Icon className="h-5 w-5 mr-2" />
+            {title}
+          </h3>
           {actionLabel && onAction && (
-            <Button
-              size="sm"
-              variant="secondary"
-              className={`h-8 text-xs ${colorClasses[color].button}`}
-              onClick={onAction}
-            >
+            <Button size="sm" variant="secondary" className={colorClasses[color].button} onClick={onAction}>
               {actionLabel}
             </Button>
           )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-4 pt-3">{children}</CardContent>
+        </div>
+      </div>
+      <CardContent className="p-4">{children}</CardContent>
     </Card>
   )
 }

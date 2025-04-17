@@ -2,45 +2,53 @@ import type React from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle, ArrowRight, BarChart3, FileText, Upload, PieChart, Shield, Clock } from "lucide-react"
+import { CheckCircle, ArrowRight, BarChart3, FileText, Upload, PieChart, Shield, Clock, Star } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 export default function Home() {
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
-      <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-gradient-to-b from-background to-muted">
-        <div className="container px-4 md:px-6">
+      <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-gradient-to-b from-background to-muted relative overflow-hidden">
+        {/* Background elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-[30%] -right-[10%] w-[60%] h-[80%] bg-primary/5 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-[20%] -left-[10%] w-[50%] h-[70%] bg-primary/5 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="container px-4 md:px-6 relative z-10">
           <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
             <div className="flex flex-col justify-center space-y-4">
+              <Badge className="w-fit bg-primary/10 text-primary border-primary/20 mb-2">Innovant & Intuitif</Badge>
               <div className="space-y-2">
                 <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                  Modern Accounting Solutions for Growing Businesses
+                  Solutions Comptables Modernes pour Entreprises en Croissance
                 </h1>
                 <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                  Streamline your financial operations with our intuitive platform. Save time, reduce errors, and gain
-                  valuable insights.
+                  Simplifiez vos opérations financières avec notre plateforme intuitive. Gagnez du temps, réduisez les
+                  erreurs et obtenez des insights précieux.
                 </p>
               </div>
               <div className="flex flex-col gap-2 min-[400px]:flex-row">
                 <Link href="/auth/register">
-                  <Button size="lg" className="px-8">
-                    Get Started
+                  <Button size="lg" className="px-8 shadow-lg shadow-primary/20">
+                    Commencer
                   </Button>
                 </Link>
                 <Link href="#features">
                   <Button size="lg" variant="outline" className="px-8">
-                    Learn More
+                    En savoir plus
                   </Button>
                 </Link>
               </div>
             </div>
             <div className="flex items-center justify-center">
               <div className="relative w-full h-full min-h-[300px] md:min-h-[400px] lg:min-h-[500px]">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-blue-500/20 rounded-lg transform rotate-2"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-blue-500/20 rounded-lg transform rotate-2 shadow-xl"></div>
                 <img
                   src="/placeholder.svg?height=600&width=800"
                   alt="Dashboard Preview"
-                  className="absolute inset-0 w-full h-full object-cover rounded-lg shadow-2xl transform -rotate-1 transition-all duration-200 hover:rotate-0"
+                  className="absolute inset-0 w-full h-full object-cover rounded-lg shadow-2xl transform -rotate-1 transition-all duration-300 hover:rotate-0 hover:scale-[1.02]"
                 />
               </div>
             </div>
@@ -53,15 +61,20 @@ export default function Home() {
         <div className="container px-4 md:px-6">
           <div className="flex flex-col items-center justify-center space-y-4 text-center">
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold tracking-tighter md:text-3xl">Trusted by Businesses Worldwide</h2>
+              <h2 className="text-2xl font-bold tracking-tighter md:text-3xl">
+                Utilisé par des Entreprises du Monde Entier
+              </h2>
               <p className="max-w-[700px] text-muted-foreground md:text-lg">
-                Join thousands of companies using our platform to streamline their accounting processes
+                Rejoignez des milliers d'entreprises qui utilisent notre plateforme pour optimiser leurs processus
+                comptables
               </p>
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12 lg:gap-16">
-              {["Company A", "Company B", "Company C", "Company D", "Company E"].map((company) => (
-                <div key={company} className="flex items-center justify-center">
-                  <div className="text-2xl font-bold text-muted-foreground/60">{company}</div>
+            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12 lg:gap-16 mt-6">
+              {["Company A", "Company B", "Company C", "Company D", "Company E"].map((company, index) => (
+                <div key={company} className="flex items-center justify-center group">
+                  <div className="text-2xl font-bold text-muted-foreground/60 transition-all duration-200 group-hover:text-primary/80">
+                    {company}
+                  </div>
                 </div>
               ))}
             </div>
@@ -70,51 +83,55 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="w-full py-12 md:py-24 lg:py-32">
-        <div className="container px-4 md:px-6">
+      <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-background relative overflow-hidden">
+        {/* Background elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-[10%] right-[5%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-[10%] left-[5%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="container px-4 md:px-6 relative z-10">
           <div className="flex flex-col items-center justify-center space-y-4 text-center">
+            <Badge className="bg-primary/10 text-primary border-primary/20">Fonctionnalités</Badge>
             <div className="space-y-2">
-              <div className="inline-block rounded-lg bg-primary px-3 py-1 text-sm text-primary-foreground">
-                Features
-              </div>
               <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">
-                Everything You Need in One Place
+                Tout ce dont vous avez besoin en un seul endroit
               </h2>
               <p className="max-w-[700px] text-muted-foreground md:text-lg">
-                Our comprehensive platform provides all the tools you need to manage your finances efficiently
+                Notre plateforme complète fournit tous les outils nécessaires pour gérer vos finances efficacement
               </p>
             </div>
           </div>
           <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 py-12 md:grid-cols-2 lg:grid-cols-3">
             <FeatureCard
               icon={<FileText className="h-10 w-10 text-primary" />}
-              title="Invoicing"
-              description="Create and manage professional invoices with automated reminders and payment tracking"
+              title="Facturation"
+              description="Créez et gérez des factures professionnelles avec des rappels automatisés et un suivi des paiements"
             />
             <FeatureCard
               icon={<BarChart3 className="h-10 w-10 text-primary" />}
-              title="Financial Reporting"
-              description="Generate comprehensive reports with real-time data to make informed business decisions"
+              title="Rapports Financiers"
+              description="Générez des rapports complets avec des données en temps réel pour prendre des décisions éclairées"
             />
             <FeatureCard
               icon={<Upload className="h-10 w-10 text-primary" />}
-              title="Document Management"
-              description="Upload and organize all your financial documents in one secure location"
+              title="Gestion Documentaire"
+              description="Téléchargez et organisez tous vos documents financiers en un seul endroit sécurisé"
             />
             <FeatureCard
               icon={<PieChart className="h-10 w-10 text-primary" />}
-              title="Tax Management"
-              description="Simplify tax preparation with automated calculations and compliance checks"
+              title="Gestion Fiscale"
+              description="Simplifiez la préparation des impôts avec des calculs automatisés et des vérifications de conformité"
             />
             <FeatureCard
               icon={<Shield className="h-10 w-10 text-primary" />}
-              title="Secure Data"
-              description="Bank-level security ensures your financial information is always protected"
+              title="Données Sécurisées"
+              description="Une sécurité de niveau bancaire garantit que vos informations financières sont toujours protégées"
             />
             <FeatureCard
               icon={<Clock className="h-10 w-10 text-primary" />}
-              title="Time-Saving Automation"
-              description="Automate repetitive tasks to focus on what matters most for your business"
+              title="Automatisation"
+              description="Automatisez les tâches répétitives pour vous concentrer sur ce qui compte le plus pour votre entreprise"
             />
           </div>
         </div>
@@ -124,67 +141,69 @@ export default function Home() {
       <section className="w-full py-12 md:py-24 lg:py-32 bg-muted">
         <div className="container px-4 md:px-6">
           <div className="flex flex-col items-center justify-center space-y-4 text-center">
+            <Badge className="bg-primary/10 text-primary border-primary/20">Comment ça marche</Badge>
             <div className="space-y-2">
-              <div className="inline-block rounded-lg bg-primary px-3 py-1 text-sm text-primary-foreground">
-                How It Works
-              </div>
               <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">
-                Simple Process, Powerful Results
+                Processus Simple, Résultats Puissants
               </h2>
               <p className="max-w-[700px] text-muted-foreground md:text-lg">
-                Get started in minutes and transform your financial management
+                Commencez en quelques minutes et transformez votre gestion financière
               </p>
             </div>
           </div>
           <div className="mx-auto grid max-w-5xl grid-cols-1 gap-8 py-12 md:grid-cols-3">
             <StepCard
               number="01"
-              title="Sign Up"
-              description="Create your account in minutes with our simple onboarding process"
+              title="Inscription"
+              description="Créez votre compte en quelques minutes avec notre processus d'intégration simple"
             />
             <StepCard
               number="02"
-              title="Connect Your Data"
-              description="Import your existing financial data or start fresh with our intuitive platform"
+              title="Connectez vos données"
+              description="Importez vos données financières existantes ou commencez avec notre plateforme intuitive"
             />
             <StepCard
               number="03"
-              title="Start Managing"
-              description="Use our powerful tools to streamline your accounting processes"
+              title="Commencez à gérer"
+              description="Utilisez nos outils puissants pour optimiser vos processus comptables"
             />
           </div>
         </div>
       </section>
 
       {/* Testimonials Section */}
-      <section className="w-full py-12 md:py-24 lg:py-32">
-        <div className="container px-4 md:px-6">
+      <section className="w-full py-12 md:py-24 lg:py-32 bg-background relative overflow-hidden">
+        {/* Background elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-[20%] left-[10%] w-[30%] h-[30%] bg-primary/5 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-[20%] right-[10%] w-[30%] h-[30%] bg-primary/5 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="container px-4 md:px-6 relative z-10">
           <div className="flex flex-col items-center justify-center space-y-4 text-center">
+            <Badge className="bg-primary/10 text-primary border-primary/20">Témoignages</Badge>
             <div className="space-y-2">
-              <div className="inline-block rounded-lg bg-primary px-3 py-1 text-sm text-primary-foreground">
-                Testimonials
-              </div>
-              <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">What Our Clients Say</h2>
+              <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">Ce que disent nos clients</h2>
               <p className="max-w-[700px] text-muted-foreground md:text-lg">
-                Hear from businesses that have transformed their financial operations with our platform
+                Découvrez comment des entreprises ont transformé leurs opérations financières avec notre plateforme
               </p>
             </div>
           </div>
           <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 py-12 md:grid-cols-2 lg:grid-cols-3">
             <TestimonialCard
-              quote="Experio has completely transformed how we manage our finances. The time savings alone have been worth the investment."
+              quote="Experio a complètement transformé notre façon de gérer nos finances. Les économies de temps à elles seules ont valu l'investissement."
               author="Sarah Johnson"
-              position="CFO, TechStart Inc."
+              position="Directrice Financière, TechStart Inc."
             />
             <TestimonialCard
-              quote="The reporting features give us insights we never had before. We can make better business decisions with real-time data."
+              quote="Les fonctionnalités de reporting nous donnent des insights que nous n'avions jamais eus auparavant. Nous pouvons prendre de meilleures décisions avec des données en temps réel."
               author="Michael Chen"
-              position="CEO, GrowthWave"
+              position="PDG, GrowthWave"
             />
             <TestimonialCard
-              quote="The customer support team is exceptional. They've helped us customize the platform to fit our unique business needs."
+              quote="L'équipe de support client est exceptionnelle. Ils nous ont aidés à personnaliser la plateforme pour répondre à nos besoins uniques."
               author="Emma Rodriguez"
-              position="Finance Director, Innovate Ltd"
+              position="Directrice Financière, Innovate Ltd"
             />
           </div>
         </div>
@@ -194,77 +213,78 @@ export default function Home() {
       <section className="w-full py-12 md:py-24 lg:py-32 bg-muted">
         <div className="container px-4 md:px-6">
           <div className="flex flex-col items-center justify-center space-y-4 text-center">
+            <Badge className="bg-primary/10 text-primary border-primary/20">Tarification</Badge>
             <div className="space-y-2">
-              <div className="inline-block rounded-lg bg-primary px-3 py-1 text-sm text-primary-foreground">
-                Pricing
-              </div>
-              <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">Simple, Transparent Pricing</h2>
+              <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">
+                Tarification Simple et Transparente
+              </h2>
               <p className="max-w-[700px] text-muted-foreground md:text-lg">
-                Choose the plan that works best for your business needs
+                Choisissez le forfait qui convient le mieux aux besoins de votre entreprise
               </p>
             </div>
           </div>
           <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 py-12 md:grid-cols-3">
             <PricingCard
-              title="Starter"
-              price="$29"
-              description="Perfect for small businesses just getting started"
-              features={["Basic invoicing", "Financial reporting", "Document storage", "Email support"]}
-              buttonText="Get Started"
+              title="Démarrage"
+              price="29€"
+              description="Parfait pour les petites entreprises qui débutent"
+              features={["Facturation de base", "Rapports financiers", "Stockage de documents", "Support par email"]}
+              buttonText="Commencer"
             />
             <PricingCard
-              title="Professional"
-              price="$79"
-              description="Ideal for growing businesses with more complex needs"
+              title="Professionnel"
+              price="79€"
+              description="Idéal pour les entreprises en croissance avec des besoins plus complexes"
               features={[
-                "Advanced invoicing",
-                "Comprehensive reporting",
-                "Tax management",
-                "Priority support",
-                "Team collaboration",
+                "Facturation avancée",
+                "Rapports complets",
+                "Gestion fiscale",
+                "Support prioritaire",
+                "Collaboration d'équipe",
               ]}
-              buttonText="Get Started"
+              buttonText="Commencer"
               highlighted={true}
             />
             <PricingCard
-              title="Enterprise"
-              price="$149"
-              description="For established businesses with advanced requirements"
+              title="Entreprise"
+              price="149€"
+              description="Pour les entreprises établies avec des exigences avancées"
               features={[
-                "Custom invoicing",
-                "Advanced analytics",
-                "API access",
-                "Dedicated account manager",
-                "Custom integrations",
-                "Training sessions",
+                "Facturation personnalisée",
+                "Analyses avancées",
+                "Accès API",
+                "Gestionnaire de compte dédié",
+                "Intégrations personnalisées",
+                "Sessions de formation",
               ]}
-              buttonText="Contact Sales"
+              buttonText="Contacter les ventes"
             />
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="w-full py-12 md:py-24 lg:py-32 bg-primary text-primary-foreground">
+      <section className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
         <div className="container px-4 md:px-6">
           <div className="flex flex-col items-center justify-center space-y-4 text-center">
             <div className="space-y-2">
               <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">
-                Ready to Transform Your Financial Management?
+                Prêt à transformer votre gestion financière ?
               </h2>
               <p className="max-w-[700px] md:text-xl">
-                Join thousands of businesses already using our platform to streamline their accounting processes
+                Rejoignez des milliers d'entreprises qui utilisent déjà notre plateforme pour optimiser leurs processus
+                comptables
               </p>
             </div>
-            <div className="flex flex-col gap-2 min-[400px]:flex-row">
+            <div className="flex flex-col gap-2 min-[400px]:flex-row mt-6">
               <Link href="/auth/register">
-                <Button size="lg" variant="secondary" className="px-8">
-                  Get Started
+                <Button size="lg" variant="secondary" className="px-8 shadow-lg">
+                  Commencer maintenant
                 </Button>
               </Link>
               <Link href="/contact">
-                <Button size="lg" variant="outline" className="border-primary-foreground px-8">
-                  Contact Sales
+                <Button size="lg" variant="outline" className="border-primary-foreground px-8 hover:bg-white/10">
+                  Contacter les ventes
                 </Button>
               </Link>
             </div>
@@ -277,10 +297,10 @@ export default function Home() {
 
 function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
-    <Card className="flex flex-col items-center text-center h-full">
+    <Card className="flex flex-col items-center text-center h-full hover:shadow-md transition-all duration-200 hover:-translate-y-1 border-muted">
       <CardHeader>
-        <div className="p-2 bg-primary/10 rounded-full mb-4">{icon}</div>
-        <CardTitle>{title}</CardTitle>
+        <div className="p-3 bg-primary/10 rounded-full mb-4 w-16 h-16 flex items-center justify-center">{icon}</div>
+        <CardTitle className="text-xl">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <CardDescription className="text-base">{description}</CardDescription>
@@ -291,10 +311,10 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode; titl
 
 function StepCard({ number, title, description }: { number: string; title: string; description: string }) {
   return (
-    <Card className="relative overflow-hidden border-none bg-background shadow-md">
+    <Card className="relative overflow-hidden border-none bg-background shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
       <div className="absolute -top-6 -left-6 text-8xl font-bold text-primary/10">{number}</div>
       <CardHeader className="pt-8">
-        <CardTitle>{title}</CardTitle>
+        <CardTitle className="text-xl">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <CardDescription className="text-base">{description}</CardDescription>
@@ -305,21 +325,11 @@ function StepCard({ number, title, description }: { number: string; title: strin
 
 function TestimonialCard({ quote, author, position }: { quote: string; author: string; position: string }) {
   return (
-    <Card className="h-full">
+    <Card className="h-full hover:shadow-md transition-all duration-200 hover:-translate-y-1 border-muted">
       <CardHeader>
         <div className="flex space-x-1">
           {[1, 2, 3, 4, 5].map((star) => (
-            <svg
-              key={star}
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="text-primary"
-            >
-              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-            </svg>
+            <Star key={star} className="h-5 w-5 fill-current text-primary" />
           ))}
         </div>
       </CardHeader>
@@ -350,18 +360,20 @@ function PricingCard({
   highlighted?: boolean
 }) {
   return (
-    <Card className={`flex flex-col h-full ${highlighted ? "border-primary shadow-lg relative" : ""}`}>
+    <Card
+      className={`flex flex-col h-full transition-all duration-200 hover:-translate-y-1 ${highlighted ? "border-primary shadow-lg relative" : "border-muted hover:shadow-md"}`}
+    >
       {highlighted && (
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground text-xs font-medium py-1 px-3 rounded-full">
-          Most Popular
+          Le plus populaire
         </div>
       )}
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        <CardTitle className="text-xl">{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
         <div className="mt-4">
           <span className="text-3xl font-bold">{price}</span>
-          <span className="text-muted-foreground">/month</span>
+          <span className="text-muted-foreground">/mois</span>
         </div>
       </CardHeader>
       <CardContent className="flex-grow">

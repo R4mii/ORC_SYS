@@ -4,53 +4,65 @@
 
 @layer base {
   :root {
-    /* Base colors */
+    /* Base colors - refined for better contrast and visual appeal */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
+
+    /* Enhanced primary color - slightly more vibrant blue */
+    --primary: 224 76% 48%;
     --primary-foreground: 210 40% 98%;
+
+    /* Refined secondary color for better contrast */
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
+
+    /* Muted colors with better contrast */
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
+
+    /* Enhanced accent color for highlights */
+    --accent: 220 70% 94%;
     --accent-foreground: 222.2 47.4% 11.2%;
+
+    /* Refined destructive color */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
+
+    /* Border and input colors with better contrast */
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --ring: 224 76% 48%;
     --radius: 0.5rem;
 
-    /* Chart colors */
-    --chart-1: 221.2 83.2% 53.3%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    /* Chart colors - more harmonious palette */
+    --chart-1: 224 76% 48%;
+    --chart-2: 196 64% 40%;
+    --chart-3: 168 75% 35%;
+    --chart-4: 43 96% 58%;
+    --chart-5: 24 90% 55%;
 
-    /* Status colors */
-    --status-pending: 38 92% 50%;
-    --status-success: 142 71% 45%;
+    /* Status colors - more vibrant and distinct */
+    --status-pending: 38 95% 50%;
+    --status-success: 142 76% 45%;
     --status-error: 0 84% 60%;
-    --status-warning: 38 92% 50%;
+    --status-warning: 38 95% 50%;
   }
 
-  /* Theme variations */
+  /* Theme variations - enhanced for better visual distinction */
   [data-theme="blue"] {
-    --primary: 221.2 83.2% 53.3%;
-    --ring: 221.2 83.2% 53.3%;
-    --chart-1: 221.2 83.2% 53.3%;
+    --primary: 224 76% 48%;
+    --ring: 224 76% 48%;
+    --chart-1: 224 76% 48%;
   }
 
   [data-theme="teal"] {
-    --primary: 173 58% 39%;
-    --ring: 173 58% 39%;
-    --chart-1: 173 58% 39%;
+    --primary: 173 80% 36%;
+    --ring: 173 80% 36%;
+    --chart-1: 173 80% 36%;
   }
 
   [data-theme="purple"] {
@@ -60,46 +72,39 @@
   }
 
   [data-theme="green"] {
-    --primary: 142 71% 45%;
-    --ring: 142 71% 45%;
-    --chart-1: 142 71% 45%;
+    --primary: 142 76% 45%;
+    --ring: 142 76% 45%;
+    --chart-1: 142 76% 45%;
   }
 
+  /* Dark theme with improved contrast */
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
-
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-
     --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 222.2 47.4% 11.2%;
-
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
-
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
-
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 48%;
 
-    /* Chart colors - darker theme */
+    /* Chart colors - darker theme with better visibility */
     --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --chart-2: 196 64% 45%;
+    --chart-3: 168 75% 40%;
+    --chart-4: 43 96% 58%;
+    --chart-5: 24 90% 55%;
   }
 }
 
@@ -121,22 +126,26 @@
   }
 }
 
-/* Improved spacing for common components */
+/* Enhanced component styling */
 @layer components {
+  /* Card styling with improved shadows and hover effects */
   .card-dashboard {
-    @apply p-5 rounded-lg border bg-card text-card-foreground shadow-sm transition-all duration-200 hover:shadow-md;
+    @apply p-5 rounded-lg border bg-card text-card-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:translate-y-[-2px];
   }
 
+  /* Section spacing for consistent layout */
   .section-spacing {
     @apply py-6 md:py-8;
   }
 
+  /* Form group styling */
   .form-group {
     @apply space-y-2 mb-4;
   }
 
+  /* Enhanced status badges with better visual distinction */
   .status-badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors;
   }
 
   .status-badge-success {
@@ -155,6 +164,7 @@
     @apply bg-status-warning/20 text-status-warning;
   }
 
+  /* Data table styling with improved borders and hover effects */
   .data-table {
     @apply w-full border-collapse;
   }
@@ -170,17 +180,60 @@
   .data-table tr:hover {
     @apply bg-muted/50;
   }
+
+  /* Dashboard card styling */
+  .dashboard-stat-card {
+    @apply relative overflow-hidden rounded-lg border bg-card p-6 transition-all duration-300 hover:shadow-md;
+  }
+
+  .dashboard-stat-card:hover {
+    @apply translate-y-[-2px];
+  }
+
+  .dashboard-stat-card .icon-container {
+    @apply absolute right-4 top-4 rounded-full p-2 opacity-80;
+  }
+
+  /* Navigation styling */
+  .nav-item {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200;
+  }
+
+  .nav-item:hover {
+    @apply bg-muted text-foreground;
+  }
+
+  .nav-item.active {
+    @apply bg-primary text-primary-foreground font-medium;
+  }
 }
 
-/* Animations */
+/* Enhanced animations */
 .fade-in {
   animation: fadeIn 0.5s ease-in-out;
+}
+
+.slide-up {
+  animation: slideUp 0.5s ease-in-out;
+}
+
+.slide-in-right {
+  animation: slideInRight 0.5s ease-in-out;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -188,11 +241,52 @@
   }
 }
 
-/* Hover effects */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Enhanced hover effects */
 .hover-lift {
-  transition: transform 0.2s ease-in-out;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
 .hover-lift:hover {
   transform: translateY(-5px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Gradient backgrounds */
+.bg-gradient-primary {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.8) 100%);
+}
+
+.bg-gradient-success {
+  background: linear-gradient(135deg, hsl(var(--status-success)) 0%, hsl(var(--status-success) / 0.8) 100%);
+}
+
+.bg-gradient-warning {
+  background: linear-gradient(135deg, hsl(var(--status-warning)) 0%, hsl(var(--status-warning) / 0.8) 100%);
+}
+
+.bg-gradient-error {
+  background: linear-gradient(135deg, hsl(var(--status-error)) 0%, hsl(var(--status-error) / 0.8) 100%);
+}
+
+/* Glass effect for cards */
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass-card {
+  background: rgba(30, 30, 30, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
