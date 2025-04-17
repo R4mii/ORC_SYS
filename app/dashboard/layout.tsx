@@ -16,6 +16,13 @@ import {
   ChevronLeft,
   ChevronRight,
   CreditCard,
+  BookOpen,
+  BarChart,
+  Calculator,
+  DollarSign,
+  Wallet,
+  LineChart,
+  LayoutDashboard,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -30,6 +37,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { CompanySelector } from "@/components/company-selector"
 import { ModeToggle } from "@/components/mode-toggle"
+import { NotificationIndicator } from "@/components/notification-indicator"
 
 interface NavItem {
   title: string
@@ -38,7 +46,7 @@ interface NavItem {
   icon: React.ElementType
 }
 
-// Update the navItems array
+// Update the navItems array with new sections
 const navItems: NavItem[] = [
   {
     title: "Dashboard",
@@ -67,6 +75,53 @@ const navItems: NavItem[] = [
     icon: Building2,
   },
   {
+    title: "Comptabilité",
+    icon: BookOpen,
+    items: [
+      {
+        title: "Journal",
+        href: "/dashboard/accounting/journal",
+        icon: BookOpen,
+      },
+      {
+        title: "Grand Livre",
+        href: "/dashboard/accounting/ledger",
+        icon: BarChart,
+      },
+      {
+        title: "Plan Comptable",
+        href: "/dashboard/accounting/chart-of-accounts",
+        icon: LayoutDashboard,
+      },
+      {
+        title: "Gestion TVA",
+        href: "/dashboard/accounting/vat",
+        icon: Calculator,
+      },
+    ],
+  },
+  {
+    title: "Banque",
+    icon: Wallet,
+    items: [
+      {
+        title: "Rapprochement",
+        href: "/dashboard/banking/reconciliation",
+        icon: DollarSign,
+      },
+      {
+        title: "Règles bancaires",
+        href: "/dashboard/banking/rules",
+        icon: BarChart,
+      },
+      {
+        title: "Prévisions",
+        href: "/dashboard/banking/forecast",
+        icon: LineChart,
+      },
+    ],
+  },
+  {
     title: "Reports",
     href: "/dashboard/reports",
     icon: BarChart3,
@@ -89,6 +144,7 @@ export default function DashboardLayout({
   const [showCompanySelector, setShowCompanySelector] = useState(false)
   const [currentCompany, setCurrentCompany] = useState<{ name: string; id: string } | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true) // Start with collapsed sidebar
+  const [notifications, setNotifications] = useState<any[]>([])
 
   // Prevent hydration errors by only rendering client-specific content after mount
   useEffect(() => {
@@ -127,6 +183,12 @@ export default function DashboardLayout({
         })
       } else {
         router.push("/auth/login")
+      }
+
+      // Load notifications
+      const storedNotifications = localStorage.getItem(`notifications_${companyId}`)
+      if (storedNotifications) {
+        setNotifications(JSON.parse(storedNotifications))
       }
     }
   }, [router])
@@ -267,6 +329,7 @@ export default function DashboardLayout({
         </div>
 
         <div className="ml-auto flex items-center gap-4">
+          <NotificationIndicator count={notifications.filter((n) => !n.read).length} />
           <ModeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
