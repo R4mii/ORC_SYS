@@ -1,18 +1,14 @@
-import type { MainNavItem } from "@/types"
-import {
-  Activity,
-  BarChart,
-  Book,
-  Calendar,
-  CreditCard,
-  LayoutDashboard,
-  ListChecks,
-  Package,
-  ReceiptText,
-  Settings,
-  ShoppingCart,
-  Users,
-} from "lucide-react"
+import type React from "react"
+import { BarChart, Book, CreditCard, LayoutDashboard, ListChecks, ReceiptText, Settings, Users } from "lucide-react"
+
+interface MainNavItem {
+  title: string
+  href?: string
+  disabled?: boolean
+  external?: boolean
+  icon?: React.ReactNode
+  label?: string
+}
 
 interface MainNavProps {
   items?: MainNavItem[]
@@ -50,58 +46,50 @@ export const defaultNavItems: MainNavItem[] = [
     icon: <LayoutDashboard className="h-4 w-4" />,
   },
   {
-    title: "Sales",
-    href: "/sales",
-    icon: <BarChart className="h-4 w-4" />,
-  },
-  {
-    title: "Products",
-    href: "/products",
-    icon: <Package className="h-4 w-4" />,
-  },
-  {
-    title: "Orders",
-    href: "/orders",
-    icon: <ShoppingCart className="h-4 w-4" />,
-  },
-  {
-    title: "Customers",
-    href: "/customers",
-    icon: <Users className="h-4 w-4" />,
-  },
-  {
     title: "Invoices",
-    href: "/invoices",
+    href: "/dashboard/invoices",
     icon: <CreditCard className="h-4 w-4" />,
   },
   {
-    title: "Invoice Upload",
-    href: "/invoice-upload",
-    icon: <ReceiptText className="h-4 w-4" />,
+    title: "Users",
+    href: "/dashboard/users",
+    icon: <Users className="h-4 w-4" />,
   },
   {
-    title: "Tasks",
-    href: "/tasks",
-    icon: <ListChecks className="h-4 w-4" />,
+    title: "Document Processing",
+    href: "/dashboard/document-processing",
+    icon: <FileText className="h-4 w-4" />,
   },
   {
-    title: "Activity",
-    href: "/activity",
-    icon: <Activity className="h-4 w-4" />,
+    title: "Financials",
+    items: [
+      {
+        title: "Journal Entries",
+        href: "/dashboard/financial/journal-entries",
+        icon: <ReceiptText className="h-4 w-4" />,
+      },
+      {
+        title: "General Ledger",
+        href: "/dashboard/financial/general-ledger",
+        icon: <Book className="h-4 w-4" />,
+      },
+      {
+        title: "Chart of Accounts",
+        href: "/dashboard/financial/chart-of-accounts",
+        icon: <ListChecks className="h-4 w-4" />,
+      },
+    ],
+    icon: <BarChart className="h-4 w-4" />,
   },
   {
-    title: "Calendar",
-    href: "/calendar",
-    icon: <Calendar className="h-4 w-4" />,
+    title: "Reports",
+    href: "/dashboard/reports",
+    icon: <BarChart className="h-4 w-4" />,
   },
-  {
-    title: "Documents",
-    href: "/documents",
-    icon: <Book className="h-4 w-4" />,
-  },
+
   {
     title: "Settings",
-    href: "/settings",
+    href: "/dashboard/settings",
     icon: <Settings className="h-4 w-4" />,
   },
 ]

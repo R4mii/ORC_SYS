@@ -23,10 +23,6 @@ export default function SettingsPage() {
       language: "fr",
       currency: "MAD",
     },
-    api: {
-      ocrApiKey: "",
-      ocrLanguage: "fre",
-    },
     notifications: {
       emailNotifications: false,
       invoiceReminders: false,
@@ -88,11 +84,6 @@ export default function SettingsPage() {
   const saveSettings = () => {
     localStorage.setItem("appSettings", JSON.stringify(settings))
 
-    // If OCR API key is set, save it to a separate storage for security
-    if (settings.api.ocrApiKey) {
-      localStorage.setItem("ocrApiKey", settings.api.ocrApiKey)
-    }
-
     toast({
       title: "Settings saved",
       description: "Your settings have been saved successfully.",
@@ -107,10 +98,6 @@ export default function SettingsPage() {
         fiscalYear: "",
         language: "fr",
         currency: "MAD",
-      },
-      api: {
-        ocrApiKey: "",
-        ocrLanguage: "fre",
       },
       notifications: {
         emailNotifications: false,
@@ -156,8 +143,6 @@ export default function SettingsPage() {
               <TabsTrigger value="general">Général</TabsTrigger>
               <TabsTrigger value="notifications">Notifications</TabsTrigger>
               <TabsTrigger value="appearance">Apparence</TabsTrigger>
-              <TabsTrigger value="users">Utilisateurs & Permissions</TabsTrigger>
-              <TabsTrigger value="financial">Financier</TabsTrigger>
             </TabsList>
 
             <TabsContent value="general" className="space-y-4 mt-4">
