@@ -2,19 +2,20 @@
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import type { DateRange } from "react-day-picker"
+import { fr } from "date-fns/locale"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
-interface DatePickerWithRangeProps {
-  date: DateRange | undefined
-  setDate: (date: DateRange | undefined) => void
+interface DateRangePickerProps {
+  value: DateRange
+  onChange: (value: DateRange) => void
   className?: string
 }
 
-export function DatePickerWithRange({ date, setDate, className }: DatePickerWithRangeProps) {
+export function DateRangePicker({ value, onChange, className }: DateRangePickerProps) {
   return (
     <div className={cn("grid gap-2", className)}>
       <Popover>
@@ -22,16 +23,16 @@ export function DatePickerWithRange({ date, setDate, className }: DatePickerWith
           <Button
             id="date"
             variant={"outline"}
-            className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+            className={cn("w-full justify-start text-left font-normal", !value && "text-muted-foreground")}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {date?.from ? (
-              date.to ? (
+            {value?.from ? (
+              value.to ? (
                 <>
-                  {format(date.from, "dd/MM/yyyy")} - {format(date.to, "dd/MM/yyyy")}
+                  {format(value.from, "dd/MM/yyyy", { locale: fr })} - {format(value.to, "dd/MM/yyyy", { locale: fr })}
                 </>
               ) : (
-                format(date.from, "dd/MM/yyyy")
+                format(value.from, "dd/MM/yyyy", { locale: fr })
               )
             ) : (
               <span>Sélectionner une période</span>
@@ -42,10 +43,11 @@ export function DatePickerWithRange({ date, setDate, className }: DatePickerWith
           <Calendar
             initialFocus
             mode="range"
-            defaultMonth={date?.from}
-            selected={date}
-            onSelect={setDate}
+            defaultMonth={value?.from}
+            selected={value}
+            onSelect={onChange}
             numberOfMonths={2}
+            locale={fr}
           />
         </PopoverContent>
       </Popover>

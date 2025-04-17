@@ -60,6 +60,7 @@
     "zod": "^3.24.1",
     "@emotion/is-prop-valid": "latest",
     "express": "latest",
+    "jspdf": "latest",
     "framer-motion": "latest",
     "dotenv": "latest",
     "mongoose": "latest",
@@ -76,7 +77,8 @@
     "@aws-sdk/s3-request-presigner": "latest",
     "crypto": "latest",
     "isomorphic-dompurify": "latest",
-    "cors": "latest"
+    "cors": "latest",
+    "jspdf-autotable": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",
