@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -16,7 +15,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  FileUp,
+  CreditCard,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -34,7 +33,8 @@ import { ModeToggle } from "@/components/mode-toggle"
 
 interface NavItem {
   title: string
-  href: string
+  href?: string
+  items?: NavItem[]
   icon: React.ElementType
 }
 
@@ -47,13 +47,24 @@ const navItems: NavItem[] = [
   },
   {
     title: "Invoices",
-    href: "/dashboard/invoices",
     icon: FileText,
+    items: [
+      {
+        title: "Achats",
+        href: "/dashboard/invoices",
+        icon: CreditCard,
+      },
+      {
+        title: "Ventes",
+        href: "/dashboard/sales",
+        icon: CreditCard,
+      },
+    ],
   },
   {
-    title: "Document Processing",
-    href: "/dashboard/document-processing",
-    icon: FileUp,
+    title: "Rel. bancaires",
+    href: "/dashboard/bank-statements",
+    icon: Building2,
   },
   {
     title: "Reports",
@@ -196,20 +207,45 @@ export default function DashboardLayout({
                 </Button>
               </div>
               <nav className="grid gap-2 p-4">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                      pathname === item.href
-                        ? "bg-primary text-primary-foreground font-medium"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.title}
-                  </Link>
-                ))}
+                {navItems.map((item) =>
+                  item.href ? (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                        pathname === item.href
+                          ? "bg-primary text-primary-foreground font-medium"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.title}
+                    </Link>
+                  ) : item.items ? (
+                    <div key={item.title}>
+                      <div className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground">
+                        <item.icon className="h-4 w-4" />
+                        {item.title}
+                      </div>
+                      <div className="grid gap-2 pl-6">
+                        {item.items.map((subItem) => (
+                          <Link
+                            key={subItem.href}
+                            href={subItem.href}
+                            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                              pathname === subItem.href
+                                ? "bg-primary text-primary-foreground font-medium"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            }`}
+                          >
+                            <subItem.icon className="h-4 w-4" />
+                            {subItem.title}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null,
+                )}
               </nav>
             </div>
           </SheetContent>
@@ -245,16 +281,8 @@ export default function DashboardLayout({
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/profile">Profile</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
                 <Link href="/dashboard/settings">Settings</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowCompanySelector(true)}>
-                <Building2 className="mr-2 h-4 w-4" />
-                <span>Change Company</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
@@ -271,20 +299,45 @@ export default function DashboardLayout({
           }`}
         >
           <nav className="grid gap-2 p-4">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                  pathname === item.href
-                    ? "bg-primary text-primary-foreground font-medium"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.title}
-              </Link>
-            ))}
+            {navItems.map((item) =>
+              item.href ? (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                    pathname === item.href
+                      ? "bg-primary text-primary-foreground font-medium"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.title}
+                </Link>
+              ) : item.items ? (
+                <div key={item.title}>
+                  <div className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground">
+                    <item.icon className="h-4 w-4" />
+                    {item.title}
+                  </div>
+                  <div className="grid gap-2 pl-6">
+                    {item.items.map((subItem) => (
+                      <Link
+                        key={subItem.href}
+                        href={subItem.href}
+                        className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                          pathname === subItem.href
+                            ? "bg-primary text-primary-foreground font-medium"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        }`}
+                      >
+                        <subItem.icon className="h-4 w-4" />
+                        {subItem.title}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : null,
+            )}
           </nav>
         </aside>
         <main className="flex-1 p-4 md:p-6">{children}</main>

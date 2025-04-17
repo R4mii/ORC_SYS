@@ -1,164 +1,185 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { AlertTriangle } from "lucide-react"
+import { EnhancedDataTable } from "@/components/enhanced-data-table"
+import { StatusTag } from "@/components/status-tag"
 import { Button } from "@/components/ui/button"
-import { Upload, FileText, AlertCircle, CheckCircle2 } from "lucide-react"
-import { BankStatementUploadModal } from "@/components/bank-statement-upload-modal"
-import { BankStatementResult } from "@/components/bank-statement-result"
-import { toast } from "@/hooks/use-toast"
 
-interface BankStatementData {
-  accountHolder: string
-  bank: string
+// Interface for bank statement data
+interface BankStatement {
+  id: string
+  accountHolderName: string
+  bankName: string
   accountNumber: string
   statementDate: string
   previousBalance: number
   newBalance: number
   currency: string
-  confidence: number
-  rawText: string
+  status: string
+  hasWarning: boolean
+  description?: string
+  documentType: string
 }
 
 export default function BankStatementsPage() {
-  const [uploadModalOpen, setUploadModalOpen] = useState(false)
-  const [processingResult, setProcessingResult] = useState<BankStatementData | null>(null)
-  const [isProcessed, setIsProcessed] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedBankStatements, setSelectedBankStatements] = useState<string[]>([])
+  const [bankStatements, setBankStatements] = useState<BankStatement[]>([])
+  const [currentCompanyId, setCurrentCompanyId] = useState<string | null>(null)
+  const [currentCompanyName, setCurrentCompanyName] = useState<string | null>(null)
 
-  const handleUploadComplete = (result: any) => {
-    console.log("Upload complete with result:", result)
+  // Load bank statements for the current company
+  useEffect(() => {
+    // Only run this code in the browser
+    if (typeof window === "undefined") return
 
-    if (result && result.bankStatement) {
-      setProcessingResult(result.bankStatement)
-      setIsProcessed(true)
-      setError(null)
-
-      toast({
-        title: "Relevé bancaire traité avec succès",
-        description: "Les données ont été extraites avec succès",
-        variant: "default",
-      })
-    } else {
-      setError("Le traitement n'a pas pu extraire les données nécessaires")
-      setIsProcessed(false)
-
-      toast({
-        title: "Erreur de traitement",
-        description: "Le traitement n'a pas pu extraire les données nécessaires",
-        variant: "destructive",
-      })
+    // Get the selected company from localStorage
+    const companyId = localStorage.getItem("selectedCompanyId")
+    if (!companyId) {
+      router.push("/auth/login")
+      return
     }
 
-    setUploadModalOpen(false)
+    setCurrentCompanyId(companyId)
+
+    // Get company name
+    const companies = JSON.parse(localStorage.getItem("companies") || "[]")
+    const company = companies.find((c: any) => c.id === companyId)
+    if (company) {
+      setCurrentCompanyName(company.name)
+    }
+
+    // Get bank statement documents for this company
+    const bankStatementDocuments = localStorage.getItem(`bankStatements_${companyId}`)
+    if (bankStatementDocuments) {
+      setBankStatements(JSON.parse(bankStatementDocuments))
+    } else {
+      // Initialize with empty array if no bank statements exist
+      localStorage.setItem(`bankStatements_${companyId}`, JSON.stringify([]))
+      setBankStatements([])
+    }
+  }, [router])
+
+  const handleViewBankStatement = (id: string) => {
+    //   router.push(`/dashboard/bank-statements/${id}`)
+    alert(`View bank statement with ID: ${id}`) // Placeholder
   }
 
-  const handleNewUpload = () => {
-    setProcessingResult(null)
-    setIsProcessed(false)
-    setError(null)
-    setUploadModalOpen(true)
-  }
+  // Define table columns
+  const columns = [
+    {
+      key: "accountHolderName",
+      header: "Nom du titulaire du compte",
+      cell: (bankStatement: BankStatement) => (
+        <div className="font-medium flex items-center gap-2">
+          {bankStatement.hasWarning && <AlertTriangle className="h-4 w-4 text-amber-500" />}
+          {bankStatement.accountHolderName}
+        </div>
+      ),
+      sortable: true,
+    },
+    {
+      key: "bankName",
+      header: "Banque",
+      cell: (bankStatement: BankStatement) => bankStatement.bankName,
+      sortable: true,
+    },
+    {
+      key: "accountNumber",
+      header: "Numéro de compte",
+      cell: (bankStatement: BankStatement) => bankStatement.accountNumber,
+      sortable: true,
+    },
+    {
+      key: "statementDate",
+      header: "Date de relevé",
+      cell: (bankStatement: BankStatement) => bankStatement.statementDate,
+      sortable: true,
+    },
+    {
+      key: "previousBalance",
+      header: "Ancien solde",
+      cell: (bankStatement: BankStatement) => (
+        <div className="text-right">
+          {bankStatement.previousBalance ? `${bankStatement.previousBalance.toFixed(2)} DH` : "0,00 DH"}
+        </div>
+      ),
+      className: "text-right",
+      sortable: true,
+    },
+    {
+      key: "newBalance",
+      header: "Nouveau solde",
+      cell: (bankStatement: BankStatement) => (
+        <div className="text-right">
+          {bankStatement.newBalance ? `${bankStatement.newBalance.toFixed(2)} DH` : "0,00 DH"}
+        </div>
+      ),
+      className: "text-right",
+      sortable: true,
+    },
+    {
+      key: "status",
+      header: "Statut",
+      cell: (bankStatement: BankStatement) => {
+        const statusMap: Record<string, any> = {
+          "en-cours": "pending",
+          brouillon: "draft",
+          valide: "validated",
+        }
+        return <StatusTag status={statusMap[bankStatement.status] || "pending"} size="sm" />
+      },
+      sortable: true,
+    },
+  ]
+
+  // Define actions
+  const actions = [
+    {
+      label: "Voir",
+      onClick: (bankStatement: BankStatement) => handleViewBankStatement(bankStatement.id),
+    },
+    {
+      label: "Modifier",
+      onClick: (bankStatement: BankStatement) => alert(`Edit bank statement with ID: ${bankStatement.id}`), // Placeholder
+    },
+    {
+      label: "Supprimer",
+      onClick: (bankStatement: BankStatement) => {
+        if (confirm("Êtes-vous sûr de vouloir supprimer ce relevé bancaire?")) {
+          const updatedBankStatements = bankStatements.filter((inv) => inv.id !== bankStatement.id)
+          setBankStatements(updatedBankStatements)
+          localStorage.setItem(`bankStatements_${currentCompanyId}`, JSON.stringify(updatedBankStatements))
+        }
+      },
+    },
+  ]
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Traitement des relevés bancaires</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Relevés bancaires {currentCompanyName && `- ${currentCompanyName}`}
+        </h1>
+        <Button onClick={() => alert("Implement upload functionality")}>
+          {/*  Replace alert() with the correct function to show the upload modal */}
+          Charger un relevé
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        {!isProcessed ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Charger un relevé bancaire</CardTitle>
-              <CardDescription>
-                Téléchargez un relevé bancaire au format PDF ou image pour extraction automatique des données
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center p-6 space-y-4">
-              <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-2">
-                <Upload className="h-10 w-10 text-muted-foreground" />
-              </div>
-              <p className="text-center text-muted-foreground max-w-md">
-                Chargez votre relevé bancaire pour extraire automatiquement les informations importantes comme le
-                titulaire du compte, le numéro de compte, les soldes et plus encore.
-              </p>
-              <Button onClick={() => setUploadModalOpen(true)} className="mt-4" size="lg">
-                <FileText className="mr-2 h-5 w-5" />
-                Charger un relevé bancaire
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            {processingResult ? (
-              <BankStatementResult data={processingResult} onNewUpload={handleNewUpload} />
-            ) : (
-              <Card className="border-destructive">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-destructive">
-                    <AlertCircle className="mr-2 h-5 w-5" />
-                    Erreur de traitement
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">
-                    {error || "Une erreur s'est produite lors du traitement du relevé bancaire."}
-                  </p>
-                  <Button onClick={handleNewUpload} variant="outline">
-                    Essayer à nouveau
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </>
-        )}
-
-        {/* Information card */}
-        <Card className="bg-muted/40">
-          <CardHeader>
-            <CardTitle className="text-lg">À propos du traitement des relevés bancaires</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <h3 className="font-medium flex items-center">
-                <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
-                Formats supportés
-              </h3>
-              <p className="text-sm text-muted-foreground ml-6">
-                Notre système prend en charge les relevés bancaires au format PDF, JPG et PNG.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="font-medium flex items-center">
-                <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
-                Données extraites
-              </h3>
-              <p className="text-sm text-muted-foreground ml-6">
-                Nous extrayons automatiquement le nom du titulaire, la banque, le numéro de compte, la date du relevé,
-                l'ancien solde et le nouveau solde.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="font-medium flex items-center">
-                <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
-                Confidentialité
-              </h3>
-              <p className="text-sm text-muted-foreground ml-6">
-                Vos données sont traitées de manière sécurisée et ne sont pas stockées sur nos serveurs après le
-                traitement.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <BankStatementUploadModal
-        open={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
-        onUploadComplete={handleUploadComplete}
+      <EnhancedDataTable
+        data={bankStatements}
+        columns={columns}
+        keyField="id"
+        searchable={true}
+        searchPlaceholder="Rechercher un relevé..."
+        pagination={true}
+        pageSize={10}
+        actions={actions}
+        onRowClick={(bankStatement) => handleViewBankStatement(bankStatement.id)}
       />
     </div>
   )

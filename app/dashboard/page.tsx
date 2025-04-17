@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import { CalendarIcon } from "lucide-react"
 import { FileUploadModal } from "@/components/file-upload-modal"
+import { BankStatementUploadModal } from "@/components/bank-statement-upload-modal"
 
 // Define document types for categorization
 type DocumentType = "purchases" | "sales" | "cashReceipts" | "bankStatements"
@@ -25,6 +26,7 @@ export default function DashboardPage() {
   const router = useRouter()
   const [fiscalYear, setFiscalYear] = useState("01-01-2024 / 31-12-2024")
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
+  const [bankStatementModalOpen, setBankStatementModalOpen] = useState(false)
   const [currentUploadType, setCurrentUploadType] = useState<DocumentType>("purchases")
   const [currentCompany, setCurrentCompany] = useState<{ name: string; id: string } | null>(null)
   const [stats, setStats] = useState({
@@ -46,6 +48,7 @@ export default function DashboardPage() {
     bankStatements: {
       inProgress: 0,
       toValidate: 0,
+      toExport: 0,
     },
     totalAmount: 0,
     vatAmount: 0,
@@ -129,7 +132,13 @@ export default function DashboardPage() {
 
   const handleUploadClick = (type: DocumentType) => {
     setCurrentUploadType(type)
-    setUploadModalOpen(true)
+    if (type === "bankStatements") {
+      setBankStatementModalOpen(true)
+      setUploadModalOpen(false)
+    } else {
+      setUploadModalOpen(true)
+      setBankStatementModalOpen(false)
+    }
   }
 
   const handleUploadComplete = (result: any) => {
@@ -177,6 +186,45 @@ export default function DashboardPage() {
 
     // Close the modal
     setUploadModalOpen(false)
+  }
+
+  const handleBankStatementUploadComplete = (result: any) => {
+    if (!currentCompany) return
+
+    // Create a new document from OCR results
+    const newDocument = {
+      id: Math.random().toString(36).substring(2, 9),
+      name: `Rel. bancaire ${new Date().toLocaleDateString()}`,
+      description: result.originalFile.name,
+      accountHolderName: result.bankStatement.accountHolder || "Titulaire inconnu",
+      bankName: result.bankStatement.bank || "Banque inconnue",
+      accountNumber: result.bankStatement.accountNumber || "Numéro inconnu",
+      statementDate: result.bankStatement.statementDate || new Date().toLocaleDateString(),
+      previousBalance: result.bankStatement.previousBalance || 0,
+      newBalance: result.bankStatement.newBalance || 0,
+      currency: result.bankStatement.currency || "MAD",
+      paymentStatus: "non-paye",
+      declarationStatus: "non-declare",
+      status: "en-cours",
+      hasWarning: result.bankStatement.confidence < 0.7,
+      documentType: currentUploadType,
+      ocrConfidence: result.bankStatement.confidence,
+      rawText: result.rawText,
+    }
+
+    // Get existing documents for this type
+    const storageKey = `${currentUploadType}_${currentCompany.id}`
+    const existingDocumentsJson = localStorage.getItem(storageKey)
+    const existingDocuments = existingDocumentsJson ? JSON.parse(existingDocumentsJson) : []
+
+    // Save to localStorage for this company and document type
+    localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]))
+
+    // Update stats
+    calculateStats(currentCompany.id)
+
+    // Close the modal
+    setBankStatementModalOpen(false)
   }
 
   return (
@@ -402,8 +450,15 @@ export default function DashboardPage() {
       <FileUploadModal
         open={uploadModalOpen}
         onClose={() => setUploadModalOpen(false)}
-        documentType={currentUploadType}
+        documentType={
+          currentUploadType === "purchases" || currentUploadType === "sales" ? currentUploadType : "purchases"
+        }
         onUploadComplete={handleUploadComplete}
+      />
+      <BankStatementUploadModal
+        open={bankStatementModalOpen}
+        onClose={() => setBankStatementModalOpen(false)}
+        onUploadComplete={handleBankStatementUploadComplete}
       />
     </div>
   )
