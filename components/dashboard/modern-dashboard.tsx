@@ -14,26 +14,15 @@ import {
   CheckCircle2,
   Clock,
   Upload,
+  PieChart,
   TrendingUp,
   Calendar,
   Filter,
-  Building,
-  Landmark,
-  Receipt,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useRouter } from "next/navigation"
-import { ModernFileUploadModal } from "@/components/modern-file-upload-modal"
-import { useToast } from "@/components/ui/use-toast"
 
 export function ModernDashboard() {
-  const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
-  const [uploadDocumentType, setUploadDocumentType] = useState<
-    "purchases" | "sales" | "cashReceipts" | "bankStatements"
-  >("purchases")
-
   const [stats, setStats] = useState({
     totalInvoices: 0,
     pendingInvoices: 0,
@@ -54,8 +43,6 @@ export function ModernDashboard() {
       balance: 7000,
     },
   })
-
-  const { toast } = useToast()
 
   useEffect(() => {
     // Simulate loading data
@@ -130,23 +117,6 @@ export function ModernDashboard() {
     }
   }
 
-  const handleUploadClick = (type: "purchases" | "sales" | "cashReceipts" | "bankStatements") => {
-    setUploadDocumentType(type)
-    setIsUploadModalOpen(true)
-  }
-
-  const handleUploadComplete = (data: any) => {
-    console.log("Upload complete:", data)
-    // Here you would save the data to your database or state
-
-    // For now, we'll just show a toast message
-    toast({
-      title: "Document traité avec succès",
-      description: "Les données ont été extraites et enregistrées",
-      variant: "default",
-    })
-  }
-
   return (
     <div className="container mx-auto py-6 max-w-7xl">
       <FadeIn>
@@ -174,11 +144,10 @@ export function ModernDashboard() {
 
       <Stagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <ScaleIn>
-          <Card className="overflow-hidden border-none shadow-md hover:shadow-lg transition-shadow">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/20 to-purple-500/10 rounded-bl-full"></div>
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Factures</CardTitle>
-              <FileText className="h-4 w-4 text-blue-500" />
+              <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
@@ -202,8 +171,7 @@ export function ModernDashboard() {
         </ScaleIn>
 
         <ScaleIn>
-          <Card className="overflow-hidden border-none shadow-md hover:shadow-lg transition-shadow">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/20 to-orange-500/10 rounded-bl-full"></div>
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Factures en attente</CardTitle>
               <AlertTriangle className="h-4 w-4 text-amber-500" />
@@ -230,11 +198,10 @@ export function ModernDashboard() {
         </ScaleIn>
 
         <ScaleIn>
-          <Card className="overflow-hidden border-none shadow-md hover:shadow-lg transition-shadow">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-500/20 to-emerald-500/10 rounded-bl-full"></div>
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Montant Total</CardTitle>
-              <DollarSign className="h-4 w-4 text-green-500" />
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
@@ -262,11 +229,10 @@ export function ModernDashboard() {
         </ScaleIn>
 
         <ScaleIn>
-          <Card className="overflow-hidden border-none shadow-md hover:shadow-lg transition-shadow">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500/20 to-indigo-500/10 rounded-bl-full"></div>
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">TVA</CardTitle>
-              <TrendingUp className="h-4 w-4 text-purple-500" />
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
@@ -296,7 +262,7 @@ export function ModernDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <FadeIn className="lg:col-span-2" delay={0.3}>
-          <Card className="h-full border-none shadow-md">
+          <Card className="h-full">
             <CardHeader>
               <CardTitle>Évolution des achats et ventes</CardTitle>
               <CardDescription>Comparaison mensuelle des achats et ventes</CardDescription>
@@ -310,7 +276,7 @@ export function ModernDashboard() {
                     <div key={data.month} className="flex-1 flex flex-col items-center space-y-2">
                       <div className="w-full flex items-end justify-center space-x-1 h-[250px]">
                         <div
-                          className="w-5 bg-blue-400 rounded-t transition-all duration-500"
+                          className="w-5 bg-primary/80 rounded-t transition-all duration-500"
                           style={{
                             height: `${(data.purchases / 25000) * 100}%`,
                             animationDelay: `${index * 0.1}s`,
@@ -318,7 +284,7 @@ export function ModernDashboard() {
                           }}
                         />
                         <div
-                          className="w-5 bg-blue-600 rounded-t transition-all duration-500"
+                          className="w-5 bg-primary rounded-t transition-all duration-500"
                           style={{
                             height: `${(data.sales / 25000) * 100}%`,
                             animationDelay: `${index * 0.1 + 0.1}s`,
@@ -336,52 +302,57 @@ export function ModernDashboard() {
         </FadeIn>
 
         <FadeIn delay={0.4}>
-          <Card className="h-full border-none shadow-md">
+          <Card className="h-full">
             <CardHeader>
-              <CardTitle>Actions rapides</CardTitle>
-              <CardDescription>Accédez rapidement aux fonctionnalités principales</CardDescription>
+              <CardTitle>Situation TVA</CardTitle>
+              <CardDescription>Aperçu de votre situation TVA</CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors"
-                  onClick={() => handleUploadClick("purchases")}
-                >
-                  <Receipt className="h-6 w-6" />
-                  <span>Achats</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-colors"
-                  onClick={() => handleUploadClick("sales")}
-                >
-                  <FileText className="h-6 w-6" />
-                  <span>Ventes</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition-colors"
-                  onClick={() => handleUploadClick("bankStatements")}
-                >
-                  <Landmark className="h-6 w-6" />
-                  <span>Rel. bancaires</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-colors"
-                >
-                  <Building className="h-6 w-6" />
-                  <span>Entreprises</span>
-                </Button>
-              </div>
+            <CardContent className="flex flex-col justify-between h-[300px]">
+              {isLoading ? (
+                <div className="h-full bg-muted animate-pulse rounded" />
+              ) : (
+                <>
+                  <div className="flex items-center justify-center h-[180px] relative">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold">{stats.vatData.balance.toLocaleString()} DH</div>
+                        <div className="text-xs text-muted-foreground">Solde TVA</div>
+                      </div>
+                    </div>
+                    <PieChart className="h-32 w-32 text-primary opacity-20" />
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-primary mr-2" />
+                        <span className="text-sm">TVA collectée</span>
+                      </div>
+                      <span className="font-medium">{stats.vatData.collected.toLocaleString()} DH</span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-primary/60 mr-2" />
+                        <span className="text-sm">TVA déductible</span>
+                      </div>
+                      <span className="font-medium">{stats.vatData.paid.toLocaleString()} DH</span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <span className="text-sm font-medium">Solde à payer</span>
+                      <span className="font-bold">{stats.vatData.balance.toLocaleString()} DH</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </FadeIn>
       </div>
 
       <FadeIn delay={0.5}>
-        <Card className="border-none shadow-md">
+        <Card>
           <CardHeader>
             <CardTitle>Documents récents</CardTitle>
             <CardDescription>Les derniers documents ajoutés à votre système</CardDescription>
@@ -414,7 +385,7 @@ export function ModernDashboard() {
                   <div
                     key={doc.id}
                     className={cn(
-                      "grid grid-cols-5 p-3 text-sm items-center hover:bg-muted/30 transition-colors",
+                      "grid grid-cols-5 p-3 text-sm items-center",
                       i !== stats.recentDocuments.length - 1 && "border-b",
                     )}
                   >
@@ -430,13 +401,6 @@ export function ModernDashboard() {
           </CardContent>
         </Card>
       </FadeIn>
-
-      <ModernFileUploadModal
-        open={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
-        documentType={uploadDocumentType}
-        onUploadComplete={handleUploadComplete}
-      />
     </div>
   )
 }

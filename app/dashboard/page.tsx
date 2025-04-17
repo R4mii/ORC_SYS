@@ -135,75 +135,42 @@ export default function DashboardPage() {
   const handleUploadComplete = (result: any) => {
     if (!currentCompany) return
 
-    if (currentUploadType === "bankStatements") {
-      // Create a new bank statement document from OCR results
-      const newDocument = {
-        id: Math.random().toString(36).substring(2, 9),
-        name: result.bankStatement.bank
-          ? `Relevé ${result.bankStatement.bank}`
-          : `Relevé ${new Date().toLocaleDateString()}`,
-        description: result.originalFile.name,
-        accountHolder: result.bankStatement.accountHolder || "Non détecté",
-        bank: result.bankStatement.bank || "Non détecté",
-        accountNumber: result.bankStatement.accountNumber || "Non détecté",
-        statementDate: result.bankStatement.statementDate || new Date().toLocaleDateString(),
-        previousBalance: result.bankStatement.previousBalance || 0,
-        newBalance: result.bankStatement.newBalance || 0,
-        createdAt: new Date().toLocaleDateString(),
-        type: "relevé",
-        declarationStatus: "non-declare",
-        status: "en-cours",
-        hasWarning: result.bankStatement.confidence < 0.7,
-        documentType: currentUploadType,
-        ocrConfidence: result.bankStatement.confidence,
-        rawText: result.rawText,
-      }
-
-      // Get existing documents for this type
-      const storageKey = `${currentUploadType}_${currentCompany.id}`
-      const existingDocumentsJson = localStorage.getItem(storageKey)
-      const existingDocuments = existingDocumentsJson ? JSON.parse(existingDocumentsJson) : []
-
-      // Save to localStorage for this company and document type
-      localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]))
-    } else {
-      // Create a new document from OCR results (existing invoice code)
-      const newDocument = {
-        id: Math.random().toString(36).substring(2, 9),
-        name: result.invoice.supplier
-          ? `Facture ${result.invoice.supplier}`
-          : `Document ${new Date().toLocaleDateString()}`,
-        description: result.originalFile.name,
-        invoiceNumber:
-          result.invoice.invoiceNumber ||
-          `INV-${Math.floor(Math.random() * 10000)
-            .toString()
-            .padStart(4, "0")}`,
-        partner: result.invoice.supplier || "Fournisseur inconnu",
-        invoiceDate: result.invoice.invoiceDate || new Date().toLocaleDateString(),
-        dueDate: result.invoice.invoiceDate || new Date().toLocaleDateString(),
-        createdAt: new Date().toLocaleDateString(),
-        amount: result.invoice.amount || 0,
-        amountWithTax: result.invoice.amountWithTax || 0,
-        vatAmount: result.invoice.vatAmount || 0,
-        type: "facture",
-        paymentStatus: "non-paye",
-        declarationStatus: "non-declare",
-        status: "en-cours",
-        hasWarning: result.invoice.confidence < 0.7,
-        documentType: currentUploadType,
-        ocrConfidence: result.invoice.confidence,
-        rawText: result.rawText,
-      }
-
-      // Get existing documents for this type
-      const storageKey = `${currentUploadType}_${currentCompany.id}`
-      const existingDocumentsJson = localStorage.getItem(storageKey)
-      const existingDocuments = existingDocumentsJson ? JSON.parse(existingDocumentsJson) : []
-
-      // Save to localStorage for this company and document type
-      localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]))
+    // Create a new document from OCR results
+    const newDocument = {
+      id: Math.random().toString(36).substring(2, 9),
+      name: result.invoice.supplier
+        ? `Facture ${result.invoice.supplier}`
+        : `Document ${new Date().toLocaleDateString()}`,
+      description: result.originalFile.name,
+      invoiceNumber:
+        result.invoice.invoiceNumber ||
+        `INV-${Math.floor(Math.random() * 10000)
+          .toString()
+          .padStart(4, "0")}`,
+      partner: result.invoice.supplier || "Fournisseur inconnu",
+      invoiceDate: result.invoice.invoiceDate || new Date().toLocaleDateString(),
+      dueDate: result.invoice.invoiceDate || new Date().toLocaleDateString(),
+      createdAt: new Date().toLocaleDateString(),
+      amount: result.invoice.amount || 0,
+      amountWithTax: result.invoice.amountWithTax || 0,
+      vatAmount: result.invoice.vatAmount || 0,
+      type: "facture",
+      paymentStatus: "non-paye",
+      declarationStatus: "non-declare",
+      status: "en-cours",
+      hasWarning: result.invoice.confidence < 0.7,
+      documentType: currentUploadType,
+      ocrConfidence: result.invoice.confidence,
+      rawText: result.rawText,
     }
+
+    // Get existing documents for this type
+    const storageKey = `${currentUploadType}_${currentCompany.id}`
+    const existingDocumentsJson = localStorage.getItem(storageKey)
+    const existingDocuments = existingDocumentsJson ? JSON.parse(existingDocumentsJson) : []
+
+    // Save to localStorage for this company and document type
+    localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]))
 
     // Update stats
     calculateStats(currentCompany.id)

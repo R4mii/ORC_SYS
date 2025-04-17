@@ -4,7 +4,6 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const file = formData.get("file") as File
-    const documentType = (formData.get("documentType") as string) || "default"
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
@@ -14,15 +13,8 @@ export async function POST(request: NextRequest) {
     const forwardFormData = new FormData()
     forwardFormData.append("file", file)
 
-    // Determine the webhook URL based on document type
-    let webhookUrl = "https://ocr-sys-u41198.vm.elestio.app/webhook/upload"
-
-    if (documentType === "bankStatements") {
-      webhookUrl = "https://ocr-sys-u41198.vm.elestio.app/webhook-test/uprelev"
-    }
-
-    // Forward the file to the appropriate n8n webhook
-    const response = await fetch(webhookUrl, {
+    // Forward the file to the n8n webhook
+    const response = await fetch("https://ocr-sys-u41198.vm.elestio.app/webhook/upload", {
       method: "POST",
       body: forwardFormData,
     })

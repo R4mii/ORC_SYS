@@ -7,12 +7,11 @@ import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { FileUp, X, AlertTriangle, FileText, ImageIcon, Upload, ArrowRight } from "lucide-react"
+import { FileUp, X, Check, AlertTriangle, FileText, ImageIcon, Upload, ArrowRight } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
-import { Loader2 } from "lucide-react"
 
 type DocumentType = "purchases" | "sales" | "cashReceipts" | "bankStatements"
 
@@ -33,8 +32,6 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
   const [ocrResults, setOcrResults] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("preview")
-  const [isLoading, setIsLoading] = useState(false)
-  const [result, setResult] = useState<any>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -137,18 +134,12 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
     setIsUploading(true)
     setCurrentStep("processing")
     simulateProgressUpdate()
-    setIsLoading(true)
 
     try {
       const formData = new FormData()
       formData.append("invoice1", files[0])
 
-      const endpoint =
-        documentType === "bankStatements"
-          ? "https://ocr-sys-u41198.vm.elestio.app/webhook-test/uprelev"
-          : "https://ocr-sys-u41198.vm.elestio.app/webhook/upload"
-
-      const response = await fetch(endpoint, {
+      const response = await fetch("https://ocr-sys-u41198.vm.elestio.app/webhook/upload", {
         method: "POST",
         body: formData,
       })
@@ -161,10 +152,8 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
       console.log("OCR response:", data) // Debug log
 
       // Process the OCR response
-      const processedResult =
-        documentType === "bankStatements" ? processBankStatementData(data) : processOcrResponse(data)
-      setOcrResults(processedResult)
-      setResult(processedResult)
+      const processedData = processOcrResponse(data)
+      setOcrResults(processedData)
       setCurrentStep("results")
 
       toast({
@@ -189,7 +178,6 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
       }
     } finally {
       setIsUploading(false)
-      setIsLoading(false)
     }
   }
 
@@ -252,24 +240,6 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
         confidence: 0,
       },
       originalResponse: data,
-    }
-  }
-
-  // Add a function to process bank statement data after the existing processOcrResult function
-  function processBankStatementData(result: any) {
-    // Extract bank statement specific fields
-    return {
-      bankStatement: {
-        accountHolder: result.bankStatement?.accountHolder || "Non détecté",
-        bank: result.bankStatement?.bank || "Non détecté",
-        accountNumber: result.bankStatement?.accountNumber || "Non détecté",
-        statementDate: result.bankStatement?.statementDate || "Non détecté",
-        previousBalance: result.bankStatement?.previousBalance || 0,
-        newBalance: result.bankStatement?.newBalance || 0,
-        confidence: result.bankStatement?.confidence || 0,
-      },
-      originalFile: result.originalFile || { name: "document.pdf" },
-      rawText: result.rawText || "",
     }
   }
 
@@ -442,151 +412,109 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
 
         {currentStep === "results" && ocrResults && (
           <div className="p-6 space-y-6">
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="mt-2 text-sm text-muted-foreground">Traitement du document...</p>
-              </div>
-            ) : result ? (
-              <div className="space-y-4 p-4">
-                <div className="rounded-lg border bg-card p-4">
-                  <h3 className="mb-2 font-medium">Résultats de l'extraction</h3>
+            <Tabs defaultValue="preview" onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="preview" className="text-sm">
+                  Aperçu
+                </TabsTrigger>
+                <TabsTrigger value="data" className="text-sm">
+                  Données extraites
+                </TabsTrigger>
+              </TabsList>
 
-                  {documentType === "bankStatements" ? (
-                    // Bank statement results
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div className="font-medium">Titulaire du compte:</div>
-                        <div>{result.bankStatement.accountHolder}</div>
+              <TabsContent value="preview" className="space-y-4 mt-2">
+                <div className="border rounded-lg p-5 bg-muted/30">
+                  <h3 className="font-medium mb-3 text-sm flex items-center">
+                    <FileText className="h-4 w-4 mr-2 text-primary" />
+                    Texte extrait
+                  </h3>
+                  <div className="max-h-[300px] overflow-y-auto text-sm whitespace-pre-wrap bg-background p-4 rounded-md border">
+                    {ocrResults.rawText || "Aucun texte extrait"}
+                  </div>
+                </div>
+              </TabsContent>
 
-                        <div className="font-medium">Banque:</div>
-                        <div>{result.bankStatement.bank}</div>
-
-                        <div className="font-medium">Numéro de compte:</div>
-                        <div>{result.bankStatement.accountNumber}</div>
-
-                        <div className="font-medium">Date du relevé:</div>
-                        <div>{result.bankStatement.statementDate}</div>
-
-                        <div className="font-medium">Ancien solde:</div>
-                        <div>{result.bankStatement.previousBalance} DH</div>
-
-                        <div className="font-medium">Nouveau solde:</div>
-                        <div>{result.bankStatement.newBalance} DH</div>
-
-                        <div className="font-medium">Confiance:</div>
-                        <div>
-                          <Badge variant={result.bankStatement.confidence > 0.7 ? "success" : "warning"}>
-                            {Math.round(result.bankStatement.confidence * 100)}%
-                          </Badge>
-                        </div>
-                      </div>
+              <TabsContent value="data" className="space-y-4 mt-2">
+                <div className="border rounded-lg p-5">
+                  <h3 className="font-medium mb-4 text-sm flex items-center">
+                    <FileText className="h-4 w-4 mr-2 text-primary" />
+                    Données de la facture
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+                      <p className="text-xs text-muted-foreground">Fournisseur</p>
+                      <p className="font-medium">{ocrResults.invoice.supplier || "Non détecté"}</p>
                     </div>
-                  ) : (
-                    // Invoice results (existing code)
-                    <div className="space-y-2">
-                      <Tabs defaultValue="preview" onValueChange={setActiveTab} className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 mb-4">
-                          <TabsTrigger value="preview" className="text-sm">
-                            Aperçu
-                          </TabsTrigger>
-                          <TabsTrigger value="data" className="text-sm">
-                            Données extraites
-                          </TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="preview" className="space-y-4 mt-2">
-                          <div className="border rounded-lg p-5 bg-muted/30">
-                            <h3 className="font-medium mb-3 text-sm flex items-center">
-                              <FileText className="h-4 w-4 mr-2 text-primary" />
-                              Texte extrait
-                            </h3>
-                            <div className="max-h-[300px] overflow-y-auto text-sm whitespace-pre-wrap bg-background p-4 rounded-md border">
-                              {ocrResults.rawText || "Aucun texte extrait"}
-                            </div>
-                          </div>
-                        </TabsContent>
-
-                        <TabsContent value="data" className="space-y-4 mt-2">
-                          <div className="border rounded-lg p-5">
-                            <h3 className="font-medium mb-4 text-sm flex items-center">
-                              <FileText className="h-4 w-4 mr-2 text-primary" />
-                              Données de la facture
-                            </h3>
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                              <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                                <p className="text-xs text-muted-foreground">Fournisseur</p>
-                                <p className="font-medium">{ocrResults.invoice.supplier || "Non détecté"}</p>
-                              </div>
-                              <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                                <p className="text-xs text-muted-foreground">Numéro de facture</p>
-                                <p className="font-medium">{ocrResults.invoice.invoiceNumber || "Non détecté"}</p>
-                              </div>
-                              <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                                <p className="text-xs text-muted-foreground">Date de facture</p>
-                                <p className="font-medium">{ocrResults.invoice.invoiceDate || "Non détecté"}</p>
-                              </div>
-                              <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                                <p className="text-xs text-muted-foreground">Montant HT</p>
-                                <p className="font-medium">
-                                  {ocrResults.invoice.amount
-                                    ? `${ocrResults.invoice.amount.toFixed(2)} ${ocrResults.invoice.currency || "MAD"}`
-                                    : "Non détecté"}
-                                </p>
-                              </div>
-                              <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                                <p className="text-xs text-muted-foreground">TVA</p>
-                                <p className="font-medium">
-                                  {ocrResults.invoice.vatAmount
-                                    ? `${ocrResults.invoice.vatAmount.toFixed(2)} ${ocrResults.invoice.currency || "MAD"}`
-                                    : "Non détecté"}
-                                </p>
-                              </div>
-                              <div className="space-y-1 bg-muted/30 p-3 rounded-md">
-                                <p className="text-xs text-muted-foreground">Montant TTC</p>
-                                <p className="font-medium">
-                                  {ocrResults.invoice.amountWithTax
-                                    ? `${ocrResults.invoice.amountWithTax.toFixed(2)} ${ocrResults.invoice.currency || "MAD"}`
-                                    : "Non détecté"}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center space-x-2 text-sm p-3 border rounded-lg bg-muted/30">
-                            <div
-                              className={`w-2 h-2 rounded-full ${
-                                ocrResults.invoice.confidence > 0.7
-                                  ? "bg-green-500"
-                                  : ocrResults.invoice.confidence > 0.4
-                                    ? "bg-amber-500"
-                                    : "bg-red-500"
-                              }`}
-                            ></div>
-                            <span>
-                              Confiance: {Math.round((ocrResults.invoice.confidence || 0) * 100)}%
-                              <span className="ml-1 transition-opacity duration-200">
-                                (
-                                {ocrResults.invoice.confidence > 0.7
-                                  ? "Élevée"
-                                  : ocrResults.invoice.confidence > 0.4
-                                    ? "Moyenne"
-                                    : "Faible"}
-                                )
-                              </span>
-                            </span>
-                          </div>
-                        </TabsContent>
-                      </Tabs>
+                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+                      <p className="text-xs text-muted-foreground">Numéro de facture</p>
+                      <p className="font-medium">{ocrResults.invoice.invoiceNumber || "Non détecté"}</p>
                     </div>
-                  )}
+                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+                      <p className="text-xs text-muted-foreground">Date de facture</p>
+                      <p className="font-medium">{ocrResults.invoice.invoiceDate || "Non détecté"}</p>
+                    </div>
+                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+                      <p className="text-xs text-muted-foreground">Montant HT</p>
+                      <p className="font-medium">
+                        {ocrResults.invoice.amount
+                          ? `${ocrResults.invoice.amount.toFixed(2)} ${ocrResults.invoice.currency || "MAD"}`
+                          : "Non détecté"}
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+                      <p className="text-xs text-muted-foreground">TVA</p>
+                      <p className="font-medium">
+                        {ocrResults.invoice.vatAmount
+                          ? `${ocrResults.invoice.vatAmount.toFixed(2)} ${ocrResults.invoice.currency || "MAD"}`
+                          : "Non détecté"}
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-muted/30 p-3 rounded-md">
+                      <p className="text-xs text-muted-foreground">Montant TTC</p>
+                      <p className="font-medium">
+                        {ocrResults.invoice.amountWithTax
+                          ? `${ocrResults.invoice.amountWithTax.toFixed(2)} ${ocrResults.invoice.currency || "MAD"}`
+                          : "Non détecté"}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex justify-end">
-                  <Button onClick={() => onUploadComplete(result)}>Confirmer et enregistrer</Button>
+                <div className="flex items-center space-x-2 text-sm p-3 border rounded-lg bg-muted/30">
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      ocrResults.invoice.confidence > 0.7
+                        ? "bg-green-500"
+                        : ocrResults.invoice.confidence > 0.4
+                          ? "bg-amber-500"
+                          : "bg-red-500"
+                    }`}
+                  ></div>
+                  <span>
+                    Confiance: {Math.round((ocrResults.invoice.confidence || 0) * 100)}%
+                    <span className="ml-1 transition-opacity duration-200">
+                      (
+                      {ocrResults.invoice.confidence > 0.7
+                        ? "Élevée"
+                        : ocrResults.invoice.confidence > 0.4
+                          ? "Moyenne"
+                          : "Faible"}
+                      )
+                    </span>
+                  </span>
                 </div>
-              </div>
-            ) : null}
+              </TabsContent>
+            </Tabs>
+
+            <div className="flex justify-end space-x-3 pt-2">
+              <Button variant="outline" onClick={() => setCurrentStep("upload")} className="px-4">
+                Retour
+              </Button>
+              <Button onClick={handleConfirm} className="px-4 gap-2">
+                <Check className="h-4 w-4" />
+                Confirmer et enregistrer
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>
