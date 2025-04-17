@@ -154,9 +154,10 @@ export default function SettingsPage() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-4 w-full">
               <TabsTrigger value="general">Général</TabsTrigger>
-              <TabsTrigger value="api">API & Intégrations</TabsTrigger>
               <TabsTrigger value="notifications">Notifications</TabsTrigger>
               <TabsTrigger value="appearance">Apparence</TabsTrigger>
+              <TabsTrigger value="users">Utilisateurs & Permissions</TabsTrigger>
+              <TabsTrigger value="financial">Financier</TabsTrigger>
             </TabsList>
 
             <TabsContent value="general" className="space-y-4 mt-4">
@@ -207,53 +208,6 @@ export default function SettingsPage() {
                       <option value="MAD">Dirham marocain (MAD)</option>
                       <option value="EUR">Euro (EUR)</option>
                       <option value="USD">US Dollar (USD)</option>
-                    </select>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="api" className="space-y-4 mt-4">
-              <Card className="border-none shadow-none">
-                <CardHeader>
-                  <CardTitle>API & Intégrations</CardTitle>
-                  <CardDescription>
-                    Configurez les clés API et les intégrations avec des services externes.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="ocrApiKey">Clé API OCR.space</Label>
-                    <Input
-                      id="ocrApiKey"
-                      type="password"
-                      value={settings.api.ocrApiKey}
-                      onChange={(e) => handleInputChange("api", "ocrApiKey", e.target.value)}
-                      placeholder="Entrez votre clé API OCR.space"
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      Obtenez une clé API gratuite sur{" "}
-                      <a
-                        href="https://ocr.space/ocrapi"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        OCR.space
-                      </a>
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="ocrLanguage">Langue OCR</Label>
-                    <select
-                      id="ocrLanguage"
-                      className="w-full h-10 px-3 rounded-md border border-input bg-background"
-                      value={settings.api.ocrLanguage}
-                      onChange={(e) => handleInputChange("api", "ocrLanguage", e.target.value)}
-                    >
-                      <option value="fre">Français</option>
-                      <option value="eng">Anglais</option>
-                      <option value="ara">Arabe</option>
                     </select>
                   </div>
                 </CardContent>
