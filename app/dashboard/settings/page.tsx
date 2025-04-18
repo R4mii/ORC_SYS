@@ -128,6 +128,14 @@ interface ChartAccount {
   description: string
 }
 
+// Notification settings schema
+const notificationSettingsSchema = z.object({
+  emailNotifications: z.boolean().default(false),
+  invoiceReminders: z.boolean().default(false),
+  systemUpdates: z.boolean().default(true),
+  scheduledReports: z.boolean().default(false),
+})
+
 export default function SettingsPage() {
   const { toast } = useToast()
   const { theme, setTheme } = useTheme()
@@ -186,6 +194,7 @@ export default function SettingsPage() {
     emailNotifications: false,
     invoiceReminders: false,
     systemUpdates: true,
+    scheduledReports: false,
   })
 
   const [appearanceSettings, setAppearanceSettings] = useState({
@@ -230,6 +239,17 @@ export default function SettingsPage() {
       invoiceNumberFormat: "INV-{YEAR}-{NUMBER}",
       defaultPaymentTerms: 30,
       nextInvoiceNumber: 1001,
+    },
+  })
+
+  // Initialize notification settings form
+  const notificationForm = useForm<z.infer<typeof notificationSettingsSchema>>({
+    resolver: zodResolver(notificationSettingsSchema),
+    defaultValues: {
+      emailNotifications: false,
+      invoiceReminders: false,
+      systemUpdates: true,
+      scheduledReports: false,
     },
   })
 
@@ -289,6 +309,12 @@ export default function SettingsPage() {
         }
       }
 
+      // Load notification settings
+      if (parsedSettings.notifications) {
+        notificationForm.reset(parsedSettings.notifications)
+        setNotificationsSettings(parsedSettings.notifications)
+      }
+
       // Load other settings
       if (parsedSettings.notifications) {
         setNotificationsSettings(parsedSettings.notifications)
@@ -310,7 +336,7 @@ export default function SettingsPage() {
       ...prev,
       darkMode: theme === "dark",
     }))
-  }, [form, financialForm, theme])
+  }, [form, financialForm, notificationForm, theme])
 
   // Handle logo upload
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -506,6 +532,26 @@ export default function SettingsPage() {
     })
   }
 
+  // Save notification settings
+  function onNotificationSubmit(values: z.infer<typeof notificationSettingsSchema>) {
+    // Combine all settings
+    const allSettings = {
+      general: form.getValues(),
+      financial: financialForm.getValues(),
+      notifications: values,
+      appearance: appearanceSettings,
+      api: apiSettings,
+    }
+
+    // Save to localStorage
+    localStorage.setItem("appSettings", JSON.stringify(allSettings))
+
+    toast({
+      title: "Paramètres de notification sauvegardés",
+      description: "Vos paramètres de notification ont été sauvegardés avec succès.",
+    })
+  }
+
   // Reset settings
   const resetSettings = () => {
     // Reset form to default values
@@ -534,6 +580,14 @@ export default function SettingsPage() {
       invoiceNumberFormat: "INV-{YEAR}-{NUMBER}",
       defaultPaymentTerms: 30,
       nextInvoiceNumber: 1001,
+    })
+
+    // Reset notification form
+    notificationForm.reset({
+      emailNotifications: false,
+      invoiceReminders: false,
+      systemUpdates: true,
+      scheduledReports: false,
     })
 
     // Reset tax rates
@@ -567,6 +621,7 @@ export default function SettingsPage() {
       emailNotifications: false,
       invoiceReminders: false,
       systemUpdates: true,
+      scheduledReports: false,
     })
 
     setApiSettings({
@@ -600,7 +655,11 @@ export default function SettingsPage() {
             <Button
               size="sm"
               onClick={
-                activeTab === "financial" ? financialForm.handleSubmit(onFinancialSubmit) : form.handleSubmit(onSubmit)
+                activeTab === "financial"
+                  ? financialForm.handleSubmit(onFinancialSubmit)
+                  : activeTab === "notifications"
+                    ? notificationForm.handleSubmit(onNotificationSubmit)
+                    : form.handleSubmit(onSubmit)
               }
             >
               <Save className="h-4 w-4 mr-2" />
@@ -610,10 +669,9 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-5 w-full">
+            <TabsList className="grid grid-cols-4 w-full">
               <TabsTrigger value="general">Général</TabsTrigger>
               <TabsTrigger value="financial">Financier</TabsTrigger>
-              <TabsTrigger value="api">API & Intégrations</TabsTrigger>
               <TabsTrigger value="notifications">Notifications</TabsTrigger>
               <TabsTrigger value="appearance">Apparence</TabsTrigger>
             </TabsList>
@@ -1701,56 +1759,6 @@ export default function SettingsPage() {
               </Form>
             </TabsContent>
 
-            <TabsContent value="api" className="space-y-4 mt-4">
-              <Card className="border-none shadow-none">
-                <CardHeader>
-                  <CardTitle>API & Intégrations</CardTitle>
-                  <CardDescription>
-                    Configurez les clés API et les intégrations avec des services externes.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="ocrApiKey">Clé API OCR.space</Label>
-                    <Input
-                      id="ocrApiKey"
-                      type="password"
-                      value={apiSettings.ocrApiKey}
-                      onChange={(e) => handleApiChange("ocrApiKey", e.target.value)}
-                      placeholder="Entrez votre clé API OCR.space"
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      Obtenez une clé API gratuite sur{" "}
-                      <a
-                        href="https://ocr.space/ocrapi"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        OCR.space
-                      </a>
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="ocrLanguage">Langue OCR</Label>
-                    <Select
-                      onValueChange={(value) => handleApiChange("ocrLanguage", value)}
-                      defaultValue={apiSettings.ocrLanguage}
-                    >
-                      <SelectTrigger id="ocrLanguage">
-                        <SelectValue placeholder="Sélectionnez une langue" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="fre">Français</SelectItem>
-                        <SelectItem value="eng">Anglais</SelectItem>
-                        <SelectItem value="ara">Arabe</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
             <TabsContent value="notifications" className="space-y-4 mt-4">
               <Card className="border-none shadow-none">
                 <CardHeader>
@@ -1793,6 +1801,18 @@ export default function SettingsPage() {
                       id="systemUpdates"
                       checked={notificationsSettings.systemUpdates}
                       onCheckedChange={(checked) => handleNotificationChange("systemUpdates", checked)}
+                    />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="scheduledReports">Rapports planifiés</Label>
+                      <p className="text-sm text-muted-foreground">Recevoir des rapports périodiques par email</p>
+                    </div>
+                    <Switch
+                      id="scheduledReports"
+                      checked={notificationsSettings.scheduledReports}
+                      onCheckedChange={(checked) => handleNotificationChange("scheduledReports", checked)}
                     />
                   </div>
                 </CardContent>
