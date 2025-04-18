@@ -1,59 +1,76 @@
 import { Star } from "lucide-react"
 
-const testimonials = [
-  {
-    quote:
-      "Working with Experio transformed our business. Their digital solutions helped us increase efficiency by 40%.",
-    author: "Sarah Johnson",
-    position: "CEO, TechStart Inc.",
-    rating: 5,
-  },
-  {
-    quote: "The custom software they developed perfectly addressed our unique challenges. Highly recommended!",
-    author: "Michael Chen",
-    position: "CTO, GrowthWave",
-    rating: 5,
-  },
-  {
-    quote:
-      "Their strategic consulting provided invaluable insights that helped us navigate our digital transformation.",
-    author: "Emma Rodriguez",
-    position: "Operations Director, Innovate Ltd",
-    rating: 4,
-  },
-]
-
 export default function Testimonials() {
+  const testimonials = [
+    {
+      content:
+        "ORCSYS has revolutionized our accounting workflow. The OCR technology is incredibly accurate, and we've reduced manual data entry by 85%.",
+      author: "Sarah Johnson",
+      role: "CFO, TechVentures Inc.",
+      avatar: "/placeholder.svg?height=40&width=40",
+      rating: 5,
+    },
+    {
+      content:
+        "The automation capabilities have saved our finance team countless hours. We can now focus on analysis rather than data entry.",
+      author: "Michael Chen",
+      role: "Financial Controller, Global Solutions",
+      avatar: "/placeholder.svg?height=40&width=40",
+      rating: 5,
+    },
+    {
+      content:
+        "Implementation was smooth and the customer support has been exceptional. ORCSYS truly understands the needs of modern finance teams.",
+      author: "Elena Rodriguez",
+      role: "Head of Accounting, Innovate Group",
+      avatar: "/placeholder.svg?height=40&width=40",
+      rating: 4,
+    },
+  ]
+
   return (
-    <section className="py-20 bg-gray-50">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold mb-4">What Our Clients Say</h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Don't just take our word for it - hear from some of our satisfied clients
+    <div className="bg-finance-light dark:bg-finance-dark py-24 sm:py-32">
+      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-3xl font-bold tracking-tight text-finance-primary dark:text-white sm:text-4xl">
+            Trusted by Finance Professionals
+          </h2>
+          <p className="mt-6 text-lg leading-8 text-muted-foreground dark:text-muted-foreground/90">
+            Discover how ORCSYS is transforming financial document processing for businesses worldwide.
           </p>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 lg:max-w-none lg:grid-cols-3">
           {testimonials.map((testimonial, index) => (
-            <div key={index} className="bg-white p-8 rounded-lg shadow-md">
-              <div className="flex mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-5 w-5 ${i < testimonial.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
-                  />
-                ))}
+            <div
+              key={index}
+              className="flex flex-col justify-between card-shadow rounded-xl bg-white dark:bg-finance-dark/50 border border-border p-6 shadow-sm"
+            >
+              <div className="flex flex-col gap-6">
+                <div className="flex">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <Star key={i} className="h-5 w-5 fill-finance-accent text-finance-accent" />
+                  ))}
+                  {[...Array(5 - testimonial.rating)].map((_, i) => (
+                    <Star key={i + testimonial.rating} className="h-5 w-5 text-muted-foreground" />
+                  ))}
+                </div>
+                <p className="text-foreground/90">{testimonial.content}</p>
               </div>
-              <p className="text-gray-600 italic mb-6">"{testimonial.quote}"</p>
-              <div>
-                <p className="font-bold">{testimonial.author}</p>
-                <p className="text-gray-500 text-sm">{testimonial.position}</p>
+              <div className="mt-6 flex items-center gap-x-4">
+                <img
+                  className="h-10 w-10 rounded-full bg-gray-100"
+                  src={testimonial.avatar || "/placeholder.svg"}
+                  alt={testimonial.author}
+                />
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">{testimonial.author}</h3>
+                  <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                </div>
               </div>
             </div>
           ))}
         </div>
       </div>
-    </section>
+    </div>
   )
 }

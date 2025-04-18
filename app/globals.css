@@ -4,38 +4,34 @@
 
 @layer base {
   :root {
-    /* Base colors - refined for better contrast and visual appeal */
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 160 50% 98%;
+    --foreground: 160 60% 10%;
+
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 160 60% 10%;
+
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 160 60% 10%;
 
-    /* Enhanced primary color - slightly more vibrant blue */
-    --primary: 224 76% 48%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 170 64% 24%;
+    --primary-foreground: 0 0% 98%;
 
-    /* Refined secondary color for better contrast */
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 170 75% 15%;
+    --secondary-foreground: 0 0% 98%;
 
-    /* Muted colors with better contrast */
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 160 10% 94%;
+    --muted-foreground: 160 10% 40%;
 
-    /* Enhanced accent color for highlights */
-    --accent: 220 70% 94%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 170 70% 40%;
+    --accent-foreground: 0 0% 98%;
 
-    /* Refined destructive color */
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    /* Border and input colors with better contrast */
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 224 76% 48%;
+    --border: 160 10% 86%;
+    --input: 160 10% 86%;
+    --ring: 170 64% 24%;
+
     --radius: 0.5rem;
 
     /* Chart colors - more harmonious palette */
@@ -77,27 +73,34 @@
     --chart-1: 142 76% 45%;
   }
 
-  /* Dark theme with improved contrast */
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --background: 170 50% 8%;
+    --foreground: 0 0% 98%;
+
+    --card: 170 50% 10%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 170 50% 10%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 170 60% 45%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 170 30% 25%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 170 30% 20%;
+    --muted-foreground: 160 10% 60%;
+
+    --accent: 170 60% 30%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 74% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 170 30% 25%;
+    --input: 170 30% 25%;
+    --ring: 170 60% 45%;
 
     /* Chart colors - darker theme with better visibility */
     --chart-1: 220 70% 50%;
@@ -205,6 +208,18 @@
 
   .nav-item.active {
     @apply bg-primary text-primary-foreground font-medium;
+  }
+
+  .gradient-heading {
+    @apply bg-gradient-to-r from-finance-primary to-finance-accent bg-clip-text text-transparent;
+  }
+
+  .card-shadow {
+    @apply shadow-lg hover:shadow-xl transition-shadow duration-300;
+  }
+
+  .button-hover {
+    @apply transition-all duration-300 ease-in-out hover:scale-105;
   }
 }
 

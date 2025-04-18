@@ -1,20 +1,28 @@
 import Link from "next/link"
+import { ArrowRight } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 
 export default function CTA() {
   return (
-    <section className="py-20 bg-primary">
-      <div className="container mx-auto px-4 text-center">
-        <h2 className="text-3xl font-bold text-white mb-6">Ready to Transform Your Business?</h2>
-        <p className="text-xl text-white/80 max-w-2xl mx-auto mb-10">
-          Contact us today to discuss how our solutions can help you achieve your business goals.
-        </p>
-        <Link href="/contact">
-          <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-gray-100">
-            Get in Touch
+    <div className="bg-gradient-to-r from-finance-primary to-finance-accent">
+      <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:flex lg:items-center lg:justify-between lg:px-8">
+        <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          Ready to streamline your financial processes?
+          <br />
+          <span className="text-finance-light font-normal">Get started with ORCSYS today.</span>
+        </h2>
+        <div className="mt-10 flex items-center gap-x-6 lg:mt-0 lg:flex-shrink-0">
+          <Button asChild size="lg" className="bg-white text-finance-primary hover:bg-finance-light button-hover">
+            <Link href="/auth/register">Get Started</Link>
           </Button>
-        </Link>
+          <Button asChild variant="link" className="text-white">
+            <Link href="/contact" className="flex items-center gap-2">
+              Contact Sales <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
       </div>
-    </section>
+    </div>
   )
 }

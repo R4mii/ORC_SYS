@@ -1,130 +1,138 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react"
 
 export function Footer() {
-  const pathname = usePathname()
-
-  // Don't show the footer on auth or dashboard pages
-  if (pathname?.startsWith("/auth") || pathname?.startsWith("/dashboard")) {
-    return null
-  }
-
   return (
-    <footer className="w-full border-t bg-background">
-      <div className="container flex flex-col gap-8 py-12 md:py-16">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5">
-          <div className="col-span-2 flex flex-col gap-2">
-            <Link href="/" className="text-2xl font-bold">
-              <span className="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">Experio</span>
-            </Link>
-            <p className="text-sm text-muted-foreground max-w-xs">
-              Streamline your financial operations with our intuitive accounting platform. Designed for modern
-              businesses.
+    <footer className="bg-muted/50 border-t border-border">
+      <div className="mx-auto max-w-7xl px-6 py-12 md:flex md:items-center md:justify-between lg:px-8">
+        <div className="flex flex-col space-y-6 md:w-2/3">
+          <div className="flex flex-col space-y-2">
+            <span className="text-2xl font-bold text-finance-primary">
+              ORC<span className="text-finance-accent">SYS</span>
+            </span>
+            <p className="text-sm text-muted-foreground max-w-md">
+              Streamline your financial workflows with our cutting-edge OCR technology and automated document processing
+              solutions.
             </p>
           </div>
-          <div className="flex flex-col gap-2">
-            <h3 className="text-sm font-medium">Solutions</h3>
-            <ul className="flex flex-col gap-2">
-              <li>
-                <Link
-                  href="/solutions/accounting"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Accounting
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/solutions/invoicing"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Invoicing
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/solutions/reporting"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Reporting
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/solutions/tax"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Tax Management
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div className="flex flex-col gap-2">
-            <h3 className="text-sm font-medium">Company</h3>
-            <ul className="flex flex-col gap-2">
-              <li>
-                <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link href="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Pricing
-                </Link>
-              </li>
-              <li>
-                <Link href="/blog" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link href="/careers" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Careers
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div className="flex flex-col gap-2">
-            <h3 className="text-sm font-medium">Legal</h3>
-            <ul className="flex flex-col gap-2">
-              <li>
-                <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Privacy
-                </Link>
-              </li>
-              <li>
-                <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Terms
-                </Link>
-              </li>
-              <li>
-                <Link href="/cookies" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Cookies
-                </Link>
-              </li>
-            </ul>
+
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Products</h3>
+              <ul role="list" className="mt-4 space-y-2">
+                <li>
+                  <Link
+                    href="/solutions/invoicing"
+                    className="text-sm text-muted-foreground hover:text-finance-primary"
+                  >
+                    Invoicing
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/solutions/reporting"
+                    className="text-sm text-muted-foreground hover:text-finance-primary"
+                  >
+                    Reporting
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/solutions/tax" className="text-sm text-muted-foreground hover:text-finance-primary">
+                    Tax
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Resources</h3>
+              <ul role="list" className="mt-4 space-y-2">
+                <li>
+                  <Link href="/services" className="text-sm text-muted-foreground hover:text-finance-primary">
+                    Services
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/pricing" className="text-sm text-muted-foreground hover:text-finance-primary">
+                    Pricing
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact" className="text-sm text-muted-foreground hover:text-finance-primary">
+                    Contact
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Company</h3>
+              <ul role="list" className="mt-4 space-y-2">
+                <li>
+                  <Link href="/about" className="text-sm text-muted-foreground hover:text-finance-primary">
+                    About
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact" className="text-sm text-muted-foreground hover:text-finance-primary">
+                    Contact
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="text-sm text-muted-foreground hover:text-finance-primary">
+                    Privacy
+                  </Link>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} Experio. All rights reserved.
-          </p>
-          <div className="flex gap-4">
-            <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Twitter
-            </Link>
-            <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              LinkedIn
-            </Link>
-            <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Facebook
-            </Link>
-            <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Instagram
-            </Link>
+
+        <div className="mt-8 md:mt-0">
+          <h3 className="text-sm font-semibold text-foreground">Connect with us</h3>
+          <div className="flex space-x-6 mt-4">
+            <a href="#" className="text-muted-foreground hover:text-finance-primary">
+              <span className="sr-only">Twitter</span>
+              <Twitter className="h-5 w-5" />
+            </a>
+            <a href="#" className="text-muted-foreground hover:text-finance-primary">
+              <span className="sr-only">Facebook</span>
+              <Facebook className="h-5 w-5" />
+            </a>
+            <a href="#" className="text-muted-foreground hover:text-finance-primary">
+              <span className="sr-only">Instagram</span>
+              <Instagram className="h-5 w-5" />
+            </a>
+            <a href="#" className="text-muted-foreground hover:text-finance-primary">
+              <span className="sr-only">LinkedIn</span>
+              <Linkedin className="h-5 w-5" />
+            </a>
           </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-7xl px-6 py-6 md:flex md:items-center md:justify-between lg:px-8 border-t border-border mt-12">
+        <div className="flex justify-center space-x-6 md:order-2">
+          <p className="text-xs text-muted-foreground">
+            <Link href="#" className="hover:text-finance-primary">
+              Privacy Policy
+            </Link>
+            {" • "}
+            <Link href="#" className="hover:text-finance-primary">
+              Terms of Service
+            </Link>
+            {" • "}
+            <Link href="#" className="hover:text-finance-primary">
+              Cookie Policy
+            </Link>
+          </p>
+        </div>
+        <div className="mt-4 md:order-1 md:mt-0">
+          <p className="text-center text-xs text-muted-foreground">
+            &copy; {new Date().getFullYear()} ORCSYS. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>
