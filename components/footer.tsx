@@ -139,4 +139,4 @@ export function Footer() {
   )
 }
 
-export default Footer
+// Remove the default export to prevent duplication
