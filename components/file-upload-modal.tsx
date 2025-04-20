@@ -235,7 +235,7 @@ export function FileUploadModal({ open, onClose, documentType, onUploadComplete 
 
   const handleConfirm = () => {
     if (ocrResults) {
-      console.log("Processing OCR results:", ocrResults) 
+      console.log("Processing OCR results:", ocrResults)
 
       const result = {
         ...ocrResults,
