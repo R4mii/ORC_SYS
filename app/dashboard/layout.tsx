@@ -177,11 +177,12 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 shadow-sm">
+        {/* Only show sidebar toggle if not on dashboard or if on dashboard on larger screens */}
         <Button
           variant="ghost"
           size="icon"
           onClick={toggleSidebar}
-          className="mr-2 text-muted-foreground hover:text-foreground"
+          className={`mr-2 text-muted-foreground hover:text-foreground ${pathname === "/dashboard" ? "hidden md:flex" : ""}`}
         >
           {sidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
           <span className="sr-only">Toggle sidebar</span>
@@ -217,7 +218,7 @@ export default function DashboardLayout({
                   <ChevronDown className="h-4 w-4 opacity-50" />
                 </Button>
               </div>
-              <nav className="grid gap-2 p-4">
+              <nav className={`grid gap-2 p-4 ${pathname === "/dashboard" ? "hidden" : ""}`}>
                 {navItems.map((item) =>
                   item.href ? (
                     <Link
@@ -358,13 +359,14 @@ export default function DashboardLayout({
       </header>
       <div className="flex flex-1">
         {/* Collapsible sidebar with enhanced styling */}
+        {/* Collapsible sidebar with enhanced styling */}
         <aside
           className={`border-r bg-background transition-all duration-300 ease-in-out ${
             sidebarCollapsed ? "w-0 overflow-hidden" : "w-64"
           }`}
         >
           <div className="sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto py-6 px-4">
-            <nav className="grid gap-2">
+            <nav className={`grid gap-2 ${pathname === "/dashboard" ? "hidden md:grid" : ""}`}>
               {navItems.map((item) =>
                 item.href ? (
                   <Link
@@ -397,7 +399,6 @@ export default function DashboardLayout({
                 ) : null,
               )}
             </nav>
-
             {/* Bottom section with help and support */}
             <div className="mt-auto pt-6 border-t mt-6">
               <div className="rounded-lg bg-muted/50 p-4">
