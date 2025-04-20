@@ -7,6 +7,7 @@ import { metadata } from "./metadata"
 
 const inter = Inter({ subsets: ["latin"] })
 
+// Only export metadata once - it's already imported from ./metadata
 export { metadata }
 
 export default function RootLayout({
