@@ -1,3 +1,193 @@
+"use client";
+
+import { Suspense, useState, useEffect } from "react";
+import { ErrorBoundary } from "react-error-boundary";
+import {
+  Loader2,
+  RefreshCw,
+  Building2,
+  CalendarIcon,
+  Filter,
+  Download,
+  Upload,
+  Plus,
+  TrendingUp,
+  TrendingDown,
+  FileText,
+  CreditCard,
+  BarChart3,
+  DollarSign,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  ChevronRight
+} from "lucide-react";
+import { WidgetContainer } from "@/components/dashboard/widget-container";
+import { QuickActionsWidget } from "@/components/dashboard/widgets/quick-actions";
+import { ActivityFeedWidget } from "@/components/dashboard/widgets/activity-feed";
+import { OcrStatusWidget } from "@/components/dashboard/widgets/ocr-status";
+import { AnalyticsChartWidget } from "@/components/dashboard/widgets/analytics-chart";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { useRouter } from "next/navigation";
+import { FileUploadModal } from "@/components/file-upload-modal";
+import { BankStatementUploadModal } from "@/components/bank-statement-upload-modal";
+
+// Document types for categorization
+type DocumentType = "purchases" | "sales" | "cashReceipts" | "bankStatements";
+
+// Loading fallbacks for widgets
+const QuickActionsLoading = () => (
+  <div className="space-y-4">
+    <div className="flex flex-wrap gap-3">
+      {[1, 2, 3, 4].map((i) => (
+        <Skeleton key={i} className="h-16 w-[120px] rounded-md" />
+      ))}
+    </div>
+  </div>
+);
+
+const ActivityFeedLoading = () => (
+  <div className="space-y-3">
+    <div className="flex gap-2">
+      {[1, 2, 3, 4].map((i) => (
+        <Skeleton key={i} className="h-7 w-16 rounded-md" />
+      ))}
+    </div>
+    <div className="space-y-3">
+      {[1, 2, 3].map((i) => (
+        <Skeleton key={i} className="h-20 w-full rounded-md" />
+      ))}
+    </div>
+  </div>
+);
+
+const OcrStatusLoading = () => (
+  <div className="space-y-4">
+    <div className="grid grid-cols-4 gap-2">
+      {[1, 2, 3, 4].map((i) => (
+        <Skeleton key={i} className="h-16 rounded-md" />
+      ))}
+    </div>
+    <Skeleton className="h-4 w-full rounded-md" />
+    <div className="flex justify-between">
+      <Skeleton className="h-8 w-20 rounded-md" />
+      <div className="flex gap-1">
+        <Skeleton className="h-8 w-8 rounded-md" />
+        <Skeleton className="h-8 w-8 rounded-md" />
+      </div>
+    </div>
+    <Skeleton className="h-[300px] w-full rounded-md" />
+  </div>
+);
+
+const AnalyticsChartLoading = () => (
+  <div className="space-y-4">
+    <div className="flex justify-between">
+      <Skeleton className="h-6 w-40 rounded-md" />
+      <Skeleton className="h-8 w-28 rounded-md" />
+    </div>
+    <Skeleton className="h-10 w-full rounded-md" />
+    <Skeleton className="h-[260px] w-full rounded-md" />
+    <div className="flex justify-between">
+      <Skeleton className="h-4 w-32 rounded-md" />
+      <Skeleton className="h-4 w-32 rounded-md" />
+    </div>
+  </div>
+);
+
+// Error fallback component
+const ErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => {
+  return (
+    <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+      <div className="font-medium">Something went wrong:</div>
+      <div className="text-sm mt-2 mb-4">{error.message}</div>
+      <Button size="sm" onClick={resetErrorBoundary} variant="outline" className="gap-1">
+        <RefreshCw className="h-3 w-3" />
+        Try again
+      </Button>
+    </div>
+  );
+};
+
+export default function DashboardPage() {
+  const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
+  const [fiscalYear, setFiscalYear] = useState("01-01-2024 / 31-12-2024");
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [bankStatementModalOpen, setBankStatementModalOpen] = useState(false);
+  const [currentUploadType, setCurrentUploadType] = useState<DocumentType>("purchases");
+  const [currentCompany, setCurrentCompany] = useState<{ name: string; id: string } | null>(null);
+  const [stats, setStats] = useState({
+    purchases: {
+      inProgress: 0,
+      toValidate: 0,
+      toExport: 0,
+    },
+    sales: {
+      inProgress: 0,
+      toValidate: 0,
+      toExport: 0,
+    },
+    cashReceipts: {
+      inProgress: 0,
+      toValidate: 0,
+      toExport: 0,
+    },
+    bankStatements: {
+      inProgress: 0,
+      toValidate: 0,
+      toExport: 0,
+    },
+    totalAmount: 0,
+    vatAmount: 0,
+  });
+
+  // Prevent hydration errors by only rendering the full dashboard after mounting
+  useEffect(() => {
+    setIsClient(true);
+
+    // Only run this code in the browser
+    if (typeof window === "undefined") return;
+
+    // Get the selected company from localStorage
+    const companyId = localStorage.getItem("selectedCompanyId");
+    if (!companyId) {
+      router.push("/auth/login");
+      return;
+    }
+
+    // Get company details
+    const companies = JSON.parse(localStorage.getItem("companies") || "[]");
+    const company = companies.find((c: any) => c.id === companyId);
+    if (company) {
+      setCurrentCompany({
+        id: company.id,
+        name: company.name,
+      });
+    } else {
+      router.push("/auth/login");
+      return;
+    }
+
+    // Calculate stats for each document type
+    calculateStats(companyId);
+  }, [router]);
+
+  // Update the calculateStats function to properly calculate the total amount from sales
+  const calculateStats = (companyId: string) => {
+    // Initialize stats
+    const newStats = {
+      purchases: { inProgress: 0, toValidate: 0, toExport: 0 },
+      sales: { inProgress: 0, toValidate: 0, toExport: 0 },
+      cashReceipts: { inProgress: 0, toValidate: 0, toExport: 0 },
+      bankStatements: { inProgress: 0, toValidate: 0, toExport: 0 },
+      totalAmount: 0,
+}
+
 "use client"
 
 import { useState, useEffect } from "react"
