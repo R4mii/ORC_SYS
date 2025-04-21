@@ -10,6 +10,8 @@ const ticketSchema = z.object({
   subject: z.string().min(3).max(255),
   message: z.string().min(10),
   priority: z.enum(["low", "medium", "high"]).default("medium"),
+  file_url: z.string().url().optional(),
+  file_name: z.string().optional(),
 })
 
 // GET handler to fetch user's tickets
@@ -24,7 +26,7 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get("status")
 
     let query = `
-      SELECT id, subject, priority, status, created_at, updated_at
+      SELECT id, subject, priority, status, created_at, updated_at, file_url, file_name
       FROM support_tickets
       WHERE user_id = $1
     `
@@ -61,16 +63,27 @@ export async function POST(req: NextRequest) {
     // Insert the ticket into the database
     const result = await sql(
       `
-      INSERT INTO support_tickets (user_id, subject, message, priority, status)
-      VALUES ($1, $2, $3, $4, 'open')
-      RETURNING id, subject, priority, status, created_at
+      INSERT INTO support_tickets (user_id, subject, message, priority, status, file_url, file_name)
+      VALUES ($1, $2, $3, $4, 'open', $5, $6)
+      RETURNING id, subject, priority, status, created_at, file_url, file_name
     `,
-      [userId, validatedData.subject, validatedData.message, validatedData.priority],
+      [
+        userId,
+        validatedData.subject,
+        validatedData.message,
+        validatedData.priority,
+        validatedData.file_url,
+        validatedData.file_name,
+      ],
     )
 
     // Also insert the initial message
     if (result && result.length > 0) {
       const ticketId = result[0].id
+
+      // Basic notification system (just logging for now)
+      console.log(`New support ticket created with ID: ${ticketId}`)
+
       await sql(
         `
         INSERT INTO support_messages (ticket_id, user_id, message, is_staff)
