@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
@@ -13,18 +13,33 @@ import {
   TrendingUp,
   TrendingDown,
   DollarSign,
+  Calendar,
+  Filter,
+  Download,
+  Upload,
   Plus,
   ChevronRight,
   AlertCircle,
   CheckCircle,
   Clock,
+  Loader2,
+  RefreshCw
 } from "lucide-react"
 import { CalendarIcon } from "lucide-react"
 import { FileUploadModal } from "@/components/file-upload-modal"
 import { BankStatementUploadModal } from "@/components/bank-statement-upload-modal"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { SectionErrorBoundary, ErrorBoundaryWithSuspense } from "@/components/error-boundary"
+import { 
+  ErrorBoundary, 
+  SectionErrorBoundary, 
+  ErrorBoundaryWithSuspense, 
+  CardLoadingFallback, 
+  TableLoadingFallback,
+  handleAsyncError, 
+  ErrorMessage 
+} from "@/components/error-boundary"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // Define document types for categorization
 type DocumentType = "purchases" | "sales" | "cashReceipts" | "bankStatements"
@@ -76,18 +91,18 @@ export default function DashboardPage() {
     stats.cashReceipts.toExport +
     stats.bankStatements.inProgress +
     stats.bankStatements.toValidate +
-    stats.bankStatements.toExport
+    stats.bankStatements.toExport;
 
   const documentsToProcess =
     stats.purchases.toValidate +
     stats.sales.toValidate +
     stats.cashReceipts.toValidate +
-    stats.bankStatements.toValidate
+    stats.bankStatements.toValidate;
 
   // Calculate stats function
   const calculateStats = async (companyId: string): Promise<void> => {
-    setLoading(true)
-
+    setLoading(true);
+    
     try {
       // Initialize stats
       const newStats = {
@@ -97,26 +112,26 @@ export default function DashboardPage() {
         bankStatements: { inProgress: 0, toValidate: 0, toExport: 0 },
         totalAmount: 0,
         vatAmount: 0,
-      }
+      };
 
       // Get documents for each type
-      const documentTypes: DocumentType[] = ["purchases", "sales", "cashReceipts", "bankStatements"]
-
+      const documentTypes: DocumentType[] = ["purchases", "sales", "cashReceipts", "bankStatements"];
+      
       // Add a small delay to simulate network latency and show loading states properly
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       for (const type of documentTypes) {
         try {
-          const documentsJson = localStorage.getItem(`${type}_${companyId}`)
+          const documentsJson = localStorage.getItem(`${type}_${companyId}`);
           if (documentsJson) {
-            const documents = JSON.parse(documentsJson)
+            const documents = JSON.parse(documentsJson);
 
             // Count documents by status
-            newStats[type].inProgress = documents.filter((doc: any) => doc.status === "en-cours").length
-            newStats[type].toValidate = documents.filter((doc: any) => doc.status === "brouillon").length
+            newStats[type].inProgress = documents.filter((doc: any) => doc.status === "en-cours").length;
+            newStats[type].toValidate = documents.filter((doc: any) => doc.status === "brouillon").length;
             newStats[type].toExport = documents.filter(
               (doc: any) => doc.status === "valide" && doc.declarationStatus === "non-declare",
-            ).length
+            ).length;
 
             // Calculate total amount (only for sales)
             if (type === "sales") {
@@ -126,47 +141,47 @@ export default function DashboardPage() {
                   const amount =
                     typeof doc.amountWithTax === "number"
                       ? doc.amountWithTax
-                      : Number.parseFloat((doc.amountWithTax || "0").replace(",", ".")) || 0
-                  return sum + amount
+                      : Number.parseFloat((doc.amountWithTax || "0").replace(",", ".")) || 0;
+                  return sum + amount;
                 } catch (err) {
-                  console.error(`Error parsing amount for document`, err)
-                  return sum
+                  console.error(`Error parsing amount for document`, err);
+                  return sum;
                 }
-              }, 0)
+              }, 0);
             }
           } else {
             // Initialize empty array if none exists
-            localStorage.setItem(`${type}_${companyId}`, JSON.stringify([]))
+            localStorage.setItem(`${type}_${companyId}`, JSON.stringify([]));
           }
         } catch (err) {
-          console.error(`Error processing ${type} documents:`, err)
+          console.error(`Error processing ${type} documents:`, err);
         }
       }
 
       // Set the calculated stats
-      setStats(newStats)
+      setStats(newStats);
     } catch (err) {
-      console.error("Error calculating stats:", err)
-      setError("Error calculating statistics. Please refresh.")
+      console.error("Error calculating stats:", err);
+      setError("Error calculating statistics. Please refresh.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Upload handling functions
   const handleUploadClick = (type: DocumentType) => {
-    setCurrentUploadType(type)
+    setCurrentUploadType(type);
     if (type === "bankStatements") {
-      setBankStatementModalOpen(true)
-      setUploadModalOpen(false)
+      setBankStatementModalOpen(true);
+      setUploadModalOpen(false);
     } else {
-      setUploadModalOpen(true)
-      setBankStatementModalOpen(false)
+      setUploadModalOpen(true);
+      setBankStatementModalOpen(false);
     }
-  }
+  };
 
   const handleUploadComplete = (result: any) => {
-    if (!currentCompany) return
+    if (!currentCompany) return;
 
     // Create a new document from OCR results
     const newDocument = {
@@ -195,25 +210,25 @@ export default function DashboardPage() {
       documentType: currentUploadType,
       ocrConfidence: result.invoice.confidence,
       rawText: result.rawText,
-    }
+    };
 
     // Get existing documents for this type
-    const storageKey = `${currentUploadType}_${currentCompany.id}`
-    const existingDocumentsJson = localStorage.getItem(storageKey)
-    const existingDocuments = existingDocumentsJson ? JSON.parse(existingDocumentsJson) : []
+    const storageKey = `${currentUploadType}_${currentCompany.id}`;
+    const existingDocumentsJson = localStorage.getItem(storageKey);
+    const existingDocuments = existingDocumentsJson ? JSON.parse(existingDocumentsJson) : [];
 
     // Save to localStorage for this company and document type
-    localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]))
+    localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]));
 
     // Update stats
-    calculateStats(currentCompany.id)
+    calculateStats(currentCompany.id);
 
     // Close the modal
-    setUploadModalOpen(false)
-  }
+    setUploadModalOpen(false);
+  };
 
   const handleBankStatementUploadComplete = (result: any) => {
-    if (!currentCompany) return
+    if (!currentCompany) return;
 
     // Create a new document from OCR results
     const newDocument = {
@@ -234,22 +249,22 @@ export default function DashboardPage() {
       documentType: currentUploadType,
       ocrConfidence: result.bankStatement.confidence,
       rawText: result.rawText,
-    }
+    };
 
     // Get existing documents for this type
-    const storageKey = `${currentUploadType}_${currentCompany.id}`
-    const existingDocumentsJson = localStorage.getItem(storageKey)
-    const existingDocuments = existingDocumentsJson ? JSON.parse(existingDocumentsJson) : []
+    const storageKey = `${currentUploadType}_${currentCompany.id}`;
+    const existingDocumentsJson = localStorage.getItem(storageKey);
+    const existingDocuments = existingDocumentsJson ? JSON.parse(existingDocumentsJson) : [];
 
     // Save to localStorage for this company and document type
-    localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]))
+    localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]));
 
     // Update stats
-    calculateStats(currentCompany.id)
+    calculateStats(currentCompany.id);
 
     // Close the modal
-    setBankStatementModalOpen(false)
-  }
+    setBankStatementModalOpen(false);
+  };
 
   // Loading State Components
   const StatsCardSkeleton = () => (
@@ -269,7 +284,7 @@ export default function DashboardPage() {
       </div>
     </Card>
   )
-
+  
   const DocumentCardSkeleton = () => (
     <Card className="overflow-hidden border shadow-sm">
       <div className="p-4 bg-gray-100 animate-pulse">
@@ -296,7 +311,7 @@ export default function DashboardPage() {
       </CardContent>
     </Card>
   )
-
+  
   const BankAccountSkeleton = () => (
     <Card className="overflow-hidden animate-pulse">
       <CardContent className="p-0">
@@ -369,7 +384,7 @@ export default function DashboardPage() {
 
     loadData()
   }, [router])
-
+  
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -396,9 +411,7 @@ export default function DashboardPage() {
         title="Métriques clés"
         loadingFallback={
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <StatsCardSkeleton key={i} />
-            ))}
+            {[1, 2, 3, 4].map(i => <StatsCardSkeleton key={i} />)}
           </div>
         }
       >
@@ -484,9 +497,7 @@ export default function DashboardPage() {
         title="Catégories de documents"
         loadingFallback={
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <DocumentCardSkeleton key={i} />
-            ))}
+            {[1, 2, 3, 4].map(i => <DocumentCardSkeleton key={i} />)}
           </div>
         }
       >
@@ -730,9 +741,7 @@ export default function DashboardPage() {
         title="Comptes bancaires"
         loadingFallback={
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <BankAccountSkeleton key={i} />
-            ))}
+            {[1, 2, 3].map(i => <BankAccountSkeleton key={i} />)}
           </div>
         }
       >

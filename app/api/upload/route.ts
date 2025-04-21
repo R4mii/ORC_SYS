@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     forwardFormData.append("file", file)
 
     // Forward the file to the n8n webhook
-    const response = await fetch("https://ocr-sys-u41198.vm.elestio.app/webhook/upload", {
+    const response = await fetch("https://primary-production-14c1.up.railway.app/webhook/upload", {
       method: "POST",
       body: forwardFormData,
     })

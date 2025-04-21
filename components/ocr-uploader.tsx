@@ -39,7 +39,7 @@ export default function OcrUploader() {
       const formData = new FormData()
       formData.append("invoice1", file)
 
-      const response = await fetch("https://ocr-sys-u41198.vm.elestio.app/webhook/upload", {
+      const response = await fetch("https://primary-production-14c1.up.railway.app/webhook/upload", {
         method: "POST",
         body: formData,
       })

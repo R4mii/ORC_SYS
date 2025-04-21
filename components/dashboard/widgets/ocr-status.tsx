@@ -1,28 +1,46 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { PauseCircle, PlayCircle, AlertCircle, RefreshCw, FileText, Trash2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useState, useEffect } from "react";
+import {
+  PauseCircle,
+  PlayCircle,
+  AlertCircle,
+  CheckCircle,
+  RefreshCw,
+  XCircle,
+  Clock,
+  FileText,
+  BarChart3,
+  Layers,
+  Trash2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ProcessingTask {
-  id: string
-  fileName: string
-  fileType: string
-  progress: number
-  status: "processing" | "queued" | "completed" | "error"
-  timeRemaining?: number // in seconds
-  startTime: Date
-  errorMessage?: string
+  id: string;
+  fileName: string;
+  fileType: string;
+  progress: number;
+  status: "processing" | "queued" | "completed" | "error";
+  timeRemaining?: number; // in seconds
+  startTime: Date;
+  errorMessage?: string;
 }
 
 export function OcrStatusWidget() {
-  const [processingPaused, setProcessingPaused] = useState(false)
-  const [activeTab, setActiveTab] = useState("active")
-
+  const [processingPaused, setProcessingPaused] = useState(false);
+  const [activeTab, setActiveTab] = useState("active");
+  
   // Dummy data for processing tasks
   const [tasks, setTasks] = useState<ProcessingTask[]>([
     {
@@ -76,7 +94,7 @@ export function OcrStatusWidget() {
       startTime: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
       errorMessage: "Low quality image, text extraction failed",
     },
-  ])
+  ]);
 
   // Stats for today
   const stats = {
@@ -86,20 +104,20 @@ export function OcrStatusWidget() {
     errors: 1,
     success_rate: 96, // percentage
     avg_processing_time: 42, // seconds
-  }
+  };
 
   // Simulate progress updates
   useEffect(() => {
-    if (processingPaused) return
+    if (processingPaused) return;
 
     const timer = setInterval(() => {
-      setTasks((prevTasks) =>
-        prevTasks.map((task) => {
-          if (task.status !== "processing") return task
-
-          const newProgress = Math.min(task.progress + 1, 100)
-          const newTimeRemaining = task.timeRemaining ? Math.max(task.timeRemaining - 1, 0) : 0
-
+      setTasks(prevTasks => 
+        prevTasks.map(task => {
+          if (task.status !== "processing") return task;
+          
+          const newProgress = Math.min(task.progress + 1, 100);
+          const newTimeRemaining = task.timeRemaining ? Math.max(task.timeRemaining - 1, 0) : 0;
+          
           // If task completes
           if (newProgress === 100) {
             return {
@@ -107,41 +125,41 @@ export function OcrStatusWidget() {
               progress: 100,
               status: "completed",
               timeRemaining: 0,
-            }
+            };
           }
-
+          
           return {
             ...task,
             progress: newProgress,
             timeRemaining: newTimeRemaining,
-          }
-        }),
-      )
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [processingPaused])
+          };
+        })
+      );
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, [processingPaused]);
 
   // Filter tasks based on active tab
-  const filteredTasks = tasks.filter((task) => {
-    if (activeTab === "active") return task.status === "processing" || task.status === "queued"
-    if (activeTab === "completed") return task.status === "completed"
-    if (activeTab === "errors") return task.status === "error"
-    return true
-  })
+  const filteredTasks = tasks.filter(task => {
+    if (activeTab === "active") return task.status === "processing" || task.status === "queued";
+    if (activeTab === "completed") return task.status === "completed";
+    if (activeTab === "errors") return task.status === "error";
+    return true;
+  });
 
   const toggleProcessing = () => {
-    setProcessingPaused(!processingPaused)
-  }
+    setProcessingPaused(!processingPaused);
+  };
 
   // Format time remaining
   const formatTime = (seconds?: number): string => {
-    if (!seconds) return "0s"
-    if (seconds < 60) return `${seconds}s`
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes}m ${remainingSeconds}s`
-  }
+    if (!seconds) return "0s";
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds}s`;
+  };
 
   return (
     <div className="space-y-4">
@@ -177,11 +195,11 @@ export function OcrStatusWidget() {
       {/* Processing Controls */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-1">
-          <Badge
-            variant="outline"
+          <Badge 
+            variant="outline" 
             className={`
               flex items-center gap-1 
-              ${processingPaused ? "text-yellow-500" : "text-green-500"}
+              ${processingPaused ? 'text-yellow-500' : 'text-green-500'}
             `}
           >
             {processingPaused ? (
@@ -196,25 +214,40 @@ export function OcrStatusWidget() {
               </>
             )}
           </Badge>
-          <span className="text-xs text-muted-foreground">Avg. Time: {stats.avg_processing_time}s</span>
+          <span className="text-xs text-muted-foreground">
+            Avg. Time: {stats.avg_processing_time}s
+          </span>
         </div>
         <div className="flex gap-1">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={toggleProcessing}>
-                  {processingPaused ? <PlayCircle className="h-4 w-4" /> : <PauseCircle className="h-4 w-4" />}
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="h-8 w-8" 
+                  onClick={toggleProcessing}
+                >
+                  {processingPaused ? (
+                    <PlayCircle className="h-4 w-4" />
+                  ) : (
+                    <PauseCircle className="h-4 w-4" />
+                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{processingPaused ? "Resume Processing" : "Pause Processing"}</p>
+                <p>{processingPaused ? 'Resume Processing' : 'Pause Processing'}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="h-8 w-8" 
+                >
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
@@ -229,22 +262,21 @@ export function OcrStatusWidget() {
       {/* Task List */}
       <Tabs defaultValue="active" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="active" className="text-xs">
-            Active & Queued
-          </TabsTrigger>
-          <TabsTrigger value="completed" className="text-xs">
-            Completed
-          </TabsTrigger>
-          <TabsTrigger value="errors" className="text-xs">
-            Errors
-          </TabsTrigger>
+          <TabsTrigger value="active" className="text-xs">Active & Queued</TabsTrigger>
+          <TabsTrigger value="completed" className="text-xs">Completed</TabsTrigger>
+          <TabsTrigger value="errors" className="text-xs">Errors</TabsTrigger>
         </TabsList>
         <TabsContent value={activeTab} className="mt-2 space-y-2">
           {filteredTasks.length === 0 ? (
-            <div className="text-center p-4 text-muted-foreground text-sm">No tasks found</div>
+            <div className="text-center p-4 text-muted-foreground text-sm">
+              No tasks found
+            </div>
           ) : (
             filteredTasks.map((task) => (
-              <div key={task.id} className="border rounded-lg p-3 hover:bg-muted/30 transition-colors">
+              <div 
+                key={task.id} 
+                className="border rounded-lg p-3 hover:bg-muted/30 transition-colors"
+              >
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -272,11 +304,13 @@ export function OcrStatusWidget() {
                       </Badge>
                     )}
                     {task.status === "error" && (
-                      <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">Error</Badge>
+                      <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                        Error
+                      </Badge>
                     )}
                   </div>
                 </div>
-
+                
                 {/* Progress Bar for processing tasks */}
                 {task.status === "processing" && (
                   <div className="space-y-1">
@@ -287,7 +321,7 @@ export function OcrStatusWidget() {
                     </div>
                   </div>
                 )}
-
+                
                 {/* Display error message */}
                 {task.status === "error" && task.errorMessage && (
                   <div className="mt-1 text-xs text-red-500 flex items-center gap-1">
@@ -295,7 +329,7 @@ export function OcrStatusWidget() {
                     <span>{task.errorMessage}</span>
                   </div>
                 )}
-
+                
                 {/* Task controls */}
                 {(task.status === "processing" || task.status === "queued") && (
                   <div className="mt-2 flex justify-end gap-1">
@@ -317,33 +351,52 @@ export function OcrStatusWidget() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
-;("use client")
 
-import { useState, useEffect } from "react"
-import { PauseCircle, PlayCircle, AlertCircle, RefreshCw, FileText, Trash2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+"use client";
+
+import { useState, useEffect } from "react";
+import {
+  PauseCircle,
+  PlayCircle,
+  AlertCircle,
+  CheckCircle,
+  RefreshCw,
+  XCircle,
+  Clock,
+  FileText,
+  BarChart3,
+  Layers,
+  Trash2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ProcessingTask {
-  id: string
-  fileName: string
-  fileType: string
-  progress: number
-  status: "processing" | "queued" | "completed" | "error"
-  timeRemaining?: number // in seconds
-  startTime: Date
-  errorMessage?: string
+  id: string;
+  fileName: string;
+  fileType: string;
+  progress: number;
+  status: "processing" | "queued" | "completed" | "error";
+  timeRemaining?: number; // in seconds
+  startTime: Date;
+  errorMessage?: string;
 }
 
 export function OcrStatusWidget() {
-  const [processingPaused, setProcessingPaused] = useState(false)
-  const [activeTab, setActiveTab] = useState("active")
-
+  const [processingPaused, setProcessingPaused] = useState(false);
+  const [activeTab, setActiveTab] = useState("active");
+  
   // Dummy data for processing tasks
   const [tasks, setTasks] = useState<ProcessingTask[]>([
     {
@@ -397,7 +450,7 @@ export function OcrStatusWidget() {
       startTime: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
       errorMessage: "Low quality image, text extraction failed",
     },
-  ])
+  ]);
 
   // Stats for today
   const stats = {
@@ -407,20 +460,20 @@ export function OcrStatusWidget() {
     errors: 1,
     success_rate: 96, // percentage
     avg_processing_time: 42, // seconds
-  }
+  };
 
   // Simulate progress updates
   useEffect(() => {
-    if (processingPaused) return
+    if (processingPaused) return;
 
     const timer = setInterval(() => {
-      setTasks((prevTasks) =>
-        prevTasks.map((task) => {
-          if (task.status !== "processing") return task
-
-          const newProgress = Math.min(task.progress + 1, 100)
-          const newTimeRemaining = task.timeRemaining ? Math.max(task.timeRemaining - 1, 0) : 0
-
+      setTasks(prevTasks => 
+        prevTasks.map(task => {
+          if (task.status !== "processing") return task;
+          
+          const newProgress = Math.min(task.progress + 1, 100);
+          const newTimeRemaining = task.timeRemaining ? Math.max(task.timeRemaining - 1, 0) : 0;
+          
           // If task completes
           if (newProgress === 100) {
             return {
@@ -428,41 +481,41 @@ export function OcrStatusWidget() {
               progress: 100,
               status: "completed",
               timeRemaining: 0,
-            }
+            };
           }
-
+          
           return {
             ...task,
             progress: newProgress,
             timeRemaining: newTimeRemaining,
-          }
-        }),
-      )
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [processingPaused])
+          };
+        })
+      );
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, [processingPaused]);
 
   // Filter tasks based on active tab
-  const filteredTasks = tasks.filter((task) => {
-    if (activeTab === "active") return task.status === "processing" || task.status === "queued"
-    if (activeTab === "completed") return task.status === "completed"
-    if (activeTab === "errors") return task.status === "error"
-    return true
-  })
+  const filteredTasks = tasks.filter(task => {
+    if (activeTab === "active") return task.status === "processing" || task.status === "queued";
+    if (activeTab === "completed") return task.status === "completed";
+    if (activeTab === "errors") return task.status === "error";
+    return true;
+  });
 
   const toggleProcessing = () => {
-    setProcessingPaused(!processingPaused)
-  }
+    setProcessingPaused(!processingPaused);
+  };
 
   // Format time remaining
   const formatTime = (seconds?: number): string => {
-    if (!seconds) return "0s"
-    if (seconds < 60) return `${seconds}s`
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes}m ${remainingSeconds}s`
-  }
+    if (!seconds) return "0s";
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds}s`;
+  };
 
   return (
     <div className="space-y-4">
@@ -498,11 +551,11 @@ export function OcrStatusWidget() {
       {/* Processing Controls */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-1">
-          <Badge
-            variant="outline"
+          <Badge 
+            variant="outline" 
             className={`
               flex items-center gap-1 
-              ${processingPaused ? "text-yellow-500" : "text-green-500"}
+              ${processingPaused ? 'text-yellow-500' : 'text-green-500'}
             `}
           >
             {processingPaused ? (
@@ -517,25 +570,40 @@ export function OcrStatusWidget() {
               </>
             )}
           </Badge>
-          <span className="text-xs text-muted-foreground">Avg. Time: {stats.avg_processing_time}s</span>
+          <span className="text-xs text-muted-foreground">
+            Avg. Time: {stats.avg_processing_time}s
+          </span>
         </div>
         <div className="flex gap-1">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={toggleProcessing}>
-                  {processingPaused ? <PlayCircle className="h-4 w-4" /> : <PauseCircle className="h-4 w-4" />}
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="h-8 w-8" 
+                  onClick={toggleProcessing}
+                >
+                  {processingPaused ? (
+                    <PlayCircle className="h-4 w-4" />
+                  ) : (
+                    <PauseCircle className="h-4 w-4" />
+                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{processingPaused ? "Resume Processing" : "Pause Processing"}</p>
+                <p>{processingPaused ? 'Resume Processing' : 'Pause Processing'}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="h-8 w-8" 
+                >
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
@@ -550,22 +618,21 @@ export function OcrStatusWidget() {
       {/* Task List */}
       <Tabs defaultValue="active" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="active" className="text-xs">
-            Active & Queued
-          </TabsTrigger>
-          <TabsTrigger value="completed" className="text-xs">
-            Completed
-          </TabsTrigger>
-          <TabsTrigger value="errors" className="text-xs">
-            Errors
-          </TabsTrigger>
+          <TabsTrigger value="active" className="text-xs">Active & Queued</TabsTrigger>
+          <TabsTrigger value="completed" className="text-xs">Completed</TabsTrigger>
+          <TabsTrigger value="errors" className="text-xs">Errors</TabsTrigger>
         </TabsList>
         <TabsContent value={activeTab} className="mt-2 space-y-2">
           {filteredTasks.length === 0 ? (
-            <div className="text-center p-4 text-muted-foreground text-sm">No tasks found</div>
+            <div className="text-center p-4 text-muted-foreground text-sm">
+              No tasks found
+            </div>
           ) : (
             filteredTasks.map((task) => (
-              <div key={task.id} className="border rounded-lg p-3 hover:bg-muted/30 transition-colors">
+              <div 
+                key={task.id} 
+                className="border rounded-lg p-3 hover:bg-muted/30 transition-colors"
+              >
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -593,11 +660,13 @@ export function OcrStatusWidget() {
                       </Badge>
                     )}
                     {task.status === "error" && (
-                      <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">Error</Badge>
+                      <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                        Error
+                      </Badge>
                     )}
                   </div>
                 </div>
-
+                
                 {/* Progress Bar for processing tasks */}
                 {task.status === "processing" && (
                   <div className="space-y-1">
@@ -608,7 +677,7 @@ export function OcrStatusWidget() {
                     </div>
                   </div>
                 )}
-
+                
                 {/* Display error message */}
                 {task.status === "error" && task.errorMessage && (
                   <div className="mt-1 text-xs text-red-500 flex items-center gap-1">
@@ -616,7 +685,7 @@ export function OcrStatusWidget() {
                     <span>{task.errorMessage}</span>
                   </div>
                 )}
-
+                
                 {/* Task controls */}
                 {(task.status === "processing" || task.status === "queued") && (
                   <div className="mt-2 flex justify-end gap-1">
@@ -638,5 +707,6 @@ export function OcrStatusWidget() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
+
