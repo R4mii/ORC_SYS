@@ -127,7 +127,7 @@ export function BankStatementUploadModal({ open, onClose, onUploadComplete }: Ba
       const formData = new FormData()
       formData.append("invoice1", files[0])
 
-      const response = await fetch("https://ocr-sys-u41198.vm.elestio.app/webhook/uprelev", {
+      const response = await fetch("https://primary-production-14c1.up.railway.app/webhook/uprelev", {
         method: "POST",
         body: formData,
       })
