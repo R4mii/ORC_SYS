@@ -15,6 +15,7 @@ import {
   X,
   FileText,
   Menu,
+  AlertTriangle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -53,6 +54,17 @@ export default function InvoiceDetailPage() {
       const foundInvoice = invoices.find((inv: any) => inv.id === invoiceId)
 
       if (foundInvoice) {
+        // If there's a file URL but it's a relative path, convert it to an absolute URL
+        if (foundInvoice.fileUrl && !foundInvoice.fileUrl.startsWith("http")) {
+          // This is a placeholder - in a real app, you'd construct the proper URL
+          foundInvoice.fileUrl = `/api/files/${foundInvoice.id}`
+        }
+
+        // For demo purposes, if there's no fileUrl, create one from the first available file
+        if (!foundInvoice.fileUrl && foundInvoice.files && foundInvoice.files.length > 0) {
+          foundInvoice.fileUrl = foundInvoice.files[0].url
+        }
+
         setInvoice(foundInvoice)
         setFormData({
           supplier: foundInvoice.partner || "",
@@ -602,14 +614,25 @@ export default function InvoiceDetailPage() {
                         alt="Invoice document"
                         className="max-w-full max-h-[calc(100vh-200px)] object-contain"
                         onError={(e) => {
-                          e.currentTarget.src = "/placeholder.svg?height=800&width=600"
+                          // If the image fails to load, try using a data URL if available
+                          if (invoice.fileData) {
+                            e.currentTarget.src = invoice.fileData
+                          } else {
+                            e.currentTarget.src = "/placeholder.svg?height=800&width=600"
+                          }
                           console.error("Error loading image:", invoice.fileUrl)
                         }}
                       />
                     )}
                   </div>
                 ) : (
-                  <div className="p-8 text-center text-muted-foreground">Aucun document disponible</div>
+                  <div className="p-8 text-center text-muted-foreground">
+                    <div className="mb-4 text-amber-500">
+                      <AlertTriangle className="h-12 w-12 mx-auto" />
+                    </div>
+                    <p className="mb-2">Aucun document disponible</p>
+                    <p className="text-sm">Veuillez télécharger un document pour cette facture</p>
+                  </div>
                 )}
               </div>
             </div>

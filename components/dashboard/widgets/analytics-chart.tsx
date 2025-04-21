@@ -1,6 +1,6 @@
-"use client";
+"use client"
 
-import { useState } from "react";
+import { useState } from "react"
 import {
   BarChart,
   Bar,
@@ -9,54 +9,41 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
   Legend,
   AreaChart,
-  Area
-} from "recharts";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import {
-  FileText,
-  Filter,
-  Calendar,
-  CreditCard,
-  Receipt,
-  FileImage,
-  FileSpreadsheet
-} from "lucide-react";
+  Area,
+} from "recharts"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Types for chart data
 interface ProcessingData {
-  date: string;
-  documents: number;
-  successRate: number;
-  avgTime: number;
+  date: string
+  documents: number
+  successRate: number
+  avgTime: number
 }
 
 interface DocumentTypeData {
-  name: string;
-  value: number;
-  color: string;
+  name: string
+  value: number
+  color: string
 }
 
 interface TimeAnalyticsData {
-  timeRange: string;
-  invoices: number;
-  receipts: number;
-  statements: number;
-  other: number;
+  timeRange: string
+  invoices: number
+  receipts: number
+  statements: number
+  other: number
 }
 
 export function AnalyticsChartWidget() {
-  const [timeRange, setTimeRange] = useState<"week" | "month" | "quarter" | "year">("week");
-  const [chartTab, setChartTab] = useState("trends");
+  const [timeRange, setTimeRange] = useState<"week" | "month" | "quarter" | "year">("week")
+  const [chartTab, setChartTab] = useState("trends")
 
   // Sample data for processing trends
   const processingTrends: ProcessingData[] = [
@@ -67,7 +54,7 @@ export function AnalyticsChartWidget() {
     { date: "Fri", documents: 17, successRate: 94, avgTime: 32 },
     { date: "Sat", documents: 5, successRate: 90, avgTime: 38 },
     { date: "Sun", documents: 3, successRate: 93, avgTime: 35 },
-  ];
+  ]
 
   // Sample data for document types
   const documentTypeData: DocumentTypeData[] = [
@@ -76,7 +63,7 @@ export function AnalyticsChartWidget() {
     { name: "Statements", value: 17, color: "#f59e0b" },
     { name: "Images", value: 7, color: "#ef4444" },
     { name: "Other", value: 3, color: "#6b7280" },
-  ];
+  ]
 
   // Sample data for time analytics
   const timeAnalyticsData: TimeAnalyticsData[] = [
@@ -84,13 +71,13 @@ export function AnalyticsChartWidget() {
     { timeRange: "Afternoon", invoices: 22, receipts: 12, statements: 8, other: 4 },
     { timeRange: "Evening", invoices: 8, receipts: 6, statements: 4, other: 2 },
     { timeRange: "Night", invoices: 2, receipts: 2, statements: 0, other: 1 },
-  ];
+  ]
 
   // Get proper dataset based on time range
   const getDataForTimeRange = (range: string) => {
     // In a real app, this would fetch different datasets based on the selected time range
-    return processingTrends;
-  };
+    return processingTrends
+  }
 
   // Custom tooltip styles
   const customTooltipStyle = {
@@ -100,7 +87,7 @@ export function AnalyticsChartWidget() {
     padding: "8px 12px",
     boxShadow: "var(--shadow)",
     fontSize: "12px",
-  };
+  }
 
   // Custom tooltip formatter for line charts
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -111,21 +98,22 @@ export function AnalyticsChartWidget() {
             <div className="w-2 h-2 rounded-full bg-[#6b7280]"></div>
             <span className="text-muted-foreground">Other: 3</span>
           </div>
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: entry.color }}
-              />
-              <span className="text-muted-foreground">
-                {entry.name}: {entry.value} {entry.unit || ""}
-              </span>
-            </div>
-          ))}
+          className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}
+          />
+          <span className="text-muted-foreground">
+            {entry.name}: {entry.value} {entry.unit || ""}
+          </span>
         </div>
-      );
+      )
+      )
     }
-    return null;
-  };
+    </div>
+      )
+  }
+  return null
+}
 
-  return (
+return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="text-sm font-medium">OCR Document Analytics</div>
@@ -349,4 +337,3 @@ export function AnalyticsChartWidget() {
             <div className="w-2 h-2 rounded-full bg-[#6b7280]"></div>
             <span className="text-muted-foreground">Other: 3</span>
           </div
-

@@ -406,7 +406,12 @@ export default function DashboardLayout({
                 <p className="text-xs text-muted-foreground mb-3">
                   Contact our support team for assistance with your account.
                 </p>
-                <Button variant="outline" size="sm" className="w-full">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => router.push("/dashboard/support")}
+                >
                   Contact Support
                 </Button>
               </div>

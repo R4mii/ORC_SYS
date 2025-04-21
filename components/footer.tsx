@@ -116,16 +116,16 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-6 py-6 md:flex md:items-center md:justify-between lg:px-8 border-t border-border mt-12">
         <div className="flex justify-center space-x-6 md:order-2">
           <p className="text-xs text-muted-foreground">
+            <Link href="/dashboard/support" className="hover:text-finance-primary">
+              Support
+            </Link>
+            {" • "}
             <Link href="#" className="hover:text-finance-primary">
               Privacy Policy
             </Link>
             {" • "}
             <Link href="#" className="hover:text-finance-primary">
               Terms of Service
-            </Link>
-            {" • "}
-            <Link href="#" className="hover:text-finance-primary">
-              Cookie Policy
             </Link>
           </p>
         </div>

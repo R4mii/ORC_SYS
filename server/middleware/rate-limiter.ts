@@ -1,6 +1,6 @@
-import rateLimit from 'express-rate-limit';
-import { CONFIG } from '../config/config';
-import logger from '../config/logger';
+import rateLimit from "express-rate-limit"
+import { CONFIG } from "../config/config"
+import logger from "../config/logger"
 
 /**
  * Create a general rate limiter for all API routes
@@ -12,15 +12,15 @@ export const generalLimiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   message: {
     success: false,
-    error: 'Too many requests, please try again later.',
-    timestamp: Date.now()
+    error: "Too many requests, please try again later.",
+    timestamp: Date.now(),
   },
   // Add logging for rate limited requests
   handler: (req, res, next, options) => {
-    logger.warn(`Rate limit exceeded: ${req.ip} - ${req.method} ${req.originalUrl}`);
-    res.status(429).json(options.message);
-  }
-});
+    logger.warn(`Rate limit exceeded: ${req.ip} - ${req.method} ${req.originalUrl}`)
+    res.status(429).json(options.message)
+  },
+})
 
 /**
  * Create a more strict rate limiter for OCR requests which are resource intensive
@@ -32,14 +32,13 @@ export const ocrLimiter = rateLimit({
   legacyHeaders: false,
   message: {
     success: false,
-    error: 'Too many OCR requests, please try again later.',
-    timestamp: Date.now()
+    error: "Too many OCR requests, please try again later.",
+    timestamp: Date.now(),
   },
   handler: (req, res, next, options) => {
-    logger.warn(`OCR rate limit exceeded: ${req.ip} - ${req.method} ${req.originalUrl}`);
-    res.status(429).json(options.message);
+    logger.warn(`OCR rate limit exceeded: ${req.ip} - ${req.method} ${req.originalUrl}`)
+    res.status(429).json(options.message)
   },
   // Skip rate limiting in test environment
-  skip: () => CONFIG.isTest
-});
-
+  skip: () => CONFIG.isTest,
+})

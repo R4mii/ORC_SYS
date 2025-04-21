@@ -1,27 +1,28 @@
-"use client";
+"use client"
 
-import React, { Component, ErrorInfo, ReactNode, Suspense } from "react";
-import { RefreshCw, AlertTriangle, Bug } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import type React from "react"
+import { Component, type ErrorInfo, type ReactNode, Suspense } from "react"
+import { RefreshCw, AlertTriangle, Bug } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // ===========================================
 // Error Boundary Types
 // ===========================================
 interface ErrorBoundaryProps {
-  children: ReactNode;
-  fallback?: ReactNode;
-  onError?: (error: Error, errorInfo: ErrorInfo) => void;
-  onReset?: () => void;
+  children: ReactNode
+  fallback?: ReactNode
+  onError?: (error: Error, errorInfo: ErrorInfo) => void
+  onReset?: () => void
   /** Allow retry by resetting the error boundary */
-  resetKeys?: Array<any>;
+  resetKeys?: Array<any>
 }
 
 interface ErrorBoundaryState {
-  hasError: boolean;
-  error: Error | null;
-  errorInfo: ErrorInfo | null;
+  hasError: boolean
+  error: Error | null
+  errorInfo: ErrorInfo | null
 }
 
 // ===========================================
@@ -33,7 +34,7 @@ export const DefaultLoadingFallback = () => (
     <Skeleton className="h-32 w-full" />
     <Skeleton className="h-20 w-full" />
   </div>
-);
+)
 
 // Specialized loading skeletons for different content types
 export const CardLoadingFallback = () => (
@@ -42,7 +43,7 @@ export const CardLoadingFallback = () => (
     <Skeleton className="h-24 w-full mb-2" />
     <Skeleton className="h-6 w-1/3" />
   </div>
-);
+)
 
 export const TableLoadingFallback = () => (
   <div className="w-full animate-pulse">
@@ -51,7 +52,7 @@ export const TableLoadingFallback = () => (
       <Skeleton key={i} className="h-12 w-full mb-2" />
     ))}
   </div>
-);
+)
 
 // ===========================================
 // Error Boundary Component
@@ -62,12 +63,12 @@ export const TableLoadingFallback = () => (
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
-    super(props);
+    super(props)
     this.state = {
       hasError: false,
       error: null,
       errorInfo: null,
-    };
+    }
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
@@ -76,24 +77,24 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       hasError: true,
       error,
       errorInfo: null,
-    };
+    }
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // Log the error to console
-    console.error("Error caught by ErrorBoundary:", error, errorInfo);
-    
+    console.error("Error caught by ErrorBoundary:", error, errorInfo)
+
     // Update state with error details
     this.setState({
       error,
       errorInfo,
-    });
-    
+    })
+
     // Call the onError callback if provided
     if (this.props.onError) {
-      this.props.onError(error, errorInfo);
+      this.props.onError(error, errorInfo)
     }
-    
+
     // Here you could log to an error monitoring service
     // Example: reportToErrorService(error, errorInfo);
   }
@@ -101,9 +102,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   componentDidUpdate(prevProps: ErrorBoundaryProps) {
     // Reset the error state if resetKeys have changed
     if (this.state.hasError && this.props.resetKeys) {
-      if (!prevProps.resetKeys || 
-          JSON.stringify(prevProps.resetKeys) !== JSON.stringify(this.props.resetKeys)) {
-        this.reset();
+      if (!prevProps.resetKeys || JSON.stringify(prevProps.resetKeys) !== JSON.stringify(this.props.resetKeys)) {
+        this.reset()
       }
     }
   }
@@ -113,11 +113,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       hasError: false,
       error: null,
       errorInfo: null,
-    });
+    })
 
     // Call the onReset callback if provided
     if (this.props.onReset) {
-      this.props.onReset();
+      this.props.onReset()
     }
   }
 
@@ -125,9 +125,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     if (this.state.hasError) {
       // If a custom fallback is provided, use it
       if (this.props.fallback) {
-        return this.props.fallback;
+        return this.props.fallback
       }
-      
+
       // Otherwise, use the default fallback UI
       return (
         <div className="p-4 rounded-lg border border-destructive/50 bg-destructive/10 text-destructive">
@@ -136,43 +136,39 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             <AlertTitle>Une erreur s'est produite</AlertTitle>
             <AlertDescription>
               <p className="mt-2 mb-4 text-sm text-destructive/90">
-                Une erreur est survenue lors du chargement de cette section. Veuillez réessayer ou contacter le support si le problème persiste.
+                Une erreur est survenue lors du chargement de cette section. Veuillez réessayer ou contacter le support
+                si le problème persiste.
               </p>
-              
-              {this.state.error && process.env.NODE_ENV !== 'production' && (
+
+              {this.state.error && process.env.NODE_ENV !== "production" && (
                 <div className="mt-4 p-3 rounded bg-black/10 overflow-auto text-xs max-h-32">
                   <p className="font-mono">{this.state.error.toString()}</p>
                 </div>
               )}
-              
+
               <div className="mt-4 flex flex-col sm:flex-row gap-2">
-                <Button 
-                  onClick={this.reset} 
-                  size="sm" 
-                  variant="outline" 
-                  className="gap-1"
-                >
+                <Button onClick={this.reset} size="sm" variant="outline" className="gap-1">
                   <RefreshCw className="h-3 w-3" />
                   Réessayer
                 </Button>
-                
-                <Button 
-                  onClick={() => window.location.reload()} 
-                  size="sm" 
-                  variant="outline" 
-                  className="gap-1"
-                >
+
+                <Button onClick={() => window.location.reload()} size="sm" variant="outline" className="gap-1">
                   <RefreshCw className="h-3 w-3" />
                   Recharger la page
                 </Button>
-                
-                <Button 
-                  size="sm" 
-                  variant="outline" 
+
+                <Button
+                  size="sm"
+                  variant="outline"
                   className="gap-1"
-                  onClick={() => window.open('mailto:support@orcsys.com?subject=Erreur Application&body=' + 
-                    encodeURIComponent(`Erreur: ${this.state.error?.message || 'Erreur inconnue'}\n\nHeure: ${new Date().toISOString()}`)
-                  )}
+                  onClick={() =>
+                    window.open(
+                      "mailto:support@orcsys.com?subject=Erreur Application&body=" +
+                        encodeURIComponent(
+                          `Erreur: ${this.state.error?.message || "Erreur inconnue"}\n\nHeure: ${new Date().toISOString()}`,
+                        ),
+                    )
+                  }
                 >
                   <Bug className="h-3 w-3" />
                   Signaler un problème
@@ -181,11 +177,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             </AlertDescription>
           </Alert>
         </div>
-      );
+      )
     }
 
     // No error, render children normally
-    return this.props.children;
+    return this.props.children
   }
 }
 
@@ -197,19 +193,19 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
  */
 export function withErrorBoundary<P extends object>(
   Component: React.ComponentType<P>,
-  errorBoundaryProps?: Omit<ErrorBoundaryProps, 'children'>
+  errorBoundaryProps?: Omit<ErrorBoundaryProps, "children">,
 ): React.ComponentType<P> {
-  const displayName = Component.displayName || Component.name || 'Component';
-  
+  const displayName = Component.displayName || Component.name || "Component"
+
   const WithErrorBoundary = (props: P) => (
     <ErrorBoundary {...errorBoundaryProps}>
       <Component {...props} />
     </ErrorBoundary>
-  );
-  
-  WithErrorBoundary.displayName = `WithErrorBoundary(${displayName})`;
-  
-  return WithErrorBoundary;
+  )
+
+  WithErrorBoundary.displayName = `WithErrorBoundary(${displayName})`
+
+  return WithErrorBoundary
 }
 
 // ===========================================
@@ -226,11 +222,9 @@ export function ErrorBoundaryWithSuspense({
 }: ErrorBoundaryProps & { loadingFallback?: ReactNode }) {
   return (
     <ErrorBoundary fallback={fallback} {...errorBoundaryProps}>
-      <Suspense fallback={loadingFallback}>
-        {children}
-      </Suspense>
+      <Suspense fallback={loadingFallback}>{children}</Suspense>
     </ErrorBoundary>
-  );
+  )
 }
 
 // ===========================================
@@ -246,32 +240,25 @@ export function SectionErrorBoundary({
 }: ErrorBoundaryProps & { title?: string }) {
   const customFallback = (
     <div className="p-4 bg-background border rounded-lg shadow-sm">
-      <div className="text-sm text-muted-foreground mb-2">
-        {title}
-      </div>
+      <div className="text-sm text-muted-foreground mb-2">{title}</div>
       <Alert variant="destructive" className="bg-destructive/5">
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Impossible de charger cette section</AlertTitle>
         <AlertDescription className="text-xs">
-          <Button 
-            onClick={() => window.location.reload()} 
-            size="sm" 
-            variant="outline" 
-            className="mt-2 text-xs"
-          >
+          <Button onClick={() => window.location.reload()} size="sm" variant="outline" className="mt-2 text-xs">
             <RefreshCw className="h-3 w-3 mr-1" />
             Recharger
           </Button>
         </AlertDescription>
       </Alert>
     </div>
-  );
+  )
 
   return (
     <ErrorBoundary fallback={customFallback} {...props}>
       {children}
     </ErrorBoundary>
-  );
+  )
 }
 
 // ===========================================
@@ -282,28 +269,28 @@ export function SectionErrorBoundary({
  */
 export function handleAsyncError<T>(
   promise: Promise<T>,
-  errorHandler?: (error: Error) => void
+  errorHandler?: (error: Error) => void,
 ): Promise<[T | null, Error | null]> {
   return promise
     .then((data) => [data, null] as [T, null])
     .catch((error: Error) => {
       if (errorHandler) {
-        errorHandler(error);
+        errorHandler(error)
       }
-      return [null, error] as [null, Error];
-    });
+      return [null, error] as [null, Error]
+    })
 }
 
 /**
  * Error display component for form errors or API errors
  */
 export function ErrorMessage({ error }: { error: string | null | undefined }) {
-  if (!error) return null;
-  
+  if (!error) return null
+
   return (
     <div className="text-sm text-destructive flex items-center mt-1">
       <AlertTriangle className="h-3 w-3 mr-1 flex-shrink-0" />
       <span>{error}</span>
     </div>
-  );
+  )
 }
