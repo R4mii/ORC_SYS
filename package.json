@@ -84,7 +84,8 @@
     "@aws-sdk/client-s3": "latest",
     "@aws-sdk/s3-request-presigner": "latest",
     "isomorphic-dompurify": "latest",
-    "@neondatabase/serverless": "latest"
+    "@neondatabase/serverless": "latest",
+    "@next/font": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",
