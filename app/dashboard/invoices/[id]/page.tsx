@@ -24,19 +24,6 @@ import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-// Add a style block for the checkerboard pattern
-const checkerboardStyle = `
-  .bg-checkerboard {
-    background-image: 
-      linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
-      linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
-      linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
-    background-size: 20px 20px;
-    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-  }
-`
-
 export default function InvoiceDetailPage() {
   const router = useRouter()
   const params = useParams()
@@ -70,54 +57,32 @@ export default function InvoiceDetailPage() {
         const foundInvoice = invoices.find((inv: any) => inv.id === invoiceId)
 
         if (foundInvoice) {
-          // Handle file URL generation for preview
-          if (!foundInvoice.fileUrl) {
-            // If we have a file object, create an object URL
-            if (foundInvoice.file && typeof foundInvoice.file === "object") {
-              try {
-                // For File objects
-                if (foundInvoice.file instanceof File) {
-                  foundInvoice.fileUrl = URL.createObjectURL(foundInvoice.file)
-                }
-                // For stored file data in JSON
-                else if (foundInvoice.file.data) {
-                  // Convert base64 to blob if available
-                  const byteCharacters = atob(foundInvoice.file.data)
-                  const byteArrays = []
-                  for (let i = 0; i < byteCharacters.length; i++) {
-                    byteArrays.push(byteCharacters.charCodeAt(i))
-                  }
-                  const blob = new Blob([new Uint8Array(byteArrays)], {
-                    type: foundInvoice.file.type || "application/octet-stream",
-                  })
-                  foundInvoice.fileUrl = URL.createObjectURL(blob)
-                }
-              } catch (error) {
-                console.error("Error creating object URL:", error)
-                // Provide a fallback URL for testing/development
-                foundInvoice.fileUrl = "/placeholder.svg?height=800&width=600"
-                setFileError("Unable to display the invoice file. Using placeholder instead.")
+          console.log("Found invoice:", foundInvoice) // Helpful for debugging
+
+          // If we don't have a fileUrl but have a file object
+          if (!foundInvoice.fileUrl && foundInvoice.file) {
+            try {
+              // Check if 'file' is a File/Blob object or a string
+              if (foundInvoice.file instanceof Blob || typeof foundInvoice.file === "object") {
+                foundInvoice.fileUrl = URL.createObjectURL(foundInvoice.file)
+                console.log("Created object URL:", foundInvoice.fileUrl)
+              } else if (typeof foundInvoice.file === "string") {
+                // If it's a string URL, use it directly
+                foundInvoice.fileUrl = foundInvoice.file
               }
-            } else if (foundInvoice.originalFile && foundInvoice.originalFile.name) {
-              // If we have file metadata but no actual file, use a placeholder
-              foundInvoice.fileUrl = "/placeholder.svg?height=800&width=600"
-              setFileError(
-                `The file "${foundInvoice.originalFile.name}" is not available for preview. Using placeholder instead.`,
-              )
-            } else {
-              // Fallback for development/testing
-              foundInvoice.fileUrl = "/placeholder.svg?height=800&width=600"
+            } catch (error) {
+              console.error("Error creating object URL:", error)
+              setFileError("Impossible de charger le fichier. Le fichier peut être corrompu ou inaccessible.")
             }
           }
 
-          // Set total pages based on document type (for PDFs)
-          if (
-            foundInvoice.fileUrl?.toLowerCase().endsWith(".pdf") ||
-            foundInvoice.originalFile?.type === "application/pdf"
-          ) {
-            setTotalPages(foundInvoice.totalPages || 1)
-          } else {
-            setTotalPages(1) // Non-PDF files have only one page
+          // If we have neither fileUrl nor file, but have originalFile metadata
+          else if (!foundInvoice.fileUrl && !foundInvoice.file && foundInvoice.originalFile) {
+            if (foundInvoice.originalFile.name) {
+              setFileError(`Le fichier "${foundInvoice.originalFile.name}" n'est pas disponible pour prévisualisation.`)
+            } else {
+              setFileError("Le document associé n'est pas disponible pour prévisualisation.")
+            }
           }
 
           setInvoice(foundInvoice)
@@ -137,14 +102,21 @@ export default function InvoiceDetailPage() {
             nonRecoverableTVA: false,
             multipleTVAAmounts: false,
           })
+
+          // Set total pages for PDF if available
+          if (foundInvoice.pageCount) {
+            setTotalPages(foundInvoice.pageCount)
+          }
         } else {
+          console.error("Invoice not found:", invoiceId)
           router.push("/dashboard/invoices")
         }
       } catch (error) {
         console.error("Error parsing invoice data:", error)
-        setFileError("Error loading invoice data. Please try again.")
-        router.push("/dashboard/invoices")
+        setFileError("Erreur lors du chargement des données de la facture.")
       }
+    } else {
+      console.error("No purchases documents found for company:", companyId)
     }
 
     setLoading(false)
@@ -181,18 +153,30 @@ export default function InvoiceDetailPage() {
       amount: Number.parseFloat(formData.amountHT),
       vatAmount: Number.parseFloat(formData.amountTVA),
       amountWithTax: Number.parseFloat(formData.amountTTC),
+      // Preserve file information
+      file: invoice.file,
+      fileUrl: invoice.fileUrl,
+      originalFile: invoice.originalFile,
     }
 
     // Update in localStorage
     const purchasesDocuments = localStorage.getItem(`purchases_${companyId}`)
     if (purchasesDocuments) {
-      const invoices = JSON.parse(purchasesDocuments)
-      const updatedInvoices = invoices.map((inv: any) => (inv.id === invoice.id ? updatedInvoice : inv))
+      try {
+        const invoices = JSON.parse(purchasesDocuments)
+        const updatedInvoices = invoices.map((inv: any) => (inv.id === invoice.id ? updatedInvoice : inv))
 
-      localStorage.setItem(`purchases_${companyId}`, JSON.stringify(updatedInvoices))
+        localStorage.setItem(`purchases_${companyId}`, JSON.stringify(updatedInvoices))
 
-      // Redirect to invoices page
-      router.push("/dashboard/invoices")
+        // Show success message or feedback
+        alert("La facture a été mise à jour avec succès.")
+
+        // Redirect to invoices page
+        router.push("/dashboard/invoices")
+      } catch (error) {
+        console.error("Error updating invoice:", error)
+        alert("Une erreur s'est produite lors de la mise à jour de la facture.")
+      }
     }
   }
 
@@ -236,83 +220,82 @@ export default function InvoiceDetailPage() {
       )
     }
 
-    if (!invoice?.fileUrl) {
+    // Enhanced debug display to help troubleshoot file display issues
+    if (!invoice?.fileUrl && !invoice?.file) {
       return (
-        <div className="flex flex-col items-center justify-center p-8 text-center">
-          <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-          <div className="text-muted-foreground">Aucun document disponible</div>
-          <Button variant="outline" className="mt-4" onClick={() => setEditMode(true)}>
-            Modifier les détails de la facture
-          </Button>
+        <div className="p-8 flex flex-col items-center justify-center text-center text-muted-foreground">
+          <FileText className="h-12 w-12 mb-4 text-muted-foreground/50" />
+          <p className="mb-2">Aucun document disponible</p>
+          <p className="text-xs text-muted-foreground/70">
+            {invoice?.originalFile?.name ? `Fichier original: ${invoice.originalFile.name}` : "Aucun fichier attaché"}
+          </p>
         </div>
       )
     }
 
-    // Determine file type
-    const isPdf = invoice.fileUrl.toLowerCase().endsWith(".pdf") || invoice.originalFile?.type === "application/pdf"
-
-    const isImage =
-      invoice.fileUrl.toLowerCase().match(/\.(jpeg|jpg|png|gif|webp)$/) ||
-      (invoice.originalFile?.type && invoice.originalFile.type.startsWith("image/"))
-
-    if (isPdf) {
+    // Handle file display based on type
+    // For PDFs
+    if (
+      (invoice.fileUrl && invoice.fileUrl.toLowerCase().endsWith(".pdf")) ||
+      invoice.originalFile?.type === "application/pdf"
+    ) {
       return (
-        <div className="w-full h-full flex flex-col">
-          <iframe
-            src={invoice.fileUrl + "#toolbar=0&navpanes=0"}
-            title="Invoice PDF"
-            className="w-full h-[calc(100vh-200px)]"
-            style={{ border: "none" }}
-            onError={() => {
-              setFileError("Error loading PDF. The file may be corrupted or unavailable.")
+        <iframe
+          src={invoice.fileUrl + "#toolbar=0&navpanes=0"}
+          title="Invoice PDF"
+          className="w-full h-[calc(100vh-200px)]"
+          style={{ border: "none" }}
+          onError={() => {
+            setFileError("Impossible de charger le PDF. Le fichier peut être corrompu ou inaccessible.")
+          }}
+        />
+      )
+    }
+    // For images
+    else if (
+      (invoice.fileUrl && invoice.fileUrl.toLowerCase().match(/\.(jpeg|jpg|png|gif|webp)$/)) ||
+      (invoice.originalFile?.type && invoice.originalFile.type.startsWith("image/"))
+    ) {
+      return (
+        <div className="flex items-center justify-center">
+          <img
+            src={invoice.fileUrl || "/placeholder.svg"}
+            alt="Invoice document"
+            className="max-w-full max-h-[calc(100vh-200px)] object-contain shadow-lg"
+            onError={(e) => {
+              e.currentTarget.src = "/placeholder.svg?height=800&width=600"
+              setFileError("Erreur lors du chargement de l'image. Le fichier peut être corrompu ou inaccessible.")
             }}
           />
-          <div className="text-xs text-center text-muted-foreground mt-2">
-            {invoice.originalFile?.name || "Document PDF"}
+        </div>
+      )
+    }
+    // For other file types or blob URLs
+    else if (invoice.fileUrl) {
+      return (
+        <div className="p-8 text-center">
+          <div className="inline-block p-6 border rounded-lg shadow-md bg-muted/30 mb-4">
+            <FileText className="h-16 w-16 mx-auto mb-2 text-primary" />
+            <p className="text-sm font-medium">{invoice.originalFile?.name || "Document"}</p>
+          </div>
+          <div>
+            <a
+              href={invoice.fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline inline-flex items-center gap-1 mt-2"
+            >
+              <Download className="h-4 w-4" /> Télécharger le fichier
+            </a>
           </div>
         </div>
       )
-    } else if (isImage) {
+    }
+    // Fallback for no file
+    else {
       return (
-        <div className="w-full h-full flex flex-col items-center">
-          <div className="relative bg-checkerboard rounded-md overflow-hidden">
-            <img
-              src={invoice.fileUrl || "/placeholder.svg"}
-              alt="Invoice document"
-              className="max-w-full max-h-[calc(100vh-200px)] object-contain"
-              style={{
-                transform: `scale(${zoomLevel / 100})`,
-                transformOrigin: "center",
-                transition: "transform 0.2s",
-              }}
-              onError={(e) => {
-                e.currentTarget.src = "/placeholder.svg?height=800&width=600"
-                setFileError("Error loading image. The file may be corrupted or unavailable.")
-              }}
-            />
-          </div>
-          <div className="text-xs text-center text-muted-foreground mt-2">
-            {invoice.originalFile?.name || "Image document"}
-          </div>
-        </div>
-      )
-    } else {
-      // For other file types, show a more helpful message with file info
-      const fileExtension =
-        invoice.fileUrl.split(".").pop()?.toUpperCase() ||
-        invoice.originalFile?.name?.split(".").pop()?.toUpperCase() ||
-        "Unknown"
-
-      return (
-        <div className="flex flex-col items-center justify-center p-8 text-center">
-          <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-          <div className="text-muted-foreground">
-            Format de fichier {fileExtension} non pris en charge pour la prévisualisation
-          </div>
-          <div className="text-sm text-muted-foreground mt-2">{invoice.originalFile?.name || "Document"}</div>
-          <Button variant="outline" className="mt-4" onClick={() => window.open(invoice.fileUrl, "_blank")}>
-            Télécharger le fichier
-          </Button>
+        <div className="p-8 text-center text-muted-foreground">
+          Format de fichier non pris en charge ou fichier non disponible
         </div>
       )
     }
@@ -328,11 +311,6 @@ export default function InvoiceDetailPage() {
 
   return (
     <div className="flex flex-col h-screen">
-      {/* Add the style tag for the checkerboard pattern */}
-      <style jsx global>
-        {checkerboardStyle}
-      </style>
-
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center space-x-2">
@@ -722,6 +700,7 @@ export default function InvoiceDetailPage() {
         </div>
 
         {/* Right panel - Document viewer */}
+        {/* Document viewer with enhanced controls */}
         <div className="w-1/2 flex flex-col">
           <div className="flex items-center justify-between p-2 border-b bg-gray-50">
             <div className="flex items-center space-x-2">
@@ -746,7 +725,47 @@ export default function InvoiceDetailPage() {
             </div>
           </div>
 
+          {/* Add this file upload button when no file exists */}
+          {!invoice?.fileUrl && !fileError && (
+            <div className="bg-muted/30 p-4 border-b flex justify-center">
+              <label htmlFor="invoice-file-upload" className="cursor-pointer">
+                <div className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors">
+                  <FileText className="h-4 w-4" />
+                  <span>Ajouter un document</span>
+                </div>
+                <input
+                  id="invoice-file-upload"
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      // Create URL for preview
+                      const fileUrl = URL.createObjectURL(file)
+
+                      // Update invoice with file
+                      setInvoice((prev) => ({
+                        ...prev,
+                        file: file,
+                        fileUrl: fileUrl,
+                        originalFile: {
+                          name: file.name,
+                          type: file.type,
+                          size: file.size,
+                        },
+                      }))
+
+                      setFileError(null)
+                    }
+                  }}
+                />
+              </label>
+            </div>
+          )}
+
           <div className="flex-1 overflow-auto bg-gray-100 flex items-center justify-center">
+            {/* The renderFilePreview() function stays here */}
             <div className="relative w-full h-full">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div

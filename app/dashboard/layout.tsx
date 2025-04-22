@@ -10,16 +10,15 @@ import {
   FileText,
   Home,
   LogOut,
-  Menu,
   Settings,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   CreditCard,
   Bell,
-  Search,
   User,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -31,7 +30,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { CompanySelector } from "@/components/company-selector"
 import { ModeToggle } from "@/components/mode-toggle"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Suspense } from "react"
 
@@ -156,7 +154,7 @@ export default function DashboardLayout({
   }
 
   const handleContactSupport = () => {
-    // Redirect to the dedicated support page
+    // Redirect to support page
     router.push("/support")
   }
 
@@ -179,114 +177,37 @@ export default function DashboardLayout({
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 shadow-sm">
-        {/* Only show sidebar toggle if not on dashboard or if on dashboard on larger screens */}
-        {/* Navigation toggle removed as requested */}
+      <header className="sticky top-0 z-50 flex h-16 items-center justify-between gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 shadow-sm">
+        <div className="flex items-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="mr-2 text-muted-foreground hover:text-foreground"
+          >
+            {sidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+            <span className="sr-only">Toggle sidebar</span>
+          </Button>
 
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="md:hidden">
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-72">
-            <div className="flex h-full flex-col">
-              <div className="flex h-14 items-center border-b px-4">
-                <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-                  <FileText className="h-6 w-6 text-primary" />
-                  <span className="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent font-bold">
-                    Besoin.Compta
-                  </span>
-                </Link>
-              </div>
-              <div className="border-b py-3 px-4">
-                <Button
-                  variant="outline"
-                  className="w-full justify-between"
-                  onClick={() => setShowCompanySelector(true)}
-                >
-                  <div className="flex items-center">
-                    <Building2 className="mr-2 h-4 w-4 text-primary" />
-                    <span className="truncate">{currentCompany?.name || "Select Company"}</span>
-                  </div>
-                  <ChevronDown className="h-4 w-4 opacity-50" />
-                </Button>
-              </div>
-              <nav className={`grid gap-2 p-4 ${pathname === "/dashboard" ? "hidden" : ""}`}>
-                {navItems.map((item) =>
-                  item.href ? (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 ${
-                        pathname === item.href
-                          ? "bg-primary text-primary-foreground font-medium"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      }`}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {item.title}
-                    </Link>
-                  ) : item.items ? (
-                    <div key={item.title}>
-                      <div className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground">
-                        <item.icon className="h-4 w-4" />
-                        {item.title}
-                      </div>
-                      <div className="grid gap-2 pl-6">
-                        {item.items.map((subItem) => (
-                          <Link
-                            key={subItem.href}
-                            href={subItem.href}
-                            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 ${
-                              pathname === subItem.href
-                                ? "bg-primary text-primary-foreground font-medium"
-                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                            }`}
-                          >
-                            <subItem.icon className="h-4 w-4" />
-                            {subItem.title}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null,
-                )}
-              </nav>
-            </div>
-          </SheetContent>
-        </Sheet>
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-          <FileText className="h-6 w-6 text-primary" />
-          <span className="hidden md:inline-block bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent font-bold">
-            Besoin.Compta
-          </span>
-        </Link>
-
-        {/* Search bar */}
-        <div className="hidden md:flex flex-1 mx-4 max-w-md">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search..." className="pl-10 bg-muted/40 border-muted focus-visible:bg-background" />
-          </div>
+          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+            <FileText className="h-6 w-6 text-primary" />
+            <span className="hidden md:inline-block bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent font-bold">
+              Besoin.Compta
+            </span>
+          </Link>
         </div>
 
-        {/* Company Selector Button (Desktop) */}
-        <div className="hidden md:flex">
+        <div className="flex items-center gap-4">
           <Button
             variant="outline"
-            className="gap-2 border-muted bg-muted/40 hover:bg-muted"
+            className="gap-2 border-muted bg-muted/40 hover:bg-muted hidden md:flex"
             onClick={() => setShowCompanySelector(true)}
           >
             <Building2 className="h-4 w-4 text-primary" />
             <span className="max-w-[150px] truncate">{currentCompany?.name || "Select Company"}</span>
             <ChevronDown className="h-4 w-4 opacity-50" />
           </Button>
-        </div>
 
-        <div className="ml-auto flex items-center gap-4">
-          {/* Notifications */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
@@ -353,33 +274,86 @@ export default function DashboardLayout({
         </div>
       </header>
       <div className="flex flex-1">
-        {/* Navigation sidebar removed as requested */}
+        {/* Collapsible sidebar with enhanced styling */}
+        <aside
+          className={`border-r bg-background transition-all duration-300 ease-in-out ${
+            sidebarCollapsed ? "w-0 overflow-hidden" : "w-64"
+          }`}
+        >
+          <div className="sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto py-6 px-4">
+            <nav className={`grid gap-2 ${pathname === "/dashboard" ? "hidden md:grid" : ""}`}>
+              {navItems.map((item) =>
+                item.href ? (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`nav-item ${pathname === item.href ? "active" : ""}`}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.title}
+                  </Link>
+                ) : item.items ? (
+                  <div key={item.title} className="space-y-2 pt-2">
+                    <div className="flex items-center gap-3 px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <item.icon className="h-4 w-4" />
+                      {item.title}
+                    </div>
+                    <div className="grid gap-1 pl-2">
+                      {item.items.map((subItem) => (
+                        <Link
+                          key={subItem.href}
+                          href={subItem.href}
+                          className={`nav-item ${pathname === subItem.href ? "active" : ""}`}
+                        >
+                          <subItem.icon className="h-4 w-4" />
+                          {subItem.title}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ) : null,
+              )}
+            </nav>
+            {/* Bottom section with help and support */}
+            <div className="mt-auto pt-6 border-t mt-6">
+              <div className="rounded-lg bg-muted/50 p-4">
+                <h4 className="text-sm font-medium mb-2">Need help?</h4>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Contact our support team for assistance with your account.
+                </p>
+                <Button variant="outline" size="sm" className="w-full" onClick={handleContactSupport}>
+                  Contact Support
+                </Button>
+              </div>
+            </div>
+          </div>
+        </aside>
         <main className="flex-1 p-4 md:p-6 overflow-auto">
           <Suspense fallback={<>Loading...</>}>{children}</Suspense>
         </main>
-        <footer className="border-t bg-background/95 backdrop-blur-sm p-4 md:p-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
-              <span className="text-sm font-medium">Besoin.Compta © {new Date().getFullYear()}</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <Button variant="link" size="sm" className="text-muted-foreground" onClick={handleContactSupport}>
-                Contact Support
-              </Button>
-              <Button variant="link" size="sm" className="text-muted-foreground" asChild>
-                <Link href="/about">About</Link>
-              </Button>
-              <Button variant="link" size="sm" className="text-muted-foreground" asChild>
-                <Link href="/privacy">Privacy</Link>
-              </Button>
-              <Button variant="link" size="sm" className="text-muted-foreground" asChild>
-                <Link href="/terms">Terms</Link>
-              </Button>
-            </div>
-          </div>
-        </footer>
       </div>
+
+      {/* Modern footer */}
+      <footer className="border-t py-4 px-6 bg-background/95 backdrop-blur-sm">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            <span className="text-sm font-medium">Besoin.Compta © {new Date().getFullYear()}</span>
+          </div>
+          <div className="flex items-center gap-6">
+            <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground">
+              Terms
+            </Link>
+            <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground">
+              Privacy
+            </Link>
+            <Link href="/support" className="text-sm text-muted-foreground hover:text-foreground">
+              Support
+            </Link>
+          </div>
+          <div className="text-xs text-muted-foreground">Version 2.1.0</div>
+        </div>
+      </footer>
 
       {/* Company Selector Modal */}
       <CompanySelector isOpen={showCompanySelector} onClose={() => setShowCompanySelector(false)} />
