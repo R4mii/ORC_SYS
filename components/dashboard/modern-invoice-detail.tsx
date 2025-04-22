@@ -753,24 +753,47 @@ export function ModernInvoiceDetail({ id, documentType }: ModernInvoiceDetailPro
                   }}
                   className="p-4"
                 >
-                  {document?.fileUrl &&
-                    (document.fileUrl.includes(".pdf") ? (
+                  {document?.fileUrl ? (
+                    document.fileUrl.toLowerCase().endsWith(".pdf") ? (
                       <iframe
                         src={`${document.fileUrl}#toolbar=0&navpanes=0`}
                         className="w-[595px] h-[842px] border shadow-md bg-white"
                         title="Document PDF"
                       />
-                    ) : (
+                    ) : document.fileUrl.match(/\.(jpe?g|png|gif|webp)$/i) ? (
                       <img
                         src={document.fileUrl || "/placeholder.svg"}
                         alt="Document"
                         className="max-w-full border shadow-md bg-white"
                         onError={(e) => {
                           e.currentTarget.src = "/placeholder.svg?height=842&width=595"
-                          e.currentTarget.alt = "Erreur de chargement de l'image"
+                          e.currentTarget.alt = "Error loading image"
                         }}
                       />
-                    ))}
+                    ) : (
+                      <div className="p-8 bg-white border rounded-lg shadow-md flex flex-col items-center justify-center w-[595px]">
+                        <FileText className="h-16 w-16 text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-medium">Document Preview</h3>
+                        <p className="text-sm text-muted-foreground mt-2 text-center">
+                          This document type cannot be previewed directly.
+                          <br />
+                          <Button
+                            variant="link"
+                            className="text-primary p-0 h-auto mt-2"
+                            onClick={() => window.open(document.fileUrl, "_blank")}
+                          >
+                            Download to view
+                          </Button>
+                        </p>
+                      </div>
+                    )
+                  ) : (
+                    <div className="p-8 text-center text-muted-foreground bg-white border rounded-lg shadow-md w-[595px]">
+                      <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium">No Document Available</h3>
+                      <p className="mt-2">There is no document attached to this invoice.</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
