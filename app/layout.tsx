@@ -5,10 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import Navbar from "@/components/navbar"
 import { Footer } from "@/components/footer"
 
-
 const inter = Inter({ subsets: ["latin"] })
-
-
 
 export default function RootLayout({
   children,
@@ -30,3 +27,7 @@ export default function RootLayout({
     </html>
   )
 }
+
+export const metadata = {
+      generator: 'v0.dev'
+    };
