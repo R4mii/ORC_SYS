@@ -79,6 +79,11 @@ export default function InvoiceDetailPage() {
               console.log("Using fileData")
             } else {
               console.log("No file data available")
+              if (foundInvoice.originalFile && foundInvoice.originalFile.name) {
+                setFileError(
+                  `Le fichier "${foundInvoice.originalFile.name}" n'est pas disponible pour prévisualisation.`,
+                )
+              }
             }
           }
 
@@ -95,7 +100,7 @@ export default function InvoiceDetailPage() {
             amountTVA: foundInvoice.vatAmount || 0,
             stampDuty: 0,
             expenses: 0,
-            amountTTC: foundInvoice.amountWithTax || 0,
+            amountTTC: invoice.amountWithTax || 0,
             nonRecoverableTVA: false,
             multipleTVAAmounts: false,
           })
@@ -143,6 +148,10 @@ export default function InvoiceDetailPage() {
       amount: Number.parseFloat(formData.amountHT),
       vatAmount: Number.parseFloat(formData.amountTVA),
       amountWithTax: Number.parseFloat(formData.amountTTC),
+      // Preserve file information
+      file: invoice.file,
+      fileUrl: invoice.fileUrl,
+      originalFile: invoice.originalFile,
     }
 
     // Update in localStorage
@@ -203,6 +212,7 @@ export default function InvoiceDetailPage() {
     try {
       // Create a URL for the file
       const fileUrl = URL.createObjectURL(file)
+      console.log("Created new file URL:", fileUrl)
 
       // Update the invoice with the new file
       const updatedInvoice = {
@@ -221,13 +231,17 @@ export default function InvoiceDetailPage() {
       // Save to localStorage
       const companyId = localStorage.getItem("selectedCompanyId")
       if (companyId) {
-        const purchasesDocuments = localStorage.getItem("purchases_${companyId}")
+        const purchasesDocuments = localStorage.getItem(`purchases_${companyId}`)
         if (purchasesDocuments) {
-          const invoices = JSON.parse(purchasesDocuments)
-          const updatedInvoices = invoices.map((inv: any) => (inv.id === invoice.id ? updatedInvoice : inv))
+          try {
+            const invoices = JSON.parse(purchasesDocuments)
+            const updatedInvoices = invoices.map((inv: any) => (inv.id === invoice.id ? updatedInvoice : inv))
 
-          localStorage.setItem("purchases_${companyId}", JSON.stringify(updatedInvoices))
-          console.log("File saved to localStorage")
+            localStorage.setItem(`purchases_${companyId}`, JSON.stringify(updatedInvoices))
+            console.log("File saved to localStorage")
+          } catch (error) {
+            console.error("Error updating invoice in localStorage:", error)
+          }
         }
       }
     } catch (error) {
@@ -252,7 +266,7 @@ export default function InvoiceDetailPage() {
       return (
         <div className="p-8 text-center text-muted-foreground flex flex-col items-center justify-center">
           <FileText className="h-16 w-16 mb-4 text-muted-foreground/50" />
-          <p className="mb-2">Aucun document disponible</p>
+          <p className="mb-2 font-medium">Aucun document disponible</p>
           <p className="text-xs text-muted-foreground/70 max-w-xs mb-4">
             Veuillez télécharger un document pour cette facture.
           </p>
@@ -302,6 +316,7 @@ export default function InvoiceDetailPage() {
         />
       )
     } else {
+      // For other file types
       return (
         <div className="p-8 text-center">
           <div className="inline-block p-6 border rounded-lg shadow-md bg-muted/30 mb-4">
@@ -321,14 +336,6 @@ export default function InvoiceDetailPage() {
         </div>
       )
     }
-  }
-
-  if (loading) {
-    return <div className="flex items-center justify-center h-screen">Chargement...</div>
-  }
-
-  if (!invoice) {
-    return <div className="flex items-center justify-center h-screen">Facture non trouvée</div>
   }
 
   return (

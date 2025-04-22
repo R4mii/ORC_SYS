@@ -90,36 +90,29 @@ export default function DashboardLayout({
   const [mounted, setMounted] = useState(false)
   const [showCompanySelector, setShowCompanySelector] = useState(false)
   const [currentCompany, setCurrentCompany] = useState<{ name: string; id: string } | null>(null)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false) // Start with expanded sidebar
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
-  // Prevent hydration errors by only rendering client-specific content after mount
   useEffect(() => {
     setMounted(true)
 
-    // Only run this code in the browser
     if (typeof window !== "undefined") {
-      // Check if user is logged in
       const token = localStorage.getItem("token")
       if (!token) {
         router.push("/auth/login")
         return
       }
 
-      // Get the selected company from localStorage
       const companyId = localStorage.getItem("selectedCompanyId")
       if (!companyId) {
-        // If no company is selected but user is logged in, show company selector
         setShowCompanySelector(true)
         return
       }
 
-      // Get the sidebar state from localStorage
       const savedSidebarState = localStorage.getItem("sidebarCollapsed")
       if (savedSidebarState !== null) {
         setSidebarCollapsed(savedSidebarState === "true")
       }
 
-      // Get company details
       const companies = JSON.parse(localStorage.getItem("companies") || "[]")
       const company = companies.find((c: any) => c.id === companyId)
       if (company) {
@@ -133,7 +126,6 @@ export default function DashboardLayout({
     }
   }, [router])
 
-  // Save sidebar state when it changes
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("sidebarCollapsed", String(sidebarCollapsed))
@@ -145,20 +137,15 @@ export default function DashboardLayout({
   }
 
   const handleLogout = () => {
-    // Clear any stored data
     localStorage.removeItem("selectedCompanyId")
     localStorage.removeItem("token")
-
-    // Redirect to login page
     router.push("/auth/login")
   }
 
   const handleContactSupport = () => {
-    // Redirect to support page
     router.push("/support")
   }
 
-  // Render a simple loading state during server-side rendering
   if (!mounted) {
     return (
       <div className="flex min-h-screen flex-col">
@@ -177,103 +164,105 @@ export default function DashboardLayout({
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {/* Simplified header - NAVBAR REMOVED */}
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 shadow-sm">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleSidebar}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            {sidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
-            <span className="sr-only">Toggle sidebar</span>
-          </Button>
+      {/* Conditionally render Navbar */}
+      {pathname !== "/dashboard" && (
+        <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 shadow-sm">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebar}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              {sidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+              <span className="sr-only">Toggle sidebar</span>
+            </Button>
 
-          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-            <FileText className="h-6 w-6 text-primary" />
-            <span className="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent font-bold">
-              Besoin.Compta
-            </span>
-          </Link>
-        </div>
+            <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+              <FileText className="h-6 w-6 text-primary" />
+              <span className="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent font-bold">
+                Besoin.Compta
+              </span>
+            </Link>
+          </div>
 
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            className="gap-2 border-muted bg-muted/40 hover:bg-muted hidden md:flex"
-            onClick={() => setShowCompanySelector(true)}
-          >
-            <Building2 className="h-4 w-4 text-primary" />
-            <span className="max-w-[150px] truncate">{currentCompany?.name || "Select Company"}</span>
-            <ChevronDown className="h-4 w-4 opacity-50" />
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              className="gap-2 border-muted bg-muted/40 hover:bg-muted hidden md:flex"
+              onClick={() => setShowCompanySelector(true)}
+            >
+              <Building2 className="h-4 w-4 text-primary" />
+              <span className="max-w-[150px] truncate">{currentCompany?.name || "Select Company"}</span>
+              <ChevronDown className="h-4 w-4 opacity-50" />
+            </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
-                  3
-                </span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <div className="max-h-80 overflow-auto">
-                {[1, 2, 3].map((i) => (
-                  <DropdownMenuItem key={i} className="flex flex-col items-start p-3 cursor-pointer">
-                    <div className="flex items-center gap-2 mb-1 w-full">
-                      <span className="font-medium">New invoice uploaded</span>
-                      <Badge variant="outline" className="ml-auto text-xs">
-                        New
-                      </Badge>
-                    </div>
-                    <span className="text-xs text-muted-foreground">Invoice #INV-{1000 + i} has been processed</span>
-                    <span className="text-xs text-muted-foreground mt-1">2 hour{i > 1 ? "s" : ""} ago</span>
-                  </DropdownMenuItem>
-                ))}
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="justify-center text-primary">View all notifications</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-5 w-5" />
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                    3
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <div className="max-h-80 overflow-auto">
+                  {[1, 2, 3].map((i) => (
+                    <DropdownMenuItem key={i} className="flex flex-col items-start p-3 cursor-pointer">
+                      <div className="flex items-center gap-2 mb-1 w-full">
+                        <span className="font-medium">New invoice uploaded</span>
+                        <Badge variant="outline" className="ml-auto text-xs">
+                          New
+                        </Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground">Invoice #INV-{1000 + i} has been processed</span>
+                      <span className="text-xs text-muted-foreground mt-1">2 hour{i > 1 ? "s" : ""} ago</span>
+                    </DropdownMenuItem>
+                  ))}
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="justify-center text-primary">View all notifications</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          <ModeToggle />
+            <ModeToggle />
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <Avatar className="h-8 w-8 ring-2 ring-primary/10">
-                  <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                  <AvatarFallback className="bg-primary/10 text-primary">JD</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                <span>My Account</span>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/settings" className="cursor-pointer">
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleLogout}
-                className="cursor-pointer text-destructive focus:text-destructive"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </header>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <Avatar className="h-8 w-8 ring-2 ring-primary/10">
+                    <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
+                    <AvatarFallback className="bg-primary/10 text-primary">JD</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span>My Account</span>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/settings" className="cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="cursor-pointer text-destructive focus:text-destructive"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </header>
+      )}
       <div className="flex flex-1">
         {/* Collapsible sidebar with enhanced styling */}
         <aside
