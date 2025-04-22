@@ -67,8 +67,13 @@ export default function InvoiceDetailPage() {
           if (!foundInvoice.fileUrl) {
             if (foundInvoice.file instanceof Blob) {
               // If we have a Blob object
-              foundInvoice.fileUrl = URL.createObjectURL(foundInvoice.file)
-              console.log("Created URL from Blob")
+              try {
+                foundInvoice.fileUrl = URL.createObjectURL(foundInvoice.file)
+                console.log("Created URL from Blob")
+              } catch (e) {
+                console.error("Error creating object URL:", e)
+                setFileError("Error creating object URL from Blob")
+              }
             } else if (typeof foundInvoice.file === "string" && foundInvoice.file.startsWith("data:")) {
               // If we have a data URL
               foundInvoice.fileUrl = foundInvoice.file
@@ -92,10 +97,10 @@ export default function InvoiceDetailPage() {
             withholding: false,
             prorataTVA: true,
             amountHT: foundInvoice.amount || 0,
-            amountTVA: foundInvoice.vatAmount || 0,
+            amountTVA: invoice.vatAmount || 0,
             stampDuty: 0,
             expenses: 0,
-            amountTTC: foundInvoice.amountWithTax || 0,
+            amountTTC: invoice.amountWithTax || 0,
             nonRecoverableTVA: false,
             multipleTVAAmounts: false,
           })
@@ -107,6 +112,8 @@ export default function InvoiceDetailPage() {
         console.error("Error parsing invoice data:", error)
         setFileError("Erreur lors du chargement des données de la facture.")
       }
+    } else {
+      console.warn("No purchases documents found in localStorage")
     }
 
     setLoading(false)
@@ -284,7 +291,8 @@ export default function InvoiceDetailPage() {
           title="Invoice PDF"
           className="w-full h-[calc(100vh-200px)]"
           style={{ border: "none" }}
-          onError={() => {
+          onError={(e) => {
+            console.error("Error loading PDF:", e)
             setFileError("Impossible de charger le PDF. Le fichier peut être corrompu ou inaccessible.")
           }}
         />
@@ -322,14 +330,6 @@ export default function InvoiceDetailPage() {
         </div>
       )
     }
-  }
-
-  if (loading) {
-    return <div className="flex items-center justify-center h-screen">Chargement...</div>
-  }
-
-  if (!invoice) {
-    return <div className="flex items-center justify-center h-screen">Facture non trouvée</div>
   }
 
   return (
