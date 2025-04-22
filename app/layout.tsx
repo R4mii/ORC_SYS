@@ -4,11 +4,11 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import Navbar from "@/components/navbar"
 import { Footer } from "@/components/footer"
-import { metadata } from "./metadata"
+
 
 const inter = Inter({ subsets: ["latin"] })
 
-export { metadata }
+
 
 export default function RootLayout({
   children,
@@ -29,4 +29,4 @@ export default function RootLayout({
       </body>
     </html>
   )
-}S
+}
