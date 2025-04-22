@@ -177,13 +177,13 @@ export default function DashboardLayout({
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 shadow-sm">
-        <div className="flex items-center">
+      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 shadow-sm">
+        <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleSidebar}
-            className="mr-2 text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground"
           >
             {sidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
             <span className="sr-only">Toggle sidebar</span>
@@ -191,13 +191,13 @@ export default function DashboardLayout({
 
           <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
             <FileText className="h-6 w-6 text-primary" />
-            <span className="hidden md:inline-block bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent font-bold">
+            <span className="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent font-bold">
               Besoin.Compta
             </span>
           </Link>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
             className="gap-2 border-muted bg-muted/40 hover:bg-muted hidden md:flex"

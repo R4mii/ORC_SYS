@@ -38,6 +38,8 @@ export default function InvoiceDetailPage() {
   const [showAccountingEntries, setShowAccountingEntries] = useState(false)
   const [fileError, setFileError] = useState<string | null>(null)
 
+  // Fix the invoice document display issue and enhance file upload display
+  // Update the useEffect hook to better handle file URLs and display
   useEffect(() => {
     if (typeof window === "undefined") return
 
@@ -57,31 +59,44 @@ export default function InvoiceDetailPage() {
         const foundInvoice = invoices.find((inv: any) => inv.id === invoiceId)
 
         if (foundInvoice) {
-          console.log("Found invoice:", foundInvoice) // Helpful for debugging
+          console.log("Found invoice:", foundInvoice) // Debug log
 
-          // If we don't have a fileUrl but have a file object
-          if (!foundInvoice.fileUrl && foundInvoice.file) {
-            try {
-              // Check if 'file' is a File/Blob object or a string
-              if (foundInvoice.file instanceof Blob || typeof foundInvoice.file === "object") {
-                foundInvoice.fileUrl = URL.createObjectURL(foundInvoice.file)
-                console.log("Created object URL:", foundInvoice.fileUrl)
-              } else if (typeof foundInvoice.file === "string") {
-                // If it's a string URL, use it directly
-                foundInvoice.fileUrl = foundInvoice.file
+          // Handle file URL creation
+          if (!foundInvoice.fileUrl) {
+            // If we have a file object
+            if (foundInvoice.file) {
+              try {
+                // Check if it's a blob or file object
+                if (
+                  foundInvoice.file instanceof Blob ||
+                  (typeof foundInvoice.file === "object" && foundInvoice.file !== null)
+                ) {
+                  foundInvoice.fileUrl = URL.createObjectURL(foundInvoice.file)
+                  console.log("Created object URL from file object:", foundInvoice.fileUrl)
+                }
+                // If it's a string that might be a data URL or path
+                else if (typeof foundInvoice.file === "string") {
+                  foundInvoice.fileUrl = foundInvoice.file
+                  console.log("Using file string as URL:", foundInvoice.fileUrl)
+                }
+              } catch (error) {
+                console.error("Error creating object URL:", error)
+                setFileError("Impossible de charger le fichier. Le fichier peut être corrompu ou inaccessible.")
               }
-            } catch (error) {
-              console.error("Error creating object URL:", error)
-              setFileError("Impossible de charger le fichier. Le fichier peut être corrompu ou inaccessible.")
             }
-          }
-
-          // If we have neither fileUrl nor file, but have originalFile metadata
-          else if (!foundInvoice.fileUrl && !foundInvoice.file && foundInvoice.originalFile) {
-            if (foundInvoice.originalFile.name) {
-              setFileError(`Le fichier "${foundInvoice.originalFile.name}" n'est pas disponible pour prévisualisation.`)
-            } else {
-              setFileError("Le document associé n'est pas disponible pour prévisualisation.")
+            // If we have a base64 data string
+            else if (foundInvoice.fileData) {
+              foundInvoice.fileUrl = foundInvoice.fileData
+              console.log("Using fileData as URL")
+            }
+            // If we have neither file nor fileUrl
+            else {
+              console.log("No file or fileUrl available")
+              if (foundInvoice.originalFile && foundInvoice.originalFile.name) {
+                setFileError(
+                  `Le fichier "${foundInvoice.originalFile.name}" n'est pas disponible pour prévisualisation.`,
+                )
+              }
             }
           }
 
@@ -102,11 +117,6 @@ export default function InvoiceDetailPage() {
             nonRecoverableTVA: false,
             multipleTVAAmounts: false,
           })
-
-          // Set total pages for PDF if available
-          if (foundInvoice.pageCount) {
-            setTotalPages(foundInvoice.pageCount)
-          }
         } else {
           console.error("Invoice not found:", invoiceId)
           router.push("/dashboard/invoices")
@@ -115,8 +125,6 @@ export default function InvoiceDetailPage() {
         console.error("Error parsing invoice data:", error)
         setFileError("Erreur lors du chargement des données de la facture.")
       }
-    } else {
-      console.error("No purchases documents found for company:", companyId)
     }
 
     setLoading(false)
@@ -210,6 +218,7 @@ export default function InvoiceDetailPage() {
     }))
   }
 
+  // Improve the renderFilePreview function to better handle different file types
   const renderFilePreview = () => {
     if (fileError) {
       return (
@@ -220,25 +229,30 @@ export default function InvoiceDetailPage() {
       )
     }
 
-    // Enhanced debug display to help troubleshoot file display issues
-    if (!invoice?.fileUrl && !invoice?.file) {
+    if (!invoice?.fileUrl) {
       return (
         <div className="p-8 flex flex-col items-center justify-center text-center text-muted-foreground">
-          <FileText className="h-12 w-12 mb-4 text-muted-foreground/50" />
-          <p className="mb-2">Aucun document disponible</p>
-          <p className="text-xs text-muted-foreground/70">
-            {invoice?.originalFile?.name ? `Fichier original: ${invoice.originalFile.name}` : "Aucun fichier attaché"}
+          <FileText className="h-16 w-16 mb-4 text-muted-foreground/50" />
+          <p className="mb-2 font-medium">Aucun document disponible</p>
+          <p className="text-xs text-muted-foreground/70 max-w-xs">
+            Veuillez télécharger un document pour cette facture en utilisant le bouton ci-dessus.
           </p>
         </div>
       )
     }
 
-    // Handle file display based on type
-    // For PDFs
-    if (
-      (invoice.fileUrl && invoice.fileUrl.toLowerCase().endsWith(".pdf")) ||
+    // Determine file type
+    const isPdf =
+      invoice.fileUrl.toLowerCase().endsWith(".pdf") ||
+      invoice.fileUrl.includes("data:application/pdf") ||
       invoice.originalFile?.type === "application/pdf"
-    ) {
+
+    const isImage =
+      invoice.fileUrl.toLowerCase().match(/\.(jpeg|jpg|png|gif|webp)$/) ||
+      invoice.fileUrl.includes("data:image/") ||
+      (invoice.originalFile?.type && invoice.originalFile.type.startsWith("image/"))
+
+    if (isPdf) {
       return (
         <iframe
           src={invoice.fileUrl + "#toolbar=0&navpanes=0"}
@@ -250,12 +264,7 @@ export default function InvoiceDetailPage() {
           }}
         />
       )
-    }
-    // For images
-    else if (
-      (invoice.fileUrl && invoice.fileUrl.toLowerCase().match(/\.(jpeg|jpg|png|gif|webp)$/)) ||
-      (invoice.originalFile?.type && invoice.originalFile.type.startsWith("image/"))
-    ) {
+    } else if (isImage) {
       return (
         <div className="flex items-center justify-center">
           <img
@@ -269,9 +278,8 @@ export default function InvoiceDetailPage() {
           />
         </div>
       )
-    }
-    // For other file types or blob URLs
-    else if (invoice.fileUrl) {
+    } else {
+      // For other file types
       return (
         <div className="p-8 text-center">
           <div className="inline-block p-6 border rounded-lg shadow-md bg-muted/30 mb-4">
@@ -288,14 +296,6 @@ export default function InvoiceDetailPage() {
               <Download className="h-4 w-4" /> Télécharger le fichier
             </a>
           </div>
-        </div>
-      )
-    }
-    // Fallback for no file
-    else {
-      return (
-        <div className="p-8 text-center text-muted-foreground">
-          Format de fichier non pris en charge ou fichier non disponible
         </div>
       )
     }
@@ -700,7 +700,8 @@ export default function InvoiceDetailPage() {
         </div>
 
         {/* Right panel - Document viewer */}
-        {/* Document viewer with enhanced controls */}
+        {/* Add a file upload section in the document viewer
+        Replace the document viewer section with this enhanced version: */}
         <div className="w-1/2 flex flex-col">
           <div className="flex items-center justify-between p-2 border-b bg-gray-50">
             <div className="flex items-center space-x-2">
@@ -725,47 +726,72 @@ export default function InvoiceDetailPage() {
             </div>
           </div>
 
-          {/* Add this file upload button when no file exists */}
-          {!invoice?.fileUrl && !fileError && (
-            <div className="bg-muted/30 p-4 border-b flex justify-center">
-              <label htmlFor="invoice-file-upload" className="cursor-pointer">
-                <div className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors">
-                  <FileText className="h-4 w-4" />
-                  <span>Ajouter un document</span>
-                </div>
-                <input
-                  id="invoice-file-upload"
-                  type="file"
-                  className="hidden"
-                  accept=".pdf,.png,.jpg,.jpeg"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) {
-                      // Create URL for preview
-                      const fileUrl = URL.createObjectURL(file)
+          {/* File upload button */}
+          <div className="bg-muted/30 p-4 border-b flex justify-center">
+            <label htmlFor="invoice-file-upload" className="cursor-pointer">
+              <div className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors">
+                <FileText className="h-4 w-4" />
+                <span>{invoice?.fileUrl ? "Remplacer le document" : "Ajouter un document"}</span>
+              </div>
+              <input
+                id="invoice-file-upload"
+                type="file"
+                className="hidden"
+                accept=".pdf,.png,.jpg,.jpeg"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) {
+                    // Create URL for preview
+                    const fileUrl = URL.createObjectURL(file)
+                    console.log("Created new file URL:", fileUrl)
 
-                      // Update invoice with file
-                      setInvoice((prev) => ({
-                        ...prev,
-                        file: file,
-                        fileUrl: fileUrl,
-                        originalFile: {
-                          name: file.name,
-                          type: file.type,
-                          size: file.size,
-                        },
-                      }))
+                    // Update invoice with file
+                    setInvoice((prev) => ({
+                      ...prev,
+                      file: file,
+                      fileUrl: fileUrl,
+                      originalFile: {
+                        name: file.name,
+                        type: file.type,
+                        size: file.size,
+                      },
+                    }))
 
-                      setFileError(null)
+                    // Also update in localStorage to persist
+                    const companyId = localStorage.getItem("selectedCompanyId")
+                    if (companyId) {
+                      const purchasesDocuments = localStorage.getItem(`purchases_${companyId}`)
+                      if (purchasesDocuments) {
+                        try {
+                          const invoices = JSON.parse(purchasesDocuments)
+                          const updatedInvoices = invoices.map((inv: any) =>
+                            inv.id === invoice.id
+                              ? {
+                                  ...inv,
+                                  fileUrl: fileUrl,
+                                  originalFile: {
+                                    name: file.name,
+                                    type: file.type,
+                                    size: file.size,
+                                  },
+                                }
+                              : inv,
+                          )
+                          localStorage.setItem(`purchases_${companyId}`, JSON.stringify(updatedInvoices))
+                        } catch (error) {
+                          console.error("Error updating invoice in localStorage:", error)
+                        }
+                      }
                     }
-                  }}
-                />
-              </label>
-            </div>
-          )}
+
+                    setFileError(null)
+                  }
+                }}
+              />
+            </label>
+          </div>
 
           <div className="flex-1 overflow-auto bg-gray-100 flex items-center justify-center">
-            {/* The renderFilePreview() function stays here */}
             <div className="relative w-full h-full">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div

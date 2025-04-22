@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { FileText } from "lucide-react"
 
 export function Footer() {
   // Check if we're in the dashboard
@@ -9,18 +10,24 @@ export function Footer() {
   // Return a simplified footer for dashboard pages
   if (isDashboard) {
     return (
-      <footer className="bg-background border-t py-4 px-6 text-center text-sm text-muted-foreground">
-        <p>© {new Date().getFullYear()} ORCSYS. All rights reserved.</p>
-        <div className="mt-2 flex justify-center space-x-4">
-          <Link href="/support" className="hover:text-primary transition-colors">
-            Support
-          </Link>
-          <Link href="/privacy" className="hover:text-primary transition-colors">
-            Privacy
-          </Link>
-          <Link href="/terms" className="hover:text-primary transition-colors">
-            Terms
-          </Link>
+      <footer className="bg-background border-t py-3 px-6">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">ORCSYS © {new Date().getFullYear()}</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link href="/terms" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+              Terms
+            </Link>
+            <Link href="/privacy" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+              Privacy
+            </Link>
+            <Link href="/support" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+              Support
+            </Link>
+          </div>
+          <div className="text-xs text-muted-foreground hidden md:block">v2.1.0</div>
         </div>
       </footer>
     )
