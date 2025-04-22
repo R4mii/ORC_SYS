@@ -15,13 +15,14 @@ import {
   X,
   FileText,
   Menu,
+  AlertCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { toast } from "@/components/ui/use-toast"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function InvoiceDetailPage() {
   const router = useRouter()
@@ -35,6 +36,7 @@ export default function InvoiceDetailPage() {
   const [formData, setFormData] = useState<any>({})
   const [activeTab, setActiveTab] = useState("form")
   const [showAccountingEntries, setShowAccountingEntries] = useState(false)
+  const [fileError, setFileError] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -50,82 +52,48 @@ export default function InvoiceDetailPage() {
     // Get invoice data from localStorage
     const purchasesDocuments = localStorage.getItem(`purchases_${companyId}`)
     if (purchasesDocuments) {
-      try {
-        const invoices = JSON.parse(purchasesDocuments)
-        const foundInvoice = invoices.find((inv: any) => inv.id === invoiceId)
+      const invoices = JSON.parse(purchasesDocuments)
+      const foundInvoice = invoices.find((inv: any) => inv.id === invoiceId)
 
-        if (foundInvoice) {
-          // Ensure the invoice has a fileUrl property
-          if (!foundInvoice.fileUrl) {
-            // If no fileUrl exists, set a placeholder
-            foundInvoice.fileUrl = "/placeholder.svg?height=800&width=600"
+      if (foundInvoice) {
+        // Create a placeholder fileUrl if it doesn't exist
+        if (!foundInvoice.fileUrl) {
+          // Check if we have a file object or blob URL stored
+          if (foundInvoice.file) {
+            // If we have a file object, create an object URL
+            try {
+              foundInvoice.fileUrl = URL.createObjectURL(foundInvoice.file)
+            } catch (error) {
+              console.error("Error creating object URL:", error)
+              setFileError("Unable to display the invoice file. The file may be corrupted or unavailable.")
+            }
+          } else if (foundInvoice.originalFile && foundInvoice.originalFile.name) {
+            // If we have file metadata but no actual file, set a placeholder
+            foundInvoice.fileUrl = null
+            setFileError(`The file "${foundInvoice.originalFile.name}" is not available for preview.`)
           }
-
-          setInvoice(foundInvoice)
-          setFormData({
-            supplier: foundInvoice.partner || "",
-            accountCode: '61110000 Achats de marchandises "groupe A"',
-            currency: "MAD",
-            invoiceNumber: foundInvoice.invoiceNumber || "",
-            invoiceDate: foundInvoice.invoiceDate || "",
-            withholding: false,
-            prorataTVA: true,
-            amountHT: foundInvoice.amount || 0,
-            amountTVA: foundInvoice.vatAmount || 0,
-            stampDuty: 0,
-            expenses: 0,
-            amountTTC: foundInvoice.amountWithTax || 0,
-            nonRecoverableTVA: false,
-            multipleTVAAmounts: false,
-          })
-        } else {
-          console.error("Invoice not found:", invoiceId)
-          toast({
-            title: "Invoice not found",
-            description: "The requested invoice could not be found",
-            variant: "destructive",
-          })
-          router.push("/dashboard/invoices")
         }
-      } catch (error) {
-        console.error("Error parsing invoices:", error)
-        toast({
-          title: "Error loading invoice",
-          description: "There was a problem loading the invoice data",
-          variant: "destructive",
+
+        setInvoice(foundInvoice)
+        setFormData({
+          supplier: foundInvoice.partner || "",
+          accountCode: '61110000 Achats de marchandises "groupe A"',
+          currency: "MAD",
+          invoiceNumber: foundInvoice.invoiceNumber || "",
+          invoiceDate: foundInvoice.invoiceDate || "",
+          withholding: false,
+          prorataTVA: true,
+          amountHT: foundInvoice.amount || 0,
+          amountTVA: foundInvoice.vatAmount || 0,
+          stampDuty: 0,
+          expenses: 0,
+          amountTTC: foundInvoice.amountWithTax || 0,
+          nonRecoverableTVA: false,
+          multipleTVAAmounts: false,
         })
+      } else {
+        router.push("/dashboard/invoices")
       }
-    } else {
-      console.error("No purchases documents found for company:", companyId)
-      // Create some sample data for testing
-      const sampleInvoice = {
-        id: invoiceId,
-        partner: "Sample Supplier",
-        invoiceNumber: "INV-2023-001",
-        invoiceDate: "2023-05-15",
-        amount: 1000,
-        vatAmount: 200,
-        amountWithTax: 1200,
-        fileUrl: "/placeholder.svg?height=800&width=600",
-        description: "Sample Invoice",
-      }
-      setInvoice(sampleInvoice)
-      setFormData({
-        supplier: sampleInvoice.partner,
-        accountCode: '61110000 Achats de marchandises "groupe A"',
-        currency: "MAD",
-        invoiceNumber: sampleInvoice.invoiceNumber,
-        invoiceDate: sampleInvoice.invoiceDate,
-        withholding: false,
-        prorataTVA: true,
-        amountHT: sampleInvoice.amount,
-        amountTVA: sampleInvoice.vatAmount,
-        stampDuty: 0,
-        expenses: 0,
-        amountTTC: sampleInvoice.amountWithTax,
-        nonRecoverableTVA: false,
-        multipleTVAAmounts: false,
-      })
     }
 
     setLoading(false)
@@ -205,6 +173,53 @@ export default function InvoiceDetailPage() {
       ...prev,
       [field]: value,
     }))
+  }
+
+  const renderFilePreview = () => {
+    if (fileError) {
+      return (
+        <Alert variant="destructive" className="max-w-md mx-auto">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{fileError}</AlertDescription>
+        </Alert>
+      )
+    }
+
+    if (!invoice?.fileUrl) {
+      return <div className="p-8 text-center text-muted-foreground">Aucun document disponible</div>
+    }
+
+    // Determine file type
+    const isPdf = invoice.fileUrl.toLowerCase().endsWith(".pdf") || invoice.originalFile?.type === "application/pdf"
+
+    const isImage =
+      invoice.fileUrl.toLowerCase().match(/\.(jpeg|jpg|png|gif|webp)$/) ||
+      (invoice.originalFile?.type && invoice.originalFile.type.startsWith("image/"))
+
+    if (isPdf) {
+      return (
+        <iframe
+          src={invoice.fileUrl + "#toolbar=0&navpanes=0"}
+          title="Invoice PDF"
+          className="w-full h-[calc(100vh-200px)]"
+          style={{ border: "none" }}
+        />
+      )
+    } else if (isImage) {
+      return (
+        <img
+          src={invoice.fileUrl || "/placeholder.svg"}
+          alt="Invoice document"
+          className="max-w-full max-h-[calc(100vh-200px)] object-contain"
+          onError={(e) => {
+            e.currentTarget.src = "/placeholder.svg?height=800&width=600"
+            setFileError("Error loading image. The file may be corrupted or unavailable.")
+          }}
+        />
+      )
+    } else {
+      return <div className="p-8 text-center text-muted-foreground">Format de fichier non pris en charge</div>
+    }
   }
 
   if (loading) {
@@ -633,58 +648,16 @@ export default function InvoiceDetailPage() {
           <div className="flex-1 overflow-auto bg-gray-100 flex items-center justify-center">
             <div className="relative w-full h-full">
               <div className="absolute inset-0 flex items-center justify-center">
-                {invoice?.fileUrl ? (
-                  <div
-                    className="bg-white shadow-md max-h-full"
-                    style={{
-                      transform: `scale(${zoomLevel / 100})`,
-                      transformOrigin: "center",
-                      transition: "transform 0.2s",
-                    }}
-                  >
-                    {invoice.fileUrl.toLowerCase().endsWith(".pdf") ? (
-                      <iframe
-                        src={`${invoice.fileUrl}#toolbar=0&navpanes=0`}
-                        title="Invoice PDF"
-                        className="w-[600px] h-[calc(100vh-200px)]"
-                        style={{ border: "none" }}
-                      />
-                    ) : invoice.fileUrl.match(/\.(jpe?g|png|gif|webp)$/i) ? (
-                      <img
-                        src={invoice.fileUrl || "/placeholder.svg"}
-                        alt="Invoice document"
-                        className="max-w-full max-h-[calc(100vh-200px)] object-contain"
-                        onError={(e) => {
-                          e.currentTarget.src = "/placeholder.svg?height=800&width=600"
-                          console.error("Error loading image:", invoice.fileUrl)
-                        }}
-                      />
-                    ) : (
-                      <div className="p-8 bg-white border rounded-lg shadow-md flex flex-col items-center justify-center">
-                        <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-                        <h3 className="text-lg font-medium">Document Preview</h3>
-                        <p className="text-sm text-muted-foreground mt-2 text-center">
-                          This document type cannot be previewed directly.
-                          <br />
-                          <a
-                            href={invoice.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline mt-2 inline-block"
-                          >
-                            Download to view
-                          </a>
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="p-8 text-center text-muted-foreground bg-white border rounded-lg shadow-md">
-                    <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium">No Document Available</h3>
-                    <p className="mt-2">There is no document attached to this invoice.</p>
-                  </div>
-                )}
+                <div
+                  className="bg-white shadow-md max-h-full"
+                  style={{
+                    transform: `scale(${zoomLevel / 100})`,
+                    transformOrigin: "center",
+                    transition: "transform 0.2s",
+                  }}
+                >
+                  {renderFilePreview()}
+                </div>
               </div>
             </div>
           </div>

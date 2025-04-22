@@ -20,6 +20,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <div className="flex min-h-screen flex-col">
+            {/* Navbar removed from dashboard via conditional in dashboard layout */}
             <Navbar />
             <main className="flex-grow">{children}</main>
             <Footer />
