@@ -221,12 +221,12 @@ export default function InvoiceDetailPage() {
       // Save to localStorage
       const companyId = localStorage.getItem("selectedCompanyId")
       if (companyId) {
-        const purchasesDocuments = localStorage.getItem("purchases_${companyId}")
+        const purchasesDocuments = localStorage.getItem(`purchases_${companyId}`)
         if (purchasesDocuments) {
           const invoices = JSON.parse(purchasesDocuments)
           const updatedInvoices = invoices.map((inv: any) => (inv.id === invoice.id ? updatedInvoice : inv))
 
-          localStorage.setItem("purchases_${companyId}", JSON.stringify(updatedInvoices))
+          localStorage.setItem(`purchases_${companyId}`, JSON.stringify(updatedInvoices))
           console.log("File saved to localStorage")
         }
       }
@@ -296,8 +296,9 @@ export default function InvoiceDetailPage() {
           alt="Invoice document"
           className="max-w-full max-h-[calc(100vh-200px)] object-contain"
           onError={(e) => {
-            e.currentTarget.src = "/placeholder.svg?height=800&width=600"
+            console.error("Error loading image:", e)
             setFileError("Erreur lors du chargement de l'image. Le fichier peut être corrompu ou inaccessible.")
+            e.currentTarget.src = "/placeholder.svg?height=800&width=600"
           }}
         />
       )
